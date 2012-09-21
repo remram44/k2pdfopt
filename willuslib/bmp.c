@@ -30,7 +30,9 @@
 #include <zlib.h>
 #include <png.h>
 #include <jpeglib.h>
+#ifdef HAVE_JASPER_LIB
 #include <jasper.h>
+#endif
 
 #define BOUND(x,xmin,xmax)  if ((x)<(xmin)) (x)=(xmin); else { if ((x)>(xmax)) (x)=(xmax); }
 
@@ -1603,15 +1605,18 @@ int bmp_read(WILLUSBITMAP *bmap,char *filename,FILE *out)
     if (!stricmp(fileext,"jpg") || !stricmp(fileext,"jpeg"))
         return(bmp_read_jpeg(bmap,filename,out));
     if (stricmp(fileext,"bmp"))
+#ifdef HAVE_JASPER_LIB
         {
         int fmt;
         fmt=bmp_jasper_read(NULL,filename,NULL);
         if (fmt<0)
-            fprintf(out,"Warning:  file %s has no extension.  Treating as BMP file.\n",
-                    filename);
+#endif
+        fprintf(out,"Warning:  file %s has no extension.  Treating as BMP file.\n",filename);
+#ifdef HAVE_JASPER_LIB
         else
             return(bmp_jasper_read(bmap,filename,out));
         }
+#endif
     f=fopen(filename,"rb");
     if (f==NULL)
         {
@@ -3714,6 +3719,7 @@ static int bmp_uniform_col(WILLUSBITMAP *bmp,int col)
     }
 
 
+#ifdef HAVE_JASPER_LIB
 /*
 ** Read image using Jasper library
 ** 9-3-2010
@@ -3853,6 +3859,7 @@ int bmp_jasper_read(WILLUSBITMAP *bmp,char *filename,FILE *out)
     jas_image_clearfmts();
     return(0);
     }
+#endif // HAVE_JASPER_LIB
 
 
 /*

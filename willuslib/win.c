@@ -1719,7 +1719,7 @@ void win_tm2filetime(void *_ftime,struct tm *date)
 
 
 static char winname[MAXFILENAMELEN];
-static HWND targetwin;
+static HWND targetwin1;
 void *win_start_app_get_win(char *syscmd,char *wname,double sleeptime,
                             int ntries,FILE *out)
 
@@ -1731,22 +1731,22 @@ void *win_start_app_get_win(char *syscmd,char *wname,double sleeptime,
     system(syscmd);
     for (count=0;count<ntries;count++)
         {
-        targetwin=0;
+        targetwin1=0;
         EnumWindows((WNDENUMPROC)EnumWndFind,0L);
-        if (targetwin!=0)
+        if (targetwin1!=0)
             break;
         if (count>1)
             nprintf(out,"Could not find window '%s'.\n",winname);
         win_sleep((int)(sleeptime*1000.));
         }
-    if (targetwin==0)
+    if (targetwin1==0)
         return(NULL);
     win_sleep((int)(sleeptime*1000.));
     /*
     childwin=0;
-    EnumChildWindows(targetwin,(WNDENUMPROC)EnumChildList,0);
+    EnumChildWindows(targetwin1,(WNDENUMPROC)EnumChildList,0);
     */
-    return((void *)targetwin);
+    return((void *)targetwin1);
     }
 
 
@@ -1757,9 +1757,9 @@ void *win_find_window(char *wname)
     {
     strncpy(winname,wname,255);
     winname[255]='\0';
-    targetwin=0;
+    targetwin1=0;
     EnumWindows((WNDENUMPROC)EnumWndFind,0L);
-    return((void *)targetwin);
+    return((void *)targetwin1);
     }
 
 
@@ -1768,33 +1768,17 @@ static BOOL CALLBACK EnumWndFind(HWND h,LPARAM lp)
     {
     char    buf[MAXFILENAMELEN];
 
-    if (targetwin!=0)
+    if (targetwin1!=0)
         return(TRUE);
     GetWindowText(h,buf,255);
     if (wfile_unix_style_match(winname,buf))
-        targetwin=h;
+        targetwin1=h;
     return(TRUE);
     }
 
 
-static BOOL CALLBACK find_win_by_name(HWND h,LPARAM lp);
 static char findtitle[256];
-static HWND targetwin;
 static int  kwpid;
-    
-
-static BOOL CALLBACK find_win_by_name(HWND h,LPARAM lp)
-
-    {
-    char    buf[256];
-
-    if (targetwin!=0)
-        return(TRUE);
-    GetWindowText(h,buf,254);
-    if (!strncmp(buf,findtitle,strlen(findtitle)))
-        targetwin=h;
-    return(TRUE);
-    }
 
 
 /*
@@ -2224,35 +2208,6 @@ break;
         }
     CloseHandle(h);
     return(ppid);
-    }
-
-
-char *win_procname(int pid)
-
-    {
-    static char filename[256];
-#ifdef __DMC__
-    strcpy(filename,"Unknown");
-#else
-    HANDLE hproc;
-    HMODULE hmod;
-    int size;
-
-    hproc = OpenProcess(PROCESS_QUERY_INFORMATION|PROCESS_VM_READ,FALSE,pid);
-    if (hproc==NULL)
-        {
-        filename[0]='\0';
-        return(filename);
-        }
-    if (EnumProcessModules(hproc,&hmod,sizeof(hmod),(LPDWORD)&size))
-        if (GetModuleFileNameEx(hproc,hmod,filename,255)>0)
-            return(filename);
-        else
-            filename[0]='\0';
-    else
-        filename[0]='\0';
-#endif
-    return(filename);
     }
 
 #endif /* WIN32 */

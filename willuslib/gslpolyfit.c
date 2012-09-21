@@ -23,11 +23,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "willus.h"
+#ifdef HAVE_GSL_LIB
 #include <gsl.h>
+#endif
 
 void gslpolyfit(double *x,double *y0,int n,int d,double *c0)
 
     {
+#ifdef HAVE_GSL_LIB
     int i;
     double chisq;
     gsl_matrix *X,*cov;
@@ -59,4 +62,9 @@ void gslpolyfit(double *x,double *y0,int n,int d,double *c0)
     gsl_vector_free(w);
     gsl_vector_free(y);
     gsl_matrix_free(X);
+#else
+    printf("\n\n\a*** Support for Gnu Scientic Library required but not available! ***\n\n"
+           "*** Contact author. ***\n\n");
+    exit(10);
+#endif
     }

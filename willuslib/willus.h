@@ -65,6 +65,9 @@
 **     #define __APPLE_CC__ 926
 **     #define __BIG_ENDIAN__ 1
 **
+** OS/X 10.6.8 gcc 4.2.1 predefines (emulator)
+**     #define __MACH__ 1
+**
 */
 
 
@@ -184,6 +187,29 @@ void sincos(double th,double *s,double *c);
 #endif
 #endif
 
+
+/*
+** Defines for presence of Jasper and GSL (Gnu Scientific Library).
+** Define these if you have these libs.  Default is not to define them.
+**
+** The Jasper library enables reading of JPEG 2000 files with the
+** bmp_read() function in bmp.c.
+**
+** GSL enables a polynomial fit routine (gslpolyfit.c) which is used by
+** various spline-interpolation routines.  If calls to these are made
+** without GSL support, the program will abort with an error message.
+**
+** K2pdfopt does not need Jasper or GSL.
+**
+*/
+#ifdef HAVE_JASPER_LIB
+/* Don't have Jasper */
+#undef HAVE_JASPER_LIB
+#endif
+#ifdef HAVE_GSL_LIB
+/* Don't have GSL */
+#undef HAVE_GSL_LIB
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -372,7 +398,9 @@ int bmp_close_to_grey(int r,int g,int b,double threshold);
 #define bmp_close_to_gray(r,g,b,threshold) bmp_close_to_grey(r,g,b,threshold)
 char *bmp_ansi_code(int r,int g,int b);
 char *bmp_color_name(int r,int g,int b);
+#ifdef HAVE_JASPER_LIB
 int bmp_jasper_read(WILLUSBITMAP *bmp,char *filename,FILE *out);
+#endif
 void bmp_more_rows(WILLUSBITMAP *bmp,double ratio,int pixval);
 double bmp_autostraighten(WILLUSBITMAP *src,WILLUSBITMAP *srcgrey,int white,double maxdegrees,
                         double mindegrees,int debug,FILE *out);
@@ -795,7 +823,6 @@ int win_registry_search(char *data,int maxlen,char *basename,char *keyroot,int r
 int win_get_user_and_domain(char *szUser,int maxlen,char *szDomain,int maxlen2);
 int win_has_own_window(void);
 int win_getppid(int pid);
-char *win_procname(int pid);
 #endif
 
 /* sys.c */

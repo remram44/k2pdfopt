@@ -35,17 +35,84 @@
 **                     (contrast adjust)
 **                   - Autostraighten each column (e.g. when one page of
 **                     a book is tilted).
-**                   - Way to set overwrite_minsize_mb in menu?
 **                   - Option to change suffix or specify output name?
 **                   - Figure out how to get bounding boxes for text
 **                     primitives from MuPDF so that cropping could be
 **                     done to these bounding boxes (Markom).
-**           v1.51:
+**                   - Split final output into two pages for viewing on
+**                     side-by-side kindles (Markom)...?
+**                   - Should references w/lots of hanging indents be re-flowed?
+**                   - Make max_fig_gap, max_label_height in
+**                     bmpregion_find_vertical_breaks() adjustable?
+**
+**           v1.52:
 **                   - Copy/Paste-able unicode-16 strings in PDF so that
 **                     foreign characters are supported.
 **                     (how to handle in Helvetica font...)
 **
 ** VERSION HISTORY
+**
+** v1.51     9-21-12
+**           NEW FEATURES
+**           - New option -jf for special figure justification (under
+**             "j" in interactive menu).
+**           - -f2p option applies to small figures as well as tall figures.
+**           - Compiled w/MuPDF v1.1 and Freetype v2.4.10.
+**           - Source can be built without DjVuLibre library (see HAVE_DJVU
+**             macro) or MuPDF (see HAVE_MUPDF macro).  If no MuPDF, then
+**             Ghostscript must be installed to process PDF.
+**           - Option -o (used to control overwrite) now sets the output
+**             name via a formatting string.
+**             Example #1: -o %s_k2opt
+**               This is the default and and appends _k2opt to the source name.
+**               (%s is replaced by the base name of the source file.)
+**             Example #2: -o out%04d
+**               In this case, each subsequent output file (assuming you
+**               specify more than one input file) will be out0001.pdf,
+**               out0002.pdf, out0003.pdf, ...
+**
+**           CHANGES(!) TO COMMAND-LINE OPTIONS/INPUT MENU
+**           - I generally like to avoid doing this for backwards compatibility,
+**             but I felt some changes were overdue.
+**             COMMAND-LINE
+**             * The overwrite option is now controlled with -ow instead of
+**               -o since I wanted -o to specify the output name format.
+**             * The new command-line option for setting OCR visibility (was -wc)
+**               is -ocrvis.  E.g. "-ocrvis st" will show the 's'ource document
+**               and the OCR 't'ext.
+**             * The -gtcmax option has been changed to -cgmax to be more
+**               consistent.  It's also been moved under the "co" options
+**               in the interactive menu.  Meaning of -gtc option has been
+**               clarified somewhat.
+**             INTERACTIVE MENU
+**             * Revamped the user input menu a bit by grouping things under
+**               certain options in order to reduce the number.
+**               > "o" now sets the output name format string and you
+**                 now set the output DPI (-odpi) under "d" for device resolution.
+**               > "g" (gamma correction), "s" (sharpening), and "wt" (white
+**                  threshold) are all now under "cs" for contrast/sharpen.
+**               > "de" (defect size), "evl" (erase vertical lines), and "gs"
+**                  (ghostscript) are all under "s" for Special options.
+**               > "mc" (mark corners) is now set under "pd" (padding/marking).
+**               > "ws" (word spacing) is now set under "w" (wrap text).
+**
+**           BUG FIXES
+**           - OCR text now rendered at a more uniform height.
+**           - Box around OCR text options fixed (-ocrvis b).
+**           - Fixed bug in text re-flow when a hyphen is detected.
+**           - Fixed interpretation of -ocrhmax so that it is based on the
+**             source dimension.
+**           - Min figure height from -jf option is applied in the
+**             bmpregion_find_vertical_breaks() function.
+**           - Interactive menu should be smarter about when you try to enter
+**             a file name at the prompt (fixed a bug where it seemed to
+**             not accept a file you would type in at the prompt even though
+**             it would eventually process it).
+**           - No longer needs Jasper or GSL libs for build.
+**           - Tightened up the pdfwrite_bitmap function in willus lib.
+**           - Cleaned up / revised source code and build instructions for
+**             a simpler build (eliminated two basically unneeded libraries).
+**           - OCR options are ignored in versions compiled without OCR.
 **
 ** v1.50     9-7-12
 **           MAJOR NEW FEATURE: OCR
@@ -602,6 +669,10 @@
 /* Undefine HAVE_GOCR and HAVE_TESSERACT to turn off OCR completely */
 #define HAVE_GOCR
 #define HAVE_TESSERACT
+/* Undefine HAVE_DJVU if no DjVuLibre library */
+#define HAVE_DJVU
+/* Undefine HAVE_MUPDF if no MuPDF (must have Ghostscript in this case) */
+#define HAVE_MUPDF
 
 #if (defined(HAVE_GOCR) || defined(HAVE_TESSERACT))
 #if (!defined(HAVE_OCR))
@@ -614,7 +685,7 @@
 #endif
 
 
-#define VERSION "v1.50"
+#define VERSION "v1.51"
 #define GRAYLEVEL(r,g,b) ((int)(((r)*0.3+(g)*0.59+(b)*0.11)*1.002))
 #if (defined(WIN32) || defined(WIN64))
 #define TTEXT_BOLD    ANSI_WHITE
@@ -734,7 +805,8 @@ static char *usageintro=
 "any are found, converts those bitmaps to a PDF as if they were pages of a\n"
 "PDF file.  If there are no bitmaps in the folder and if PDF files are in\n"
 "the folder, then each PDF file will be converted in sequence.\n\n"
-"Output files are always .pdf and have _k2opt added to the source name.\n\n";
+"Output files are always .pdf and have _k2opt added to the source name.\n"
+"(See -o option to specify alternate output name.)\n\n";
 
 static char *usageenv=
 "K2PDFOPT environment variable\n"
@@ -759,7 +831,7 @@ static char *k2pdfopt_options=
 "                  specified, otherwise defaults to 4 degrees max.  Use -1 to\n"
 "                  turn off. Default is off (-as -1).\n"
 "-bp[-]            Break [do not break] output pages at end of each input page.\n"
-"                  Default is -bp-.\n\n"
+"                  Default is -bp-.\n"
 "-bpc <nn>         Set the bits per color plane on the output device to <nn>.\n"
 "                  The value of <nn> can be 1, 2, 4, or 8.  The default is 4\n"
 "                  to match the kindle's display capability.\n"
@@ -773,7 +845,12 @@ static char *k2pdfopt_options=
 "                  Default is -col 4.  -col 1 disables column searching.\n"
 "-cg <inches>      Minimum column gap width in inches for detecting multiple\n"
 "                  columns.  Default = 0.1 inches.  Setting this too large\n"
-"                  will give very poor results for multicolumn files.\n"
+"                  will give very poor results for multicolumn files.  See also\n"
+"                  -cgmax.\n"
+"-cgmax <inches>   Max allowed gap between columns in inches.  If the gap\n"
+"                  between two regions exceeds this value, they will not be\n"
+"                  considered as separate columns.  Default = 1.5.  Use -1 for\n"
+"                  no limit (disable).  See also -cg.\n"
 "-cgr <range>      Set column-gap range, 0 - 1.  This is the horizontal range\n"
 "                  over which k2pdfopt will search for a column gap, as a\n"
 "                  fraction of the page width.  E.g. -cgr 0.5 will search\n"
@@ -812,23 +889,25 @@ static char *k2pdfopt_options=
 "                  vertical lines are erased even if they are the sides of\n"
 "                  an enclosed rectangle or figure, for example.\n"
 "-f2p <val>        Fit-to-page option.  The quantity <val> controls fitting\n"
-"                  tall contiguous objects (like figures or photographs) to\n"
-"                  the device screen.  Normally these are fit to the width\n"
-"                  of the device.  If <val>=10, for example, they are allowed\n"
-"                  to be 10%% narrower than the screen in order to fit\n"
-"                  vertically.  Use -1 to fit the object no matter what.\n"
-"                  Use -2 as a special case--all \"red-boxed\" regions (see\n"
-"                  -sm option) are placed one per page. Default is -f2p 0.\n"
+"                  tall or small contiguous objects (like figures or\n"
+"                  photographs) to the device screen.  Normally these are fit\n"
+"                  to the width of the device, but if they are too small or\n"
+"                  too tall, then if <val>=10, for example, they are allowed\n"
+"                  to be 10%% wider (if too small) or narrower (if too tall)\n"
+"                  than the screen in order to fit better.  Use -1 to fit the\n"
+"                  object no matter what.  Use -2 as a special case--all\n"
+"                  \"red-boxed\" regions (see -sm option) are placed one per\n"
+"                  page. Default is -f2p 0.  See also -jf.\n"
 "-fc[-]            For multiple column documents, fit [don't fit] columns to\n"
 "                  the width of the reader screen regardless of -odpi.\n"
 "                  Default is to fit the columns to the reader.\n"
 "-g <gamma>        Set gamma value of output bitmaps. A value less than 1.0\n"
 "                  makes the page darker and may make the font more readable.\n"
 "                  Default is 0.5.\n"
-"-gtc <inches>     Threshold for detecting column gaps (expert mode).\n"
-"                  See -gtr.  Default = .005.\n"
-"-gtcmax <inches>  Max allowed gap between columns (expert mode).  See -gtc,\n"
-"                  -gtr.  Default = 1.5.  Use -1 for no limit.\n"
+"-gtc <inches>     Threshold value for detecting column gaps (expert mode).\n"
+"                  Sets how many of the pixels in the column shaft can be\n"
+"                  non-white (total height of a line crossing the shaft in\n"
+"                  inches).  See also -gtr.  Default = .005.\n"
 /*
 "-gtm <inches>     Threshold for trimming excess margins (xpert mode).\n"
 "                  See -gtr.  Default = .005.\n"
@@ -847,6 +926,7 @@ static char *k2pdfopt_options=
 "                  Equivalent to -idpi 400 -odpi 333 -w 1120 -h 1470.\n"
 "-hy[-]            Turn on [off] hyphen detection/elimination when wrapping\n"
 "                  text.  Default is on.\n"
+#ifdef HAVE_MUPDF
 "-gs[-]            Force use of Ghostscript instead of MuPDF to read PDFs.\n"
 "                  K2pdfopt has built-in PDF translation (via the MuPDF\n"
 "                  library) but will try to use Ghostscript if Ghostscript\n"
@@ -854,15 +934,27 @@ static char *k2pdfopt_options=
 "                  (virtually never happens).  You can force Ghostscript to\n"
 "                  be used with this -gs option.  Use -gs- to turn off.\n"
 "                  Download ghostscript at http://www.ghostscript.com.\n"
+#endif
 "-idpi <dpi>       Set pixels per inch for input file.  Use a negative value\n"
 "                  as a multiplier on the output dpi (e.g. -2 will set the\n"
 "                  input file dpi to twice the output file dpi (see -odpi).\n"
 "                  Default is -2.0.\n"
-"-j [-1|0|1|2][+/-] Set output text justification.  0 = left, 1 = center,\n"
+"-j -1|0|1|2[+/-]  Set output text justification.  0 = left, 1 = center,\n"
 "                  2 = right.  Add a + to attempt full justification or a -\n"
 "                  to explicitly turn it off.  The default is -1, which tells\n"
 "                  k2pdfopt to try and maintain the justification of the\n"
 "                  document as it is.  See also -wrap.\n"
+"-jf 0|1|2 [<inches>]  Set figure (tall region) justification.  If a figure\n"
+"                  has left or right margins available, this option allows\n"
+"                  you to set the justification differently than the text.\n"
+"                  E.g. you can center figures with -jf 1.  If you want to\n"
+"                  specify a minimum height for figures (e.g. minimum region\n"
+"                  height where this justification applies), you can tack it\n"
+"                  on at the end, e.g. -jf 1 1.5 to center any region taller\n"
+"                  than 1.5 inches.  Default is 0.75 inches for the minimum\n"
+"                  height and to use the same justification on figures as\n"
+"                  the rest of the document (-jf -1).  See also -f2p to fit\n"
+"                  small or tall figures to the page.\n"
 "-jpg [<quality>]  Use JPEG compression in PDF file with quality level\n"
 "                  <quality> (def=90).  A lower quality value will make your\n"
 "                  file smaller.  See also -png.\n"
@@ -875,11 +967,18 @@ static char *k2pdfopt_options=
 "-mc[-]            Mark [don't mark] corners of the output bitmaps with a\n"
 "                  small dot to prevent the reading device from re-scaling.\n"
 "                  Default = mark.\n"
-"-o[-] [<mb>]      Set the minimum file size (in MB) where overwriting the\n"
+"-o <namefmt>      Set the output file name using <namefmt>.  %s will be\n"
+"                  replaced with the base name of the source file, and %d\n"
+"                  will be replaced with the source file count (starting\n"
+"                  with 1).  The .pdf extension will be appended you don't\n"
+"                  specify it.  E.g. -o out%04d.pdf will result in output\n"
+"                  files out0001.pdf, out0002.pdf, ... for the converted\n"
+"                  files.  Def = %s_k2opt\n"
+"-ow[-] [<mb>]     Set the minimum file size (in MB) where overwriting the\n"
 "                  file will not be done without prompting.  Set to -1 (or\n"
-"                  just -o with no value) to overwrite all files with no\n"
-"                  prompting.  Set to 0 (or just -o-) to prompt for any\n"
-"                  overwritten file.  Def = -o 10 (any existing file\n"
+"                  just -ow with no value) to overwrite all files with no\n"
+"                  prompting.  Set to 0 (or just -ow-) to prompt for any\n"
+"                  overwritten file.  Def = -ow 10 (any existing file\n"
 "                  over 10 MB will not be overwritten without prompting).\n"
 "-om[b|l|r|t] <in> Set [bottom|left|right|top] margin[s] on output device in\n"
 "                  inches.  Default = 0.02 inches.\n"
@@ -890,10 +989,15 @@ static char *k2pdfopt_options=
 "                  recognition (OCR) in order to embed searchable text into\n"
 "                  the output PDF document.  If followed by t or g, specifies\n"
 "                  the ocr engine to use (tesseract or gocr).  Default if not\n"
-"                  specified is tesseract.  See also -wc and -ocrhmax.\n"
+"                  specified is tesseract.  See also -ocrvis and -ocrhmax.\n"
 "-ocrhmax <in>     Set max height for an OCR'd word in inches.  Any graphic\n"
 "                  exceeding this height will not be processed with the OCR\n"
 "                  engine.  Default = 1.5.  See -ocr.\n"
+"-ocrvis <s|t|b>   Set OCR visibility flags.  Put 's' to show the source doc,\n"
+"                  't' to show the OCR text, and/or 'b' to put a box around\n"
+"                  each word.  Default is -ocrvis s.  To show both the source\n"
+"                  document and the OCR text overlayed on top:  -ocrvis st.\n"
+"                  See also -ocr.\n"
 #endif
 "-odpi <dpi>       Set pixels per inch of output screen (def=167). See also\n"
 "                  -fc and -hq.\n"
@@ -959,13 +1063,6 @@ static char *k2pdfopt_options=
 "                  regions in the document.  Default value is 0.25.  See also\n"
 "                  -vls.\n"
 "-w <width>        Set width of output in pixels (def=560). See -hq.\n"
-#ifdef HAVE_OCR
-"-wc <color>       Set OCR word color flags.  The <color> value is a sum of\n"
-"                  powers of 2:  1=make OCR text visible; 2=make bitmapped text\n"
-"                  invisible, 4=put a box around the OCR'd words.  So use 3 to\n"
-"                  see only the OCR text.  Or 5 to see everything.  Default=0.\n"
-"                  See -ocr.\n"
-#endif
 "-wrap[-|+]        Enable [disable] text wrapping.  Default = enabled.  If\n"
 "                  -wrap+, regions of text with lines shorter than the mobile\n"
 "                  device screen are re-flowed to fit the screen width.  If\n"
@@ -1000,7 +1097,6 @@ static double cdthresh=.01;
 */
 static int src_rot=SRCROT_AUTO;
 static double gtc_in=.005; // detecting gap between columns
-static double gtcmax_in=1.5; // max gap between columns
 static double gtr_in=.006; // detecting gap between rows
 static double gtw_in=.0015; // detecting gap between words
 // static double gtm_in=.005; // detecting margins for trimming
@@ -1010,7 +1106,7 @@ static int src_left_to_right=1;
 static int src_whitethresh=-1;
 #ifdef HAVE_OCR
 static int dst_ocr=0;
-static int dst_ocr_wordcolor=0;
+static int dst_ocr_visibility_flags=1;
 static double ocr_max_height_inches=1.5;
 #ifdef HAVE_TESSERACT
 static int ocrtess_status=0;
@@ -1026,20 +1122,27 @@ static int fit_columns=1;
 static double user_src_dpi=-2.0;
 static double document_scale_factor=1.0;
 static int src_dpi=300;
+#ifdef HAVE_MUPDF
 static int usegs=0;
+#else
+static int usegs=1;
+#endif
 static int query_user=1;
 static int query_user_explicit=0;
 static int jpeg_quality=-1;
-static int dst_width=DEFAULT_WIDTH;
+static int dst_width=DEFAULT_WIDTH; /* Full device width in pixels */
 static int dst_height=DEFAULT_HEIGHT;
 static int dst_userwidth=DEFAULT_WIDTH;
 static int dst_userheight=DEFAULT_HEIGHT;
 static int dst_justify=-1; // 0 = left, 1 = center
+static int dst_figure_justify=-1; // -1 = same as dst_justify.  0=left 1=center 2=right
+static double dst_min_figure_height_in=0.75;
 static int dst_fulljustify=-1; // 0 = no, 1 = yes
 static int dst_sharpen=1;
 static int dst_color=0;
 static int dst_bpc=4;
 static int dst_landscape=0;
+static char dst_opname_format[128];
 static int src_autostraighten=0;
 static double dst_mar=0.02;
 static double dst_martop=-1.0;
@@ -1052,19 +1155,20 @@ static int pad_bottom=4;
 static int pad_top=0;
 static int mark_corners=1;
 static double min_column_gap_inches=0.1;
+static double max_column_gap_inches=1.5; // max gap between columns
 static double min_column_height_inches=1.5;
 static double mar_top=-1.0;
 static double mar_bot=-1.0;
 static double mar_left=-1.0;
 static double mar_right=-1.0;
-static double max_region_width_inches = 3.6;
+static double max_region_width_inches = 3.6; /* Max viewable width (device width minus margins) */
 static int max_columns=2;
 static double column_gap_range=0.33;
 static double column_offset_max=0.2;
 static double column_row_gap_height_in=1./72.;
 static int text_wrap=1;
 static double word_spacing=0.375;
-static double display_width_inches = 3.6;
+static double display_width_inches = 3.6; /* Device width = dst_width / dst_dpi */
 static char pagelist[1024];
 static int column_fitted=0;
 static double lm_org,bm_org,tm_org,rm_org,dpi_org;
@@ -1105,6 +1209,7 @@ static int last_h5050_internal=-1;
 static int just_flushed_internal=0;
 static int gap_override_internal; /* If > 0, apply this gap in wrapbmp_flush() and then reset. */
 
+static void k2_exit(int val);
 static void k2pdfopt_sys_close(void);
 static void k2pdfopt_sys_init(void);
 #ifdef HAVE_OCR
@@ -1118,12 +1223,15 @@ static int prcmdopts(char *s,int nl);
 static int cmdoplines(char *s);
 static char *pr1cmdopt(char *s);
 static void prlines(char *s,int nlines);
+static int wildcount(char *wildspec);
 static int user_input(int filecount,char *firstfile);
 static int user_float(char *message,double defval,double *dstval,int nmax,
                       double min,double max,char *extra_message);
 static int user_integer(char *message,int defval,int *dstval,int min,int max);
 static int user_string(char *message,char *selection[],char *def);
 static int user_any_string(char *message,char *dstval,int maxlen,char *defname);
+static int filename_comp(char *name1,char *name2);
+static void filename_substitute(char *dst,char *fmt,char *src,int count,char *defext0);
 static void strcpy_no_spaces(char *d,char *s);
 static int valid_page_range(char *s);
 static void k2pdfopt_proc_wildarg(char *arg);
@@ -1164,11 +1272,11 @@ static void bmpregion_add(BMPREGION *region,BREAKINFO *breakinfo,
 static void dst_add_gap_src_pixels(char *caller,MASTERINFO *masterinfo,int pixels);
 static void dst_add_gap(MASTERINFO *masterinfo,double inches);
 static void bmp_src_to_dst(MASTERINFO *masterinfo,WILLUSBITMAP *src,int justification_flags,
-                           int whitethresh,int nocr);
+                           int whitethresh,int nocr,int dpi);
 static void bmp_fully_justify(WILLUSBITMAP *jbmp,WILLUSBITMAP *src,int nocr,int whitethresh,
                               int just);
 #ifdef HAVE_OCR
-static void ocrwords_fill_in(OCRWORDS *words,WILLUSBITMAP *src,int whitethresh);
+static void ocrwords_fill_in(OCRWORDS *words,WILLUSBITMAP *src,int whitethresh,int dpi);
 #endif
 static void bmpregion_trim_margins(BMPREGION *region,int *colcount0,int *rowcount0,int flags);
 static void bmpregion_hyphen_detect(BMPREGION *region);
@@ -1290,14 +1398,12 @@ int main(int argc,char *argv[])
             {
             if (!k2pdfopt_usage())
                 {
-                wrapbmp_free();
                 k2pdfopt_sys_close();
                 return(0);
                 }
             }
         if (query_user!=0)
             k2_enter_to_exit();
-        wrapbmp_free();
         k2pdfopt_sys_close();
         return(0);
         }
@@ -1330,7 +1436,11 @@ int main(int argc,char *argv[])
     wrapbmp_set_color(dst_color);
     jpeg_quality=-1;
     verbose=0;
+#ifdef HAVE_MUPDF
     usegs=0;
+#else
+    usegs=1;
+#endif
     dst_width=dst_userwidth=DEFAULT_WIDTH;
     dst_height=dst_userheight=DEFAULT_HEIGHT;
     src_autostraighten=0;
@@ -1339,13 +1449,16 @@ int main(int argc,char *argv[])
     user_src_dpi=-2.0;
     document_scale_factor=1.0;
     dst_dpi=167;
+    strcpy(dst_opname_format,"%s_k2opt");
 #ifdef HAVE_OCR
     dst_ocr=0;
-    dst_ocr_wordcolor=0;
+    dst_ocr_visibility_flags=1;
 #endif
     render_dpi=167;
     dst_sharpen=1;
     dst_justify=-1;
+    dst_figure_justify=-1;
+    dst_min_figure_height_in=0.75;
     dst_fulljustify=-1;
     fit_columns=1;
     src_rot=SRCROT_AUTO;
@@ -1365,6 +1478,7 @@ int main(int argc,char *argv[])
     dst_marright=-1.0;
     dst_bpc=4;
     min_column_gap_inches=0.1;
+    max_column_gap_inches=1.5; // max allowed gap between columns
     min_column_height_inches=1.5;
     max_columns=2;
     column_gap_range=0.33;
@@ -1382,7 +1496,6 @@ int main(int argc,char *argv[])
     no_wrap_height_limit_inches=0.55;
     little_piece_threshold_inches=0.5;
     gtc_in=.005; // detecting gap between columns
-    gtcmax_in=1.5; // max gap between columns
     gtr_in=.006; // detecting gap between rows
     gtw_in=.0015; // detecting gap between words
     // gtm_in=.005; // detecting margins for trimming
@@ -1412,7 +1525,6 @@ int main(int argc,char *argv[])
     */
     if (user_input(filecount,firstfile)==-1)
         {
-        wrapbmp_free();
         k2pdfopt_sys_close();
         return(0);
         }
@@ -1448,9 +1560,17 @@ int main(int argc,char *argv[])
     ** All done.
     */
     k2_enter_to_exit();
-    wrapbmp_free();
     k2pdfopt_sys_close();
     return(0);
+    }
+
+
+static void k2_exit(int val)
+
+    {
+    k2_enter_to_exit();
+    k2pdfopt_sys_close();
+    exit(val);
     }
 
 
@@ -1461,6 +1581,7 @@ static int k2_ocr_inited=0;
 static void k2pdfopt_sys_close(void)
 
     {
+    wrapbmp_free();
     sys_set_decimal_period(0);
 #ifdef HAVE_OCR
     if (dst_ocr && k2_ocr_inited)
@@ -1656,12 +1777,14 @@ static int parse_cmd_args(int argc,char *argv[],int setvals,int procfiles,char *
                 text_wrap=(cl->cmdarg[5]=='-') ? 0 : (cl->cmdarg[5]=='+' ? 2 : 1);
             continue;
             }
+#ifdef HAVE_MUPDF
         if (!stricmp(cl->cmdarg,"-gs") || !stricmp(cl->cmdarg,"-gs-"))
             {
             if (setvals==1)
                 usegs=(cl->cmdarg[3]=='-' ? 0 : 1);
             continue;
             }
+#endif
         if (!stricmp(cl->cmdarg,"-r") || !stricmp(cl->cmdarg,"-r-"))
             {
             if (setvals==1)
@@ -1680,11 +1803,22 @@ static int parse_cmd_args(int argc,char *argv[],int setvals,int procfiles,char *
                 dst_landscape=(cl->cmdarg[3]=='-') ? 0 : 1;
             continue;
             }
-        if (!stricmp(cl->cmdarg,"-o") || !stricmp(cl->cmdarg,"-o-"))
+        if (!stricmp(cl->cmdarg,"-o"))
+            {
+            if (cmdlineinput_next(cl)==NULL)
+                break;
+            if (setvals==1)
+                {
+                strncpy(dst_opname_format,cl->cmdarg,127);
+                dst_opname_format[127]='\0';
+                }
+            continue;
+            }
+        if (!stricmp(cl->cmdarg,"-ow") || !stricmp(cl->cmdarg,"-ow-"))
             {
             int always_prompt;
             char *ptr;
-            always_prompt = (cl->cmdarg[2]=='-');
+            always_prompt = (cl->cmdarg[3]=='-');
             if (((ptr=cmdlineinput_next(cl))==NULL) || !is_a_number(cl->cmdarg))
                 {
                 readnext=0;
@@ -1765,53 +1899,81 @@ static int parse_cmd_args(int argc,char *argv[],int setvals,int procfiles,char *
                 mark_corners=(cl->cmdarg[3]=='-') ? 0 : 1;
             continue;
             }
-#ifdef HAVE_OCR
-        if (!stricmp(cl->cmdarg,"-wc"))
+        if (!stricmp(cl->cmdarg,"-ocrvis"))
             {
             if (cmdlineinput_next(cl)==NULL)
                 break;
+#ifdef HAVE_OCR
             if (setvals==1)
-                dst_ocr_wordcolor=atoi(cl->cmdarg);
+                {
+                dst_ocr_visibility_flags=0;
+                if (in_string(cl->cmdarg,"s")>=0)
+                    dst_ocr_visibility_flags |= 1;
+                if (in_string(cl->cmdarg,"t")>=0)
+                    dst_ocr_visibility_flags |= 2;
+                if (in_string(cl->cmdarg,"b")>=0)
+                    dst_ocr_visibility_flags |= 4;
+                }
+#endif
             continue;
             }
         if (!stricmp(cl->cmdarg,"-ocrhmax"))
             {
             if (cmdlineinput_next(cl)==NULL)
                 break;
+#ifdef HAVE_OCR
             if (setvals==1)
                 ocr_max_height_inches=atof(cl->cmdarg);
+#endif
             continue;
             }
         if (!stricmp(cl->cmdarg,"-ocr") || !stricmp(cl->cmdarg,"-ocr-"))
             {
+#ifndef HAVE_OCR
+            if (setvals==1)
+                {
+                static int warned=0;
+                if (!warned)
+                aprintf(TTEXT_WARN "\a\n** No OCR capability in this compile of k2pdfopt! **\n\n"
+                        TTEXT_NORMAL);
+                warned=1;
+                }
+#endif
             if (cl->cmdarg[4]=='-')
                 {
+#ifdef HAVE_OCR
                 if (setvals==1)
                     dst_ocr=0;
+#endif
                 continue;
                 }
             if (cmdlineinput_next(cl)==NULL || !stricmp(cl->cmdarg,"t"))
                 { 
+#ifdef HAVE_OCR
                 if (setvals==1)
                     dst_ocr='t';
+#endif
                 continue;
                 }
             if (!stricmp(cl->cmdarg,"g") || !stricmp(cl->cmdarg,"j"))
                 {
+#ifdef HAVE_OCR
                 if (setvals==1)
                     dst_ocr='g';
+#endif
                 continue;
                 }
+#ifdef HAVE_OCR
             if (setvals==1)
 #ifdef HAVE_TESSERACT
                 dst_ocr='t';
 #else
                 dst_ocr='g';
 #endif
+#endif
             readnext=0;
             continue;
             }
-#endif
         if (!stricmp(cl->cmdarg,"-s") || !stricmp(cl->cmdarg,"-s-"))
             {
             if (setvals==1)
@@ -1997,6 +2159,14 @@ static int parse_cmd_args(int argc,char *argv[],int setvals,int procfiles,char *
                 min_column_gap_inches=atof(cl->cmdarg);
             continue;
             }
+        if (!stricmp(cl->cmdarg,"-cgmax"))
+            {
+            if (cmdlineinput_next(cl)==NULL)
+                break;
+            if (setvals==1)
+                max_column_gap_inches=atof(cl->cmdarg);
+            continue;
+            }
         if (!stricmp(cl->cmdarg,"-gtr"))
             {
             if (cmdlineinput_next(cl)==NULL)
@@ -2007,14 +2177,6 @@ static int parse_cmd_args(int argc,char *argv[],int setvals,int procfiles,char *
                 if (gtr_in<0.)
                     gtr_in=0.;
                 }
-            continue;
-            }
-        if (!stricmp(cl->cmdarg,"-gtcmax"))
-            {
-            if (cmdlineinput_next(cl)==NULL)
-                break;
-            if (setvals==1)
-                gtcmax_in=atof(cl->cmdarg);
             continue;
             }
         if (!stricmp(cl->cmdarg,"-gtc"))
@@ -2109,6 +2271,23 @@ static int parse_cmd_args(int argc,char *argv[],int setvals,int procfiles,char *
                 break;
             if (setvals==1)
                 dst_dpi=atoi(cl->cmdarg);
+            continue;
+            }
+        if (!stricmp(cl->cmdarg,"-jf"))
+            {
+            if (cmdlineinput_next(cl)==NULL)
+                break;
+            if (setvals==1)
+                dst_figure_justify=atoi(cl->cmdarg);
+            if (cmdlineinput_next(cl)==NULL)
+                break;
+            if (!is_a_number(cl->cmdarg))
+                {
+                readnext=0;
+                continue;
+                }
+            if (setvals==1)
+                dst_min_figure_height_in=atof(cl->cmdarg);
             continue;
             }
         if (!stricmp(cl->cmdarg,"-j"))
@@ -2354,16 +2533,27 @@ static void k2pdfopt_header(void)
 
     {
     char date[32];
+    char cap[32];
 
     strcpy(date,__DATE__);
+#ifdef HAVE_MUPDF
+    strcpy(cap," (w/MuPDF");
+#else
+    cap[0]='\0';
+#endif
+#ifdef HAVE_DJVU
+    sprintf(&cap[strlen(cap)],"%sDjVuLibre",cap[0]=='\0'?" (w/":",");
+#endif
+#ifdef HAVE_OCR
+    sprintf(&cap[strlen(cap)],"%sOCR",cap[0]=='\0'?" (w/":",");
+#endif
+    if (cap[0]=='\0')
+        strcpy(cap," (Ghostscript only)");
+    else
+        strcat(cap,")");
     aprintf(TTEXT_HEADER "k2pdfopt %s" TTEXT_NORMAL "%s (c) %s, GPLv3, http://willus.com\n"
             "    Compiled %s with %s for %s on %s.\n\n",
-           VERSION,
-#ifdef HAVE_OCR
-           " (w/OCR)",
-#else
-           "",
-#endif
+           VERSION,cap,
            &date[strlen(date)-4],
            __DATE__,k2pdfopt_compiler,k2pdfopt_os,k2pdfopt_chip);
     }
@@ -2494,6 +2684,21 @@ static void prlines(char *s,int nlines)
     }
 
 
+static int wildcount(char *wildspec)
+
+    {
+    FILELIST *fl,_fl;
+    int n;
+
+    fl=&_fl;
+    filelist_init(fl);
+    filelist_fill_from_disk_1(fl,wildspec,0,0);
+    n=fl->n;
+    filelist_free(fl);
+    return(n);
+    }
+
+
 static int user_input(int filecount,char *firstfile)
 
     {
@@ -2510,36 +2715,28 @@ static int user_input(int filecount,char *firstfile)
         "bp. Break pages (-bp,-f2p)",
         "c. Color output (-c)",
         "co. Column detection (-col,-ch,...)",
-        "cm. Contrast max (-cmax)",
-        "d. Display resolution (-h,-w)",
-        "de. Defect size (-de)",
+        "cs. Contrast/Sharpen (-cmax,-g,-s,-wt)",
+        "d. Device resolution (-h,-w,-odpi)",
         "ds. Document scale factor (-ds)",
-        "e. Erase vertical lines (-evl)",
         "f. Fit to single column (-fc)",
-        "g. Gamma value (-g)",
-        "gs. Ghostscript interpreter (-gs)",
         "gt. Gap thresholds (-gt...)",
-        "i. Input file dpi (-idpi)",
         "j. Justification (-j)",
         "l. Landscape mode (-ls)",
         "m. Margin to ignore (-m)",
-        "mc. Mark corners (-mc)",
-        "o. Output device dpi (-odpi)",
+        "o. Output name (-o)",
 #ifdef HAVE_OCR
-        "oc. OCR (-ocr,-wc)",
+        "oc. OCR (-ocr,-ocrvis,...)",
 #endif
         "om. Output margins (-om)",
         "p. Page range (-p)",
-        "pd. Padding on output (-pl,...)",
+        "pd. Padding/Marking (-p[lrbt],-mc)",
         "r. Right-to-left page scans (-r)",
         "rt. Rotate source page (-sr)",
-        "s. Sharpening (-s)",
+        "s. Special (-de,-evl,-gs)",
         "sm. Show marked source (-sm)",
         "u. (or ?) Usage (command line opts)",
         "v. Vertical spacing (-vb,-vs)",
-        "w. Wrap text option (-wrap)",
-        "ws. Word spacing threshold (-ws)",
-        "wt. White threshold (-wt)",
+        "w. Wrap/Reflow text (-wrap,-ws)",
         "x. Exit on completion (-x)",
         ""};
 
@@ -2560,7 +2757,7 @@ static int user_input(int filecount,char *firstfile)
             for (j=0;options[i][j]!='.';j++)
                 opt[j]=options[i][j];
             opt[j]='\0';
-            aprintf(TTEXT_BOLD "%2s" TTEXT_NORMAL "%-34s",opt,&options[i][j]);
+            aprintf(TTEXT_BOLD "%2s" TTEXT_NORMAL "%-38s",opt,&options[i][j]);
             k=i+(no+1)/2;
             if (k < no)
                 {
@@ -2619,43 +2816,44 @@ static int user_input(int filecount,char *firstfile)
                 strcpy_no_spaces(pagelist,buf);
                 return(0);
                 }
-            strncpy(uifile,buf,511);
-            uifile[511]='\0';
 #if (!defined(WIN32) && !defined(WIN64))
             /* On Mac, backslashes are inserted before each space, */
             /* so try getting rid of them if the file isn't found. */
-            if (wfile_status(uifile)==0)
+            if (wildcount(buf)==0)
 				{
 				int i,j;
-				for (i=j=0;uifile[i]!='\0';i++)
+				for (i=j=0;buf[i]!='\0';i++)
 					{
-					if (uifile[i]=='\\')
+					if (buf[i]=='\\')
 						i++;
-					uifile[j]=uifile[i];
+					buf[j]=buf[i];
 					j++;
 					}
-				uifile[j]='\0';
+				buf[j]='\0';
 				}
 #endif
-            {
-            FILELIST *fl,_fl;
-            fl=&_fl;
-            filelist_init(fl);
-            filelist_fill_from_disk_1(fl,uifile,0,0);
-            goodspec = (fl->n>0);
-            filelist_free(fl);
+            if (wildcount(buf)==0)
+                {
+                char buf2[512];
+                strncpy(buf2,buf,505);
+                buf2[505]='\0';
+                strcat(buf2,".pdf");
+                if (wildcount(buf2)>0)
+                    strcpy(buf,buf2);
+                }
+            goodspec = (wildcount(buf)>0);
             if (filecount==0 && goodspec)
                 {
-                strcpy(specfile,uifile);
+                strcpy(specfile,buf);
+                strcpy(uifile,buf);
                 filecount=1;
                 newmenu=1;
                 break;
                 }
-            }
-            if (filecount>0)
-                aprintf(TTEXT_WARN "\a** Invalid entry. (File%s already specified.) **" TTEXT_NORMAL "\n\n",filecount>1?"s":"");
+            if (goodspec)
+                aprintf(TTEXT_WARN "\a** Invalid entry. (File%s already specified.) **" TTEXT_NORMAL "\n",filecount>1?"s":"");
             else
-                aprintf(TTEXT_WARN "\a** No files found matching %s. **" TTEXT_NORMAL "\n\n",uifile);
+                aprintf(TTEXT_WARN "\a** Unrecognized option: %s. **" TTEXT_NORMAL "\n",buf);
             }
         if (newmenu)
             continue;
@@ -2716,16 +2914,6 @@ static int user_input(int filecount,char *firstfile)
             dst_color=!status;
             wrapbmp_set_color(dst_color);
             }
-        else if (!stricmp(buf,"e"))
-            {
-            printf("\n0. Don't erase vertical lines.\n"
-                     "1. Detect and erase only free-standing vertical lines.\n"
-                     "2. Detect and erase all vertical lines.\n\n");
-            status=user_integer("Enter option above (0, 1, or 2)",
-                                 erase_vertical_lines,&erase_vertical_lines,0,2);
-            if (status<0)
-                return(status);
-            }
         else if (!stricmp(buf,"co"))
             {
             status=user_integer("Max number of columns (1, 2, or 4)",4,&max_columns,1,4);
@@ -2737,6 +2925,10 @@ static int user_input(int filecount,char *firstfile)
                 {
                 status=user_float("Min gap between columns (inches)",min_column_gap_inches,
                             &min_column_gap_inches,1,0.0,20.,NULL);
+                if (status<0)
+                    return(status);
+                status=user_float("Max gap between columns (inches)",max_column_gap_inches,
+                            &max_column_gap_inches,1,0.,99.,NULL);
                 if (status<0)
                     return(status);
                 status=user_float("Min column height (inches)",min_column_height_inches,
@@ -2757,22 +2949,49 @@ static int user_input(int filecount,char *firstfile)
                     return(status);
                 }
             }
-        else if (!stricmp(buf,"cm"))
+        else if (!stricmp(buf,"cs"))
             {
             status=user_float("Max contrast adjust (1.0=no adjust)",contrast_max,&contrast_max,1,
                              -200.,200.,NULL);
             if (status<0)
                 return(status);
+            status=user_string("Sharpen the output images",ansyesno,dst_sharpen?"y":"n");
+            if (status<0)
+                return(status);
+            dst_sharpen=!status;
+            status=user_float("Gamma value (1.0=no adjustment)",dst_gamma,&dst_gamma,1,
+                             0.01,100.,NULL);
+            if (status<0)
+                return(status);
+            status=user_integer("White threshold (-1=autocalc)",src_whitethresh,&src_whitethresh,-1,255);
+            if (status<0)
+                return(status);
+            }
+        else if (!stricmp(buf,"d"))
+            {
+            status=user_integer("Destination pixel width",DEFAULT_WIDTH,&dst_userwidth,10,6000);
+            if (status<0)
+                return(status);
+            status=user_integer("Destination pixel height",DEFAULT_HEIGHT,&dst_userheight,10,8000);
+            if (status<0)
+                return(status);
+            status=user_integer("Output/Destination pixels per inch",167,&dst_dpi,20,1200);
+            if (status<0)
+                return(status);
+            status=user_float("Input/Source pixels per inch",user_src_dpi,&user_src_dpi,1,-10.,1200.,NULL);
+            if (status<0)
+                return(status);
+            while (user_src_dpi > -.25 &&  user_src_dpi < 50.)
+                {
+                aprintf(TTEXT_WARN "\n\a** Invalid response.  Dpi must be <= -.25 or >= 50. **" TTEXT_NORMAL "\n\n");
+                status=user_float("Input/Source pixels per inch",user_src_dpi,&user_src_dpi,1,-10.,1200.,NULL);
+                if (status<0)
+                    return(status);
+                }
             }
         else if (!stricmp(buf,"ds"))
             {
             status=user_float("Document scale factor (1.0=no change)",document_scale_factor,&document_scale_factor,1,0.01,100.,NULL);
-            if (status<0)
-                return(status);
-            }
-        else if (!stricmp(buf,"de"))
-            {
-            status=user_float("Defect size in points",defect_size_pts,&defect_size_pts,1,0.0,100.,NULL);
             if (status<0)
                 return(status);
             }
@@ -2783,35 +3002,9 @@ static int user_input(int filecount,char *firstfile)
                 return(status);
             fit_columns=!status;
             }
-        else if (!stricmp(buf,"d"))
-            {
-            status=user_integer("Destination pixel width",DEFAULT_WIDTH,&dst_userwidth,10,6000);
-            if (status<0)
-                return(status);
-            status=user_integer("Destination pixel height",DEFAULT_HEIGHT,&dst_userheight,10,8000);
-            if (status<0)
-                return(status);
-            }
-        else if (!stricmp(buf,"g"))
-            {
-            status=user_float("Gamma value (1.0=no adjustment)",dst_gamma,&dst_gamma,1,
-                             0.01,100.,NULL);
-            if (status<0)
-                return(status);
-            }
-        else if (!stricmp(buf,"gs"))
-            {
-            status=user_string("Use Ghostscript interpreter",ansyesno,usegs?"y":"n");
-            if (status<0)
-                return(status);
-            usegs=!status;
-            }
         else if (!stricmp(buf,"gt"))
             {
-            status=user_float("Gap threshold for columns (inches)",gtc_in,&gtc_in,1,0.,20.,NULL);
-            if (status<0)
-                return(status);
-            status=user_float("Max gap between columns (inches)",gtcmax_in,&gtcmax_in,1,0.,99.,NULL);
+            status=user_float("Gap threshold (-gtc) for columns (inches)",gtc_in,&gtc_in,1,0.,20.,NULL);
             if (status<0)
                 return(status);
             /*
@@ -2825,19 +3018,6 @@ static int user_input(int filecount,char *firstfile)
             status=user_float("Gap threshold for words (inches)",gtw_in,&gtw_in,1,0.,20.,NULL);
             if (status<0)
                 return(status);
-            }
-        else if (!stricmp(buf,"i"))
-            {
-            status=user_float("Input/Source pixels per inch",user_src_dpi,&user_src_dpi,1,-10.,1200.,NULL);
-            if (status<0)
-                return(status);
-            while (user_src_dpi > -.25 &&  user_src_dpi < 50.)
-                {
-                aprintf(TTEXT_WARN "\n\a** Invalid response.  Dpi must be <= -.25 or >= 50. **" TTEXT_NORMAL "\n\n");
-                status=user_float("Input/Source pixels per inch",user_src_dpi,&user_src_dpi,1,-10.,1200.,NULL);
-                if (status<0)
-                    return(status);
-                }
             }
         else if (!stricmp(buf,"j"))
             {
@@ -2864,6 +3044,24 @@ static int user_input(int filecount,char *firstfile)
                 if (status<0)
                     return(status);
                 dst_fulljustify=!status;
+                }
+            status=user_string("Apply special justification for figures (tall regions)",
+                               ansyesno,dst_figure_justify>=0?"y":"n");
+            if (status<0)
+                return(status);
+            if (status==1)
+                dst_figure_justify = -1;
+            else
+                {
+                status=user_string("Figure (tall region) justification",ansjust,"center");
+                if (status<0)
+                    return(status);
+                dst_figure_justify=status;
+                status=user_float("Figure height threshold (inches)",
+                                  dst_min_figure_height_in,
+                                  &dst_min_figure_height_in,1,0.,100.,NULL);
+                if (status<0)
+                    return(status);
                 }
             }
         else if (!stricmp(buf,"l"))
@@ -2905,13 +3103,6 @@ static int user_input(int filecount,char *firstfile)
                 i++;
             mar_bot=v[i];
             }
-        else if (!stricmp(buf,"mc"))
-            {
-            status=user_string("Mark corners of bitmap with a dot",ansyesno,mark_corners?"y":"n");
-            if (status<0)
-                return(status);
-            mark_corners=!status;
-            }
         else if (!stricmp(buf,"om"))
             {
             double v[4];
@@ -2934,9 +3125,23 @@ static int user_input(int filecount,char *firstfile)
             }
         else if (!stricmp(buf,"o"))
             {
-            status=user_integer("Output/Destination pixels per inch",167,&dst_dpi,20,1200);
+            int prompt;
+            status=user_any_string("Output name format (e.g. out%02d)",dst_opname_format,127,"%s_k2opt");
             if (status<0)
                 return(status);
+            prompt=(overwrite_minsize_mb >= 0.);
+            status=user_string("Prompt to overwrite a file",ansyesno,prompt?"y":"n");
+            if (status<0)
+                return(status);
+            if (status)
+                overwrite_minsize_mb=-1.0;
+            else
+                {
+                status=user_float("Max file size before prompting (MB)",overwrite_minsize_mb,
+                          &overwrite_minsize_mb,1,0.,1000000.,"(Enter 0 to always prompt.)");
+                if (status<0)
+                    return(status);
+                }
             }
 #ifdef HAVE_OCR
         else if (!stricmp(buf,"oc"))
@@ -2955,10 +3160,20 @@ static int user_input(int filecount,char *firstfile)
                                   &ocr_max_height_inches,1,0.,999.,"");
                 if (status<0)
                     return(status);
-                status=user_integer("OCR word color (def=0 for invisible)",dst_ocr_wordcolor,
-                            &dst_ocr_wordcolor,0,3);
+                status=user_string("Show OCR text",ansyesno,"n");
                 if (status<0)
                     return(status);
+                if (!status)
+                    dst_ocr_visibility_flags |= 2;
+                else
+                    dst_ocr_visibility_flags &= (~2);
+                status=user_string("Show source file",ansyesno,"y");
+                if (status<0)
+                    return(status);
+                if (!status)
+                    dst_ocr_visibility_flags |= 1;
+                else
+                    dst_ocr_visibility_flags &= (~1);
                 }
             }
 #endif
@@ -2976,6 +3191,10 @@ static int user_input(int filecount,char *firstfile)
                 pad_left=pad_right=pad_bottom=pad_top=defpad;
             else
                 return(status);
+            status=user_string("Mark corners of bitmap with a dot",ansyesno,mark_corners?"y":"n");
+            if (status<0)
+                return(status);
+            mark_corners=!status;
             }
         else if (!stricmp(buf,"r"))
             {
@@ -3012,10 +3231,29 @@ static int user_input(int filecount,char *firstfile)
             }
         else if (!stricmp(buf,"s"))
             {
-            status=user_string("Sharpen the output images",ansyesno,dst_sharpen?"y":"n");
+            status=user_float("Defect size in points",defect_size_pts,&defect_size_pts,1,0.0,100.,NULL);
             if (status<0)
                 return(status);
-            dst_sharpen=!status;
+            printf("\n0. Don't erase vertical lines.\n"
+                     "1. Detect and erase only free-standing vertical lines.\n"
+                     "2. Detect and erase all vertical lines.\n\n");
+            status=user_integer("Enter option above (0, 1, or 2)",
+                                 erase_vertical_lines,&erase_vertical_lines,0,2);
+            if (status<0)
+                return(status);
+#ifdef HAVE_MUPDF
+            status=user_string("Use Ghostscript interpreter",ansyesno,usegs?"y":"n");
+            if (status<0)
+                return(status);
+            usegs=!status;
+#endif
+            }
+        else if (!stricmp(buf,"sm"))
+            {
+            status=user_string("Show marked source",ansyesno,show_marked_source==1?"y":"n");
+            if (status<0)
+                return(status);
+            show_marked_source=!status;
             }
         else if (!stricmp(buf,"u"))
             {
@@ -3047,19 +3285,6 @@ static int user_input(int filecount,char *firstfile)
             if (status<0)
                 return(status);
             }
-        else if (!stricmp(buf,"wt"))
-            {
-            status=user_integer("White threshold (-1=autocalc)",src_whitethresh,&src_whitethresh,1,255);
-            if (status<0)
-                return(status);
-            }
-        else if (!stricmp(buf,"ws"))
-            {
-            status=user_float("Word spacing threshold (as fraction of lowercase 'o' height)",word_spacing,&word_spacing,
-                                1,0.01,10.,NULL);
-            if (status<0)
-                return(status);
-            }
         else if (!stricmp(buf,"w"))
             {
             status=user_string("Wrap text",ansyesno,text_wrap?"y":"n");
@@ -3082,14 +3307,11 @@ static int user_input(int filecount,char *firstfile)
                 if (status<0)
                     return(status);
                 k2_hyphen_detect=!status;
+                status=user_float("Word spacing threshold (as fraction of lowercase 'o' height)",
+                               word_spacing,&word_spacing,1,0.01,10.,NULL);
+                if (status<0)
+                    return(status);
                 }
-            }
-        else if (!stricmp(buf,"sm"))
-            {
-            status=user_string("Show marked source",ansyesno,show_marked_source==1?"y":"n");
-            if (status<0)
-                return(status);
-            show_marked_source=!status;
             }
         else if (!stricmp(buf,"x"))
             {
@@ -3240,6 +3462,74 @@ static int user_string(char *message,char *selection[],char *def)
                 return(i);
         aprintf(TTEXT_WARN "\aThe response '%s' is not valid.\n\n" TTEXT_NORMAL,
                 buf);
+        }
+    }
+
+
+#if (defined(WIN32) || defined(WIN64))
+#define fstrcmp stricmp
+#else
+#define fstrcmp strcmp
+#endif
+
+static int filename_comp(char *name1,char *name2)
+
+    {
+    char abs1[512],abs2[512];
+
+    /* First do a straight compare */
+    if (!fstrcmp(name1,name2))
+        return(0);
+    /* Convert to absolute path and compare */
+    strcpy(abs1,name1);
+    wfile_make_absolute(abs1);
+    strcpy(abs2,name2);
+    wfile_make_absolute(abs2);
+    return(fstrcmp(abs1,abs2));
+    }
+    
+
+static void filename_substitute(char *dst,char *fmt,char *src,int count,char *defext0)
+
+    {
+    char *defext;
+    int i,j,k;
+    char basespec[512];
+    char xfmt[128];
+
+    wfile_newext(basespec,src,"");
+    defext=(defext0[0]=='.' ? &defext0[1] : defext0);
+    for (i=j=0;fmt[i]!='\0';i++)
+        {
+        if (fmt[i]!='%')
+            {
+            dst[j++]=fmt[i];
+            continue;
+            }
+        xfmt[0]='%';
+        for (k=1;k<120 && (fmt[i+k]=='-' || (fmt[i+k]>='0' && fmt[i+k]<='9'));k++)
+            xfmt[k]=fmt[i+k];
+        if (fmt[i+k]=='s' || fmt[i+k]=='d')
+            {
+            int c;
+            c=xfmt[k]=fmt[i+k];
+            xfmt[k+1]='\0';
+            i=i+k;
+            dst[j]='\0';
+            if (c=='s')
+                sprintf(&dst[strlen(dst)],xfmt,basespec);
+            else
+                sprintf(&dst[strlen(dst)],xfmt,count);
+            j=strlen(dst);
+            continue;
+            }
+        dst[j++]=fmt[i];
+        }
+    dst[j]='\0';
+    if (stricmp(wfile_ext(dst),defext))
+        {
+        strcat(dst,".");
+        strcat(dst,defext);
         }
     }
 
@@ -3426,7 +3716,9 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
     FILELIST *fl,_fl;
     int folder,dpi;
     double size,area_ratio,bormean;
+#ifdef HAVE_MUPDF
     static char *mupdferr1=TTEXT_WARN "\a\n ** ERROR reading from " TTEXT_BOLD2 "%s" TTEXT_WARN ".  Will try Ghostscript!\n\n" TTEXT_NORMAL;
+#endif
     static char *mupdferr=TTEXT_WARN "\a\n ** ERROR reading page %d from " TTEXT_BOLD2 "%s" TTEXT_WARN ".  Will try Ghostscript!\n\n" TTEXT_NORMAL;
     static char *djvuerr=TTEXT_WARN "\a\n ** ERROR reading page %d from " TTEXT_BOLD2 "%s" TTEXT_NORMAL ".\n\n";
 
@@ -3531,32 +3823,41 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
     pw=0;
     if (!or_detect)
         {
+        static int dstfilecount=0;
+
         wfile_newext(dstfile,filename,"");
-        strcat(dstfile,"_k2opt.pdf");
+        dstfilecount++;
+        filename_substitute(dstfile,dst_opname_format,filename,dstfilecount,"pdf");
+        if (!filename_comp(dstfile,filename))
+            {
+            aprintf(TTEXT_WARN "\n\aSource file and ouput file have the same name!" TTEXT_NORMAL "\n\n");
+            printf("    Source file = '%s'\n",filename);
+            printf("    Output file = '%s'\n",dstfile);
+            printf("    Output file name format string = '%s'\n",dst_opname_format);
+            printf("\nOperation aborted.\n");
+            k2_exit(50);
+            }
         if ((status=overwrite_fail(dstfile))!=0)
             {
             bmp_free(&masterinfo->bmp);
             if (folder)
                 filelist_free(fl);
             if (status<0)
-                exit(20);
+                k2_exit(20);
             return(0.);
             }
         if (pdffile_init(gpdf,dstfile,1)==NULL)
             {
-            printf("\n\aCannot open PDF file %s for output!\n\n",dstfile);
-            exit(30);
+            aprintf(TTEXT_WARN "\n\aCannot open PDF file %s for output!" TTEXT_NORMAL "\n\n",dstfile);
+            k2_exit(30);
             }
         if (show_marked_source)
             {
-            wfile_newext(markedfile,dstfile,"");
-            if (strlen(markedfile)>6 && !strcmp(&markedfile[strlen(markedfile)-6],"_k2opt"))
-                markedfile[strlen(markedfile)-6]='\0';
-            strcat(markedfile,"_marked.pdf");
+            filename_substitute(markedfile,"%s_marked",filename,0,"pdf");
             if (pdffile_init(mpdf,markedfile,1)==NULL)
                 {
-                printf("\n\aCannot open PDF file %s for marked output!\n\n",markedfile);
-                exit(40);
+                aprintf(TTEXT_WARN "\n\aCannot open PDF file %s for marked output!" TTEXT_NORMAL "\n\n",markedfile);
+                k2_exit(40);
                 }
             }
         }
@@ -3569,17 +3870,38 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
         src_type = SRC_TYPE_DJVU;
     else
         src_type = SRC_TYPE_OTHER;
+#ifndef HAVE_DJVU
+    if (src_type==SRC_TYPE_DJVU)
+        {
+        if (!or_detect)
+            aprintf(TTEXT_WARN
+                    "\a\n\n** DjVuLibre not compiled into this version of k2pdfopt. **\n\n"
+                          "** Cannot process file %s. **\n\n" TTEXT_NORMAL,filename);
+        return(0.);
+        }
+#endif
     if (src_type==SRC_TYPE_PDF || src_type==SRC_TYPE_DJVU)
         {
         sys_set_decimal_period(1);
-        np= (src_type==SRC_TYPE_PDF) ? bmpmupdf_numpages(filename)
-                                     : bmpdjvu_numpages(filename);
+#ifdef HAVE_MUPDF
+        if (src_type==SRC_TYPE_PDF)
+            np=bmpmupdf_numpages(filename);
+        else
+#endif
+#ifdef HAVE_DJVU
+        if (src_type==SRC_TYPE_DJVU)
+            np=bmpdjvu_numpages(filename);
+        else
+#endif
+            np=-1;
         sys_set_decimal_period(1);
+#ifdef HAVE_MUPDF
         if (np==-1 && !usegs && src_type==SRC_TYPE_PDF)
             {
             aprintf(mupdferr1,filename);
             usegs=1;
             }
+#endif
         if (np<=0 && src_type==SRC_TYPE_PDF)
             np=pdf_numpages(filename);
         pagecount=pagelist_count(pagelist,np);
@@ -3653,7 +3975,7 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
                      && !pagelist_page_by_index(pagelist,pageno,np))
                 continue;
             status=-1;
-            if (!usegs)
+            if (!usegs || src_type==SRC_TYPE_DJVU)
                 {
                 static int errcnt=0;
 
@@ -4215,9 +4537,17 @@ static int bmp_get_one_document_page(WILLUSBITMAP *src,int src_type,char *filena
                                      int pageno,double dpi,int bpp,FILE *out)
 
     {
+#ifdef HAVE_MUPDF
     if (src_type==SRC_TYPE_PDF)
         return(bmpmupdf_pdffile_to_bmp(src,filename,pageno,dpi*document_scale_factor,bpp));
-    return(bmpdjvu_djvufile_to_bmp(src,filename,pageno,dpi*document_scale_factor,bpp,out));
+    else
+#endif
+#ifdef HAVE_DJVU
+    if (src_type==SRC_TYPE_DJVU)
+        return(bmpdjvu_djvufile_to_bmp(src,filename,pageno,dpi*document_scale_factor,bpp,out));
+    else
+#endif
+    return(-1);
     }
 
 
@@ -4593,6 +4923,13 @@ static int bmpregion_find_multicolumn_divider(BMPREGION *region,int *row_black_c
     breakinfo->textrow=NULL;
     breakinfo_alloc(101,breakinfo,region->r2-region->r1+1);
     bmpregion_find_vertical_breaks(region,breakinfo,colcount,rowcount,column_row_gap_height_in);
+/*
+{
+printf("region (%d,%d)-(%d,%d) has %d breaks:\n",region->c1,region->r1,region->c2,region->r2,breakinfo->n);
+for (i=0;i<breakinfo->n;i++)
+printf("    Rows %d - %d\n",breakinfo->textrow[i].r1,breakinfo->textrow[i].r2);
+}
+*/
     newregion=&_newregion;
     (*newregion)=(*region);
     min_height_pixels=min_column_height_inches*src_dpi; /* src->height/15; */ 
@@ -4752,7 +5089,7 @@ printf("Returning %d\n",region->r2-region->r1+1);
 ** 0 = both okay
 ** Both columns must pass height requirement.
 **
-** Also, if gap between columns > gtcmax_in, fails test. (8-31-12)
+** Also, if gap between columns > max_column_gap_inches, fails test. (8-31-12)
 **
 */
 static int bmpregion_column_height_and_gap_test(BMPREGION *column,BMPREGION *region,
@@ -4786,7 +5123,7 @@ printf("    COL2:  pix=%d (%d - %d)\n",newregion->r2-newregion->r1+1,newregion->
     if (column[1].r2-column[1].r1+1 < min_height_pixels)
         status |= 2;
     /* Make sure gap between columns is not too large */
-    if (gtcmax_in>=0. && column[1].c1-column[0].c2-1 > gtcmax_in*src_dpi)
+    if (max_column_gap_inches>=0. && column[1].c1-column[0].c2-1 > max_column_gap_inches*src_dpi)
         status |= 4;
     return(status);
     }
@@ -5115,7 +5452,8 @@ printf("wrapflush1\n");
 ** First, excess margins are trimmed off of the region.
 **
 ** Then, if the resulting trimmed region is wider than the max desirable width
-** and allow_text_wrapping is non-zero, then the double_wide_add() function is called.
+** and allow_text_wrapping is non-zero, then the
+** bmpregion_analyze_justification_and_line_spacing() function is called.
 ** Otherwise the region is scaled to fit and added to the master set of pages.
 **
 ** justification_flags
@@ -5155,8 +5493,8 @@ static void bmpregion_add(BMPREGION *region,BREAKINFO *breakinfo,MASTERINFO *mas
                           int mark_flags,int rowbase_delta)
 
     {
-    int w,i,nc,nr,h,bpp,nocr;
-    double sr,region_width_inches;
+    int w,wmax,i,nc,nr,h,bpp,tall_region;
+    double region_width_inches;
     WILLUSBITMAP *bmp,_bmp;
     BMPREGION *newregion,_newregion;
 
@@ -5238,20 +5576,6 @@ printf("    Post Trim.  C's = %4d %4d %4d %4d\n",region->c1,newregion->c1,newreg
         }
         
     /*
-    region_height_inches = (double)nr/src_dpi;
-    if (force_scale < -1.5 && region_width_inches > MIN_REGION_WIDTH_INCHES
-                         && region_width_inches/max_region_width_inches < 1.25
-                         && region_height_inches > 0.5)
-        {
-        revert=1;
-        force_scale = -1.0;
-        fit_column_to_screen(region_width_inches);
-        }
-    else
-        revert=0;
-    */
-        
-    /*
     ** Try breaking the region into smaller horizontal pieces (wrap text lines)
     */
 /*
@@ -5274,45 +5598,8 @@ allow_text_wrapping,region_width_inches,max_region_width_inches);
         {
         bmpregion_analyze_justification_and_line_spacing(newregion,breakinfo,masterinfo,
                                             colcount,rowcount,pageinfo,0,force_scale);
-#ifdef COMMENT
-        int i0,c;
-        for (i=0;i<breakinfo->n;i++)
-            if (breakinfo->textrow[i].r1 <= region->r2
-                  && breakinfo->textrow[i].r2 >= region->r1)
-                break;
-        if (i>=breakinfo->n)
-             return;
-        for (c=0,i0=i;i<breakinfo->n;i++)
-            {
-            BMPREGION xregion;
-            int allow_full_justify;
-
-            if (breakinfo->textrow[i].r1 > region->r2)
-                break;
-            if (c==0)
-                wrapbmp_flush(masterinfo,0,pageinfo);
-            c++;
-            xregion=(*newregion);
-            xregion.r1=breakinfo->textrow[i].r1;
-            xregion.r2=breakinfo->textrow[i].r2;
-            if (i>i0)
-                dst_add_gap_src_pixels("Vert break L2",masterinfo,breakinfo->textrow[i-1].gap);
-            allow_full_justify = ((double)(xregion.r2-xregion.r1+1)/src_dpi 
-                                               <= no_wrap_height_limit_inches);
-            /* No further breaking or trimming allowed */
-            /* caller ID? */
-            bmpregion_add(&xregion,breakinfo,masterinfo,0,0,0,force_scale,
-                          0,caller_id,colcount,rowcount,pageinfo,mark_flags,-1);
-            }
-#endif
         return;
         }
-
-    /* Green Marks */
-    /*
-    if (mark_flags)
-        mark_source_page(newregion,2,0xf);
-    */
 
     /* AT THIS POINT, BITMAP IS NOT TO BE BROKEN UP HORIZONTALLY OR VERTICALLY */
     /* (IT CAN STILL BE FULLY JUSTIFIED IF ALLOWED.) */
@@ -5324,16 +5611,24 @@ allow_text_wrapping,region_width_inches,max_region_width_inches);
     ** Start by copying source region to new bitmap 
     **
     */
-
 // printf("c1=%d\n",newregion->c1);
-    /* If centered region, re-trim left and right */
-    if ((trim_flags&0x80)==0 && ((trim_flags&3)!=3 && ((justification_flags&3)==1
-          || ((justification_flags&3)==3
-              && (dst_justify==1
-                    || (dst_justify<0 && (justification_flags&0xc)==4))))))
+    /* Is it a figure? */
+    tall_region = (double)(newregion->r2-newregion->r1+1)/src_dpi >= dst_min_figure_height_in;
+    /* Re-trim left and right? */
+    if ((trim_flags&0x80)==0)
         {
-        bmpregion_trim_margins(newregion,colcount,rowcount,0x3);
-        nc=newregion->c2-newregion->c1+1;
+        /* If tall region and figure justification turned on ... */
+        if ((tall_region && dst_figure_justify>=0)
+                /* ... or if centered region ... */
+                || ((trim_flags&3)!=3 && ((justification_flags&3)==1
+                     || ((justification_flags&3)==3
+                     && (dst_justify==1
+                         || (dst_justify<0 && (justification_flags&0xc)==4))))))
+            {
+            bmpregion_trim_margins(newregion,colcount,rowcount,0x3);
+            nc=newregion->c2-newregion->c1+1;
+            region_width_inches = (double)nc/src_dpi;
+            }
         }
 #if (WILLUSDEBUGX & 1)
     aprintf("atomic region:  " ANSI_CYAN "%.2f x %.2f in" ANSI_NORMAL " c1=%d, (%d x %d) (rbdel=%d) just=0x%02X\n",
@@ -5344,6 +5639,7 @@ allow_text_wrapping,region_width_inches,max_region_width_inches);
                    (newregion->r2-newregion->r1+1),
                    rowbase_delta,justification_flags);
 #endif
+    /* Copy atomic region into bmp */
     bmp=&_bmp;
     bmp_init(bmp);
     bmp->width=nc;
@@ -5379,17 +5675,30 @@ allow_text_wrapping,region_width_inches,max_region_width_inches);
     ** force_scale > 0.0  : Scale region by force_scale.
     **
     */
+    /* Max viewable pixel width on device screen */
+    wmax=(int)(masterinfo->bmp.width-(dst_marleft+dst_marright)*dst_dpi+0.5);
     if (force_scale > 0.)
-        sr = force_scale;
+        w = (int)(force_scale*bmp->width+0.5);
     else
         {
         if (region_width_inches < max_region_width_inches)
-            sr=(double)masterinfo->bmp.width/(display_width_inches*src_dpi);
+            w=(int)(region_width_inches*dst_dpi+.5);
         else
-            sr=(double)(masterinfo->bmp.width-(dst_marleft+dst_marright)*dst_dpi)/bmp->width;
+            w=wmax;
         }
-    w=sr*bmp->width;
-    h=(int)(sr*bmp->height+.5);
+    /* Special processing for tall regions (likely figures) */
+    if (tall_region && w < wmax && dst_fit_to_page!=0)
+        {
+        if (dst_fit_to_page<0)
+            w = wmax;
+        else
+            {
+            w = (int)(w * (1.+(double)dst_fit_to_page/100.) + 0.5);
+            if (w > wmax)
+                w = wmax;
+            }
+        }
+    h=(int)(((double)w/bmp->width)*bmp->height+.5);
 
     /*
     ** If scaled dimensions are finite, add to master bitmap.
@@ -5397,11 +5706,13 @@ allow_text_wrapping,region_width_inches,max_region_width_inches);
     if (w>0 && h>0)
         {
         WILLUSBITMAP *tmp,_tmp;
+        int nocr;
 
+        last_scale_factor_internal=(double)w/bmp->width;
 #ifdef HAVE_OCR
         if (dst_ocr)
             {
-            nocr=(int)((1./sr)+0.5);
+            nocr=(int)((double)bmp->width/w+0.5);
             if (nocr < 1)
                 nocr=1;
             if (nocr > 10)
@@ -5416,7 +5727,6 @@ allow_text_wrapping,region_width_inches,max_region_width_inches);
         bmp_init(tmp);
         bmp_resample(tmp,bmp,(double)0.,(double)0.,(double)bmp->width,(double)bmp->height,w,h);
         bmp_free(bmp);
-        last_scale_factor_internal=sr;
 /*
 {
 static int nn=0;
@@ -5431,7 +5741,11 @@ bmp_write(tmp,filename,stdout,100);
         /* Allocate more rows if necessary */
         while (masterinfo->rows+tmp->height/nocr > masterinfo->bmp.height)
             bmp_more_rows(&masterinfo->bmp,1.4,255);
-        bmp_src_to_dst(masterinfo,tmp,justification_flags,region->bgcolor,nocr);
+        /* Check special justification for tall regions */
+        if (tall_region && dst_figure_justify>=0)
+            justification_flags = dst_figure_justify;
+        bmp_src_to_dst(masterinfo,tmp,justification_flags,region->bgcolor,nocr,
+                       (int)((double)src_dpi*tmp->width/bmp->width+.5));
         bmp_free(tmp);
         }
 
@@ -5451,9 +5765,9 @@ static void dst_add_gap_src_pixels(char *caller,MASTERINFO *masterinfo,int pixel
     {
     double gap_inches;
 
-#ifdef WILLUSDEBUG
+/*
 aprintf("%s " ANSI_GREEN "dst_add" ANSI_NORMAL " %.3f in (%d pix)\n",caller,(double)pixels/src_dpi,pixels);
-#endif
+*/
     if (last_scale_factor_internal < 0.)
         gap_inches=(double)pixels/src_dpi;
     else
@@ -5495,7 +5809,7 @@ static void dst_add_gap(MASTERINFO *masterinfo,double inches)
 **
 */
 static void bmp_src_to_dst(MASTERINFO *masterinfo,WILLUSBITMAP *src,int justification_flags,
-                           int whitethresh,int nocr)
+                           int whitethresh,int nocr,int dpi)
 
     {
     WILLUSBITMAP *src1,_src1;
@@ -5511,7 +5825,6 @@ static void bmp_src_to_dst(MASTERINFO *masterinfo,WILLUSBITMAP *src,int justific
     if (src->width<=0 || src->height<=0)
         return;
 /*
-if (fulljust && dst_fulljustify)
 printf("@bmp_src_to_dst.  dst->bpp=%d, src->bpp=%d, src=%d x %d\n",masterinfo->bmp.bpp,src->bpp,src->width,src->height);
 */
 /*
@@ -5530,7 +5843,7 @@ printf("srcbytespp=%d, srcbytewidth=%d, destwidth=%d, destx0=%d, destbytewidth=%
 srcbytespp,srcbytewidth,destwidth,destx0,dstbytewidth);
 */
 
-     /* Determine what justification to use */
+    /* Determine what justification to use */
     /* Left? */
     if ((justification_flags&3)==0  /* Mandatory left just */
           || ((justification_flags&3)==3  /* Use user settings */
@@ -5573,7 +5886,7 @@ printf("    destx0=%d, destwidth=%d, src->width=%d\n",destx0,destwidth,src->widt
         /* Run OCR on the bitmap */
         words=&_words;
         ocrwords_init(words);
-        ocrwords_fill_in(words,src1,whitethresh);
+        ocrwords_fill_in(words,src1,whitethresh,dpi);
         /* Scale bitmap and word positions to destination size */
         if (nocr>1)
             {
@@ -5791,7 +6104,7 @@ bmp_write(src,filename,stdout,100);
 /*
 ** Find words in src bitmap and put into words structure.
 */
-static void ocrwords_fill_in(OCRWORDS *words,WILLUSBITMAP *src,int whitethresh)
+static void ocrwords_fill_in(OCRWORDS *words,WILLUSBITMAP *src,int whitethresh,int dpi)
 
     {
     BMPREGION region;
@@ -5873,7 +6186,7 @@ bmp_write(src,filename,stdout,100);
             char wordbuf[256];
 
             /* Don't OCR if "word" height exceeds spec */
-            if ((double)(colbreaks->textrow[j].r2-colbreaks->textrow[j].r1+1)/src_dpi
+            if ((double)(colbreaks->textrow[j].r2-colbreaks->textrow[j].r1+1)/dpi
                      > ocr_max_height_inches)
                 continue;
 #if (WILLUSDEBUGX & 32)
@@ -5939,6 +6252,7 @@ counter++;
                 {
                 OCRWORD word;
                 word.c=colbreaks->textrow[j].c1;
+                /* Use same rowbase for whole row */
                 word.r=rowbase;
                 word.maxheight=rowbase-colbreaks->textrow[j].r1;
                 word.w=colbreaks->textrow[j].c2-colbreaks->textrow[j].c1+1;
@@ -5952,7 +6266,6 @@ printf("'%s', r1=%d, rowbase=%d, h=%d\n",wordbuf,
                              colbreaks->textrow[j].rowbase,
                              colbreaks->textrow[j].r2-colbreaks->textrow[j].r1+1);
 #endif
-                /* Use same rowbase for whole row */
                 ocrwords_add_word(words,&word);
                 }
             }
@@ -7038,7 +7351,7 @@ static void bmpregion_find_vertical_breaks(BMPREGION *region,BREAKINFO *breakinf
     int *rowthresh;
     double min_fig_height,max_fig_gap,max_label_height;
 
-    min_fig_height=0.75;
+    min_fig_height=dst_min_figure_height_in;
     max_fig_gap=0.16;
     max_label_height=0.5;
     /* Trim region and populate colcount/rowcount arrays */
@@ -8050,7 +8363,7 @@ static void wrapbmp_add(BMPREGION *region,int gap,int line_spacing,int rbase,int
 
     {
     WILLUSBITMAP *tmp,_tmp;
-    int i,rh,th,bw,new_base,h2,bpp;
+    int i,rh,th,bw,new_base,h2,bpp,width0;
 // static char filename[256];
 
 #ifdef WILLUSDEBUG
@@ -8158,6 +8471,7 @@ exit(10);
             }
         return;
         }
+    width0=wrapbmp->width; /* Starting wrapbmp width */
     tmp=&_tmp;
     bmp_init(tmp);
     bmp_copy(tmp,wrapbmp);
@@ -8217,8 +8531,8 @@ printf("3.  wbh=%d x %d, tmp=%d x %d x %d, new_base=%d, wbbase=%d\n",wrapbmp->wi
         wrapbmp_hyphen.r2 += (new_base-rbase);
         if (src_left_to_right)
             {
-            wrapbmp_hyphen.ch += wrapbmp->width+gap-region->c1;
-            wrapbmp_hyphen.c2 += wrapbmp->width+gap-region->c1;
+            wrapbmp_hyphen.ch += width0+gap-region->c1;
+            wrapbmp_hyphen.c2 += width0+gap-region->c1;
             }
         else
             {
@@ -8702,18 +9016,8 @@ if (count==1)
 #ifdef HAVE_OCR
         if (dst_ocr)
             {
-            int wordcolor;
-
-            if ((dst_ocr_wordcolor&1)==0)
-                wordcolor=3; /* Invisible */
-            else
-                wordcolor=4;
-            if (dst_ocr_wordcolor&2)
-                wordcolor|=0x40;
-            if (dst_ocr_wordcolor&4)
-                wordcolor|=0x80;
             pdffile_add_bitmap_with_ocrwords(gpdf,bmp,ldpi,jpeg_quality,size_reduction,
-                                             ocrwords_pub,wordcolor);
+                                             ocrwords_pub,dst_ocr_visibility_flags);
 /*
 {
 static int count=1;

@@ -148,6 +148,8 @@ static WILLUSCHARINFO Helvetica[96] =
     };
 
 static void pdffile_start(PDFFILE *pdf,int pages_at_end);
+static void thumbnail_create(WILLUSBITMAP *thumb,WILLUSBITMAP *bmp);
+static void pdffile_bmp_stream(PDFFILE *pdf,WILLUSBITMAP *bmp,int quality,int halfsize,int thumb);
 static void bmp_flate_decode(WILLUSBITMAP *bmp,gzFile gz,int halfsize);
 static void pdffile_new_object(PDFFILE *pdf,int flags);
 static void pdffile_add_object(PDFFILE *pdf,PDFOBJECT *object);
@@ -157,10 +159,12 @@ static int getline(char *buf,int maxlen,FILE *f);
 static int getbufline(char *buf,int maxlen,char *opbuf,int *i0,int bufsize);
 static void insert_length(FILE *f,long pos,int len);
 static void ocrwords_to_pdf_stream(OCRWORDS *ocrwords,FILE *f,double dpi,
-                                   double page_width_pts,double page_height_pts,
-                                   int wordcolor);
+                                   double page_height_pts,int text_render_mode);
+static double ocrwords_median_size(OCRWORDS *ocrwords,double dpi);
+static void ocrword_width_and_maxheight(OCRWORD *word,double *width,double *maxheight);
+static double size_round_off(double size,double median_size,double log_size_increment);
 static void ocrword_to_pdf_stream(OCRWORD *word,FILE *f,double dpi,
-                                  double page_width_pts,double page_height_pts);
+                                  double page_height_pts,double median_size_pts);
 
 FILE *pdffile_init(PDFFILE *pdf,char *filename,int pages_at_end)
 
@@ -219,6 +223,7 @@ static void pdffile_start(PDFFILE *pdf,int pages_at_end)
         fprintf(pdf->f,"<<\n"
                        "/Type /Pages\n"
                        "/Kids [");
+        fflush(pdf->f);
         fseek(pdf->f,0L,1);
         pdf->pae=ftell(pdf->f);
         cline[0]='%';
@@ -238,7 +243,7 @@ static void pdffile_start(PDFFILE *pdf,int pages_at_end)
 void pdffile_add_bitmap(PDFFILE *pdf,WILLUSBITMAP *bmp,double dpi,int quality,int halfsize)
 
     {
-    pdffile_add_bitmap_with_ocrwords(pdf,bmp,dpi,quality,halfsize,NULL,0);
+    pdffile_add_bitmap_with_ocrwords(pdf,bmp,dpi,quality,halfsize,NULL,1);
     }
 
 
@@ -256,53 +261,21 @@ void pdffile_add_bitmap(PDFFILE *pdf,WILLUSBITMAP *bmp,double dpi,int quality,in
 **         ==2 for 2-bits per color plane
 **         ==3 for 1-bit  per color plane
 **
-** ocrwordcolor = 3 for transparent
-**                1 for outline
-**                4 for normal(?)
-**                ('OR' with 0x80 to draw box around words)
+** visibility_flags
+**     Bit 1 (1):  1=Show source bitmap
+**     Bit 2 (2):  1=Show OCR text
+**     Bit 3 (4):  1=Box around text
 **
 */
 void pdffile_add_bitmap_with_ocrwords(PDFFILE *pdf,WILLUSBITMAP *bmp,double dpi,
                                       int quality,int halfsize,OCRWORDS *ocrwords,
-                                      int ocrwordcolor)
+                                      int visibility_flags)
 
     {
     double pw,ph;
-    int ptr1,ptr2,ptrlen,bpc,showbitmap;
-    WILLUSBITMAP *thumb,_thumb;
-    static char *gzflags="sab7"; /* s is special flag set up by me in zlib */
-                                 /* It turns off the gzip header/trailer   */
-                                 /* 1 July 2011 */
+    int ptr1,ptr2,ptrlen,showbitmap;
 
-    showbitmap = (ocrwordcolor&0x40)? 0 : 1;
-    if (quality<0 && halfsize>0 && halfsize<4)
-        bpc=8>>halfsize;
-    else
-        bpc=8;
-    /* Create thumbnail */
-    if (showbitmap)
-        {
-        thumb=&_thumb;
-        bmp_init(thumb);
-        if (bmp->width > bmp->height)
-            {
-            thumb->width = bmp->width<106 ? bmp->width : 106;
-            thumb->height = (int)(((double)bmp->height/bmp->width)*thumb->width+.5);
-            if (thumb->height<1)
-                thumb->height=1;
-            }
-        else
-            {
-            thumb->height = bmp->height<106 ? bmp->height : 106;
-            thumb->width = (int)(((double)bmp->width/bmp->height)*thumb->height+.5);
-            if (thumb->width<1)
-                thumb->width=1;
-            }
-        bmp_resample(thumb,bmp,0.,0.,(double)bmp->width,(double)bmp->height,
-                     thumb->width,thumb->height);
-        if (bmp->bpp==8)
-            bmp_convert_to_greyscale(thumb);
-        }
+    showbitmap = (visibility_flags&1);
 
     pw=bmp->width*72./dpi;
     ph=bmp->height*72./dpi;
@@ -344,46 +317,104 @@ void pdffile_add_bitmap_with_ocrwords(PDFFILE *pdf,WILLUSBITMAP *bmp,double dpi,
     ptrlen=ftell(pdf->f);
     fprintf(pdf->f,"         >>\n"
                    "stream\n");
+    fflush(pdf->f);
+    fseek(pdf->f,0L,1);
     ptr1=ftell(pdf->f);
     if (showbitmap)
         fprintf(pdf->f,"q\n%.1f 0 0 %.1f 0 0 cm\n/Im%d Do\nQ\n",pw,ph,pdf->imc);
     if (ocrwords!=NULL)
-        ocrwords_to_pdf_stream(ocrwords,pdf->f,dpi,pw,ph,ocrwordcolor&0x3f);
-    if (ocrwordcolor&0x80)
+        ocrwords_to_pdf_stream(ocrwords,pdf->f,dpi,ph,(visibility_flags&2)?0:3);
+    if (visibility_flags&4)
         ocrwords_box(ocrwords,bmp);
+    fflush(pdf->f);
+    fseek(pdf->f,0L,1);
     ptr2=ftell(pdf->f);
     fprintf(pdf->f,"endstream\n"
                    "endobj\n");
     insert_length(pdf->f,ptrlen,ptr2-ptr1);
-    if (!showbitmap)
-        return;
+    if (showbitmap)
+        {
+        /* Stream the bitmap */
+        pdffile_bmp_stream(pdf,bmp,quality,halfsize,0);
+        /* Stream the thumbnail */
+        pdffile_bmp_stream(pdf,bmp,quality,halfsize,1);
+        }
+    }
 
+
+static void thumbnail_create(WILLUSBITMAP *thumb,WILLUSBITMAP *bmp)
+
+    {
+    if (bmp->width > bmp->height)
+        {
+        thumb->width = bmp->width<106 ? bmp->width : 106;
+        thumb->height = (int)(((double)bmp->height/bmp->width)*thumb->width+.5);
+        if (thumb->height<1)
+            thumb->height=1;
+        }
+    else
+        {
+        thumb->height = bmp->height<106 ? bmp->height : 106;
+        thumb->width = (int)(((double)bmp->width/bmp->height)*thumb->height+.5);
+        if (thumb->width<1)
+            thumb->width=1;
+        }
+    bmp_resample(thumb,bmp,0.,0.,(double)bmp->width,(double)bmp->height,
+                 thumb->width,thumb->height);
+    if (bmp->bpp==8)
+        bmp_convert_to_greyscale(thumb);
+    }
+
+
+static void pdffile_bmp_stream(PDFFILE *pdf,WILLUSBITMAP *src,int quality,int halfsize,int thumb)
+
+    {
+    int ptrlen,ptr1,ptr2,bpc;
+    WILLUSBITMAP *bmp,_bmp;
+
+    if (thumb)
+        {
+        bmp=&_bmp;
+        bmp_init(bmp);
+        thumbnail_create(bmp,src);
+        }
+    else
+        bmp=src;
+    if (quality<0 && halfsize>0 && halfsize<4)
+        bpc=8>>halfsize;
+    else
+        bpc=8;
     /* The bitmap */
     pdffile_new_object(pdf,0);
-    fprintf(pdf->f,"<<\n"
-                   "/Type /XObject\n"
-                   "/Subtype /Image\n"
-                   "/Filter /%sDecode\n"
-                   "/Width %d\n"
+    fprintf(pdf->f,"<<\n");
+    if (!thumb)
+        fprintf(pdf->f,"/Type /XObject\n"
+                       "/Subtype /Image\n");
+    fprintf(pdf->f,"/Filter %s/%sDecode%s\n",
+            thumb?"[ ":"",quality<0?"Flate":"DCT",thumb?" ]":"");
+    fprintf(pdf->f,"/Width %d\n"
                    "/Height %d\n"
                    "/ColorSpace /Device%s\n"
                    "/BitsPerComponent %d\n"
                    "/Length ",
-                   quality<0 ? "Flate" : "DCT",
                    bmp->width,bmp->height,
                    bmp->bpp==8?"Gray":"RGB",
                    bpc);
     fflush(pdf->f);
     fseek(pdf->f,0L,1);
-    ptrlen=ftell(pdf->f);
+    ptrlen=(int)ftell(pdf->f);
     fprintf(pdf->f,"         \n"
                    ">>\n"
                    "stream\n");
+    fflush(pdf->f);
     fseek(pdf->f,0L,1);
-    ptr1=ftell(pdf->f);
+    ptr1=(int)ftell(pdf->f);
     if (quality<0)
         {
         gzFile gz;
+        static char *gzflags="sab7"; /* s is special flag set up by me in zlib */
+                                     /* It turns off the gzip header/trailer   */
+                                     /* 1 July 2011 */
         fclose(pdf->f);
         gz=gzopen(pdf->filename,gzflags);
         bmp_flate_decode(bmp,gz,halfsize);
@@ -397,52 +428,15 @@ void pdffile_add_bitmap_with_ocrwords(PDFFILE *pdf,WILLUSBITMAP *bmp,double dpi,
         bmp_write_jpeg_stream(bmp,pdf->f,quality,NULL);
         fprintf(pdf->f,"\n");
         }
-    ptr2=ftell(pdf->f)-1;
-    fprintf(pdf->f,"endstream\nendobj\n");
-    insert_length(pdf->f,ptrlen,ptr2-ptr1);
-
-    /* The thumbnail */
-    pdffile_new_object(pdf,0);
-    fprintf(pdf->f,"<<\n"
-                   "/Filter [ /%sDecode ]\n"
-                   "/Width %d\n"
-                   "/Height %d\n"
-                   "/ColorSpace /Device%s\n"
-                   "/BitsPerComponent %d\n"
-                   "/Length ",
-                   quality<0 ? "Flate" : "DCT",
-                   thumb->width,thumb->height,
-                   bmp->bpp==8?"Gray":"RGB",
-                   bpc);
     fflush(pdf->f);
     fseek(pdf->f,0L,1);
-    ptrlen=ftell(pdf->f);
-    fprintf(pdf->f,"        \n"
-                   ">>\n"
-                   "stream\n");
-    fseek(pdf->f,0L,1);
-    ptr1=ftell(pdf->f);
-    if (quality<0)
-        {
-        gzFile gz;
-        fclose(pdf->f);
-        gz=gzopen(pdf->filename,gzflags);
-        bmp_flate_decode(thumb,gz,halfsize);
-        gzclose(gz);
-        pdf->f=fopen(pdf->filename,"rb+");
-        fseek(pdf->f,(size_t)0,2);
-        fprintf(pdf->f,"\n");
-        }
-    else
-        {
-        bmp_write_jpeg_stream(thumb,pdf->f,quality,NULL);
-        fprintf(pdf->f,"\n");
-        }
-    ptr2=ftell(pdf->f)-1;
+    ptr2=(int)ftell(pdf->f)-1;
     fprintf(pdf->f,"endstream\nendobj\n");
     insert_length(pdf->f,ptrlen,ptr2-ptr1);
-    bmp_free(thumb);
+    if (thumb)
+        bmp_free(bmp);
     }
+
 
 
 /*
@@ -578,6 +572,7 @@ void pdffile_finish(PDFFILE *pdf,char *producer)
         }
     else
         {
+        fflush(pdf->f);
         fseek(pdf->f,0L,1);
         ptr=ftell(pdf->f);
         icat=pdf->n;
@@ -624,6 +619,8 @@ void pdffile_finish(PDFFILE *pdf,char *producer)
                    today.tm_year+1900,today.tm_mon+1,today.tm_mday,
                    today.tm_hour,today.tm_min,today.tm_sec,
                    producer==NULL ? buf : producer);
+    fflush(pdf->f);
+    fseek(pdf->f,0L,1);
     ptr=ftell(pdf->f);
     /* Kindles require the space after the 'f' and 'n' in the lines below. */
     fprintf(pdf->f,"xref\n"
@@ -663,6 +660,8 @@ static void pdffile_new_object(PDFFILE *pdf,int flags)
     {
     PDFOBJECT obj;
 
+    fflush(pdf->f);
+    fseek(pdf->f,0L,1);
     obj.ptr[0]=obj.ptr[1]=ftell(pdf->f);
     obj.flags=flags;
     pdffile_add_object(pdf,&obj);
@@ -867,6 +866,8 @@ static void insert_length(FILE *f,long pos,int len)
     int i;
     char nbuf[64];
 
+    fflush(f);
+    fseek(f,0L,1);
     ptr=ftell(f);
     fseek(f,pos,0);
     sprintf(nbuf,"%d",len);
@@ -900,7 +901,7 @@ void ocrwords_box(OCRWORDS *ocrwords,WILLUSBITMAP *bmp)
                 p[2]=255;
                 }
             }
-        p=bmp_rowptr_from_top(bmp,word->r+word->h-1)+word->c*bpp;
+        p=bmp_rowptr_from_top(bmp,word->r-word->maxheight)+word->c*bpp;
         for (j=0;j<word->w;j++,p+=bpp)
             {
             (*p)=0;
@@ -910,16 +911,16 @@ void ocrwords_box(OCRWORDS *ocrwords,WILLUSBITMAP *bmp)
                 p[2]=255;
                 }
             }
-        for (j=0;j<word->h;j++)
+        for (j=0;j<word->maxheight;j++)
             {
-            p=bmp_rowptr_from_top(bmp,word->r+j)+word->c*bpp;
+            p=bmp_rowptr_from_top(bmp,word->r-j)+word->c*bpp;
             (*p)=0;
             if (bpp==3)
                 {
                 p[1]=0;
                 p[2]=255;
                 }
-            p=bmp_rowptr_from_top(bmp,word->r+j)+(word->c+word->w-1)*bpp;
+            p=bmp_rowptr_from_top(bmp,word->r-j)+(word->c+word->w-1)*bpp;
             (*p)=0;
             if (bpp==3)
                 {
@@ -932,33 +933,53 @@ void ocrwords_box(OCRWORDS *ocrwords,WILLUSBITMAP *bmp)
 
 
 static void ocrwords_to_pdf_stream(OCRWORDS *ocrwords,FILE *f,double dpi,
-                                   double page_width_pts,double page_height_pts,
-                                   int ocrwordcolor)
+                                   double page_height_pts,int text_render_mode)
 
     {
     int i;
+    double median_size;
 
-    fprintf(f,"BT\n%d Tr\n",ocrwordcolor);
+    fprintf(f,"BT\n%d Tr\n",text_render_mode);
+    median_size=ocrwords_median_size(ocrwords,dpi);
     for (i=0;i<ocrwords->n;i++)
-        ocrword_to_pdf_stream(&ocrwords->word[i],f,dpi,page_width_pts,page_height_pts);
+        ocrword_to_pdf_stream(&ocrwords->word[i],f,dpi,page_height_pts,median_size);
     fprintf(f,"ET\n");
     }
 
 
-/* Ignores rotation for now */
-static void ocrword_to_pdf_stream(OCRWORD *word,FILE *f,double dpi,
-                                  double page_width_pts,double page_height_pts)
+static double ocrwords_median_size(OCRWORDS *ocrwords,double dpi)
 
     {
-    int i,wordw;
-    double fontsize;
-    double ybase;
-    double width_pts;
-    double y1,y2;
-    char rotbuf[48];
+    static char *funcname="ocrwords_to_histogram";
+    static double *fontsize_hist;
+    double msize;
+    int i;
 
-    width_pts=0.;
-    y1=y2=0.;
+    if (ocrwords->n<=0)
+        return(1.);
+    willus_mem_alloc_warn((void **)&fontsize_hist,sizeof(double)*ocrwords->n,funcname,10);
+    for (i=0;i<ocrwords->n;i++)
+        {
+        double w,h;
+        ocrword_width_and_maxheight(&ocrwords->word[i],&w,&h);
+        fontsize_hist[i] = (72.*ocrwords->word[i].maxheight/dpi) / h;
+        }
+    sortd(fontsize_hist,ocrwords->n);
+    msize=fontsize_hist[ocrwords->n/2];
+    if (msize < 0.5)
+        msize = 0.5;
+    willus_mem_free(&fontsize_hist,funcname);
+    return(msize);
+    }
+
+
+static void ocrword_width_and_maxheight(OCRWORD *word,double *width,double *maxheight)
+
+    {
+    int i;
+
+    (*width)=0.;
+    (*maxheight)=0.;
     for (i=0;word->text[i]!='\0';i++)
         {
         int c;
@@ -966,32 +987,51 @@ static void ocrword_to_pdf_stream(OCRWORD *word,FILE *f,double dpi,
         if (c<0 || c>=96)
             c=0; 
         if (word->text[i+1]=='\0')
-            width_pts += Helvetica[c].width;
+            (*width) += Helvetica[c].width;
         else
-            width_pts += Helvetica[c].nextchar;
-        if (Helvetica[c].abovebase > y2)
-            y2=Helvetica[c].abovebase;
-        if (-Helvetica[c].belowbase < y1)
-            y1=-Helvetica[c].belowbase;
+            (*width) += Helvetica[c].nextchar;
+        if (Helvetica[c].abovebase > (*maxheight))
+            (*maxheight)=Helvetica[c].abovebase;
         }
+    }
+
+
+static double size_round_off(double size,double median_size,double log_size_increment)
+
+    {
+    double rat,lograt;
+
+    if (size < .5)
+        size = .5;
+    rat=size / median_size;
+    lograt = floor(log10(rat)/log_size_increment+.5);
+    return(median_size*pow(10.,lograt*log_size_increment));
+    }
+
+
+static void ocrword_to_pdf_stream(OCRWORD *word,FILE *f,double dpi,
+                                  double page_height_pts,double median_size_pts)
+
+    {
+    int i,wordw;
+    double fontsize_width,fontsize_height,ybase;
+    double width_per_point,height_per_point,arat;
+    char rotbuf[48];
+
+    ocrword_width_and_maxheight(word,&width_per_point,&height_per_point);
     if (word->w/10. < word->lcheight)
         wordw = 0.9*word->w;
     else
         wordw = word->w-word->lcheight;
-    fontsize = 72.*wordw/dpi / width_pts;
-    /* If too tall, reduce font size */
-    if (fontsize*y2 > 1.1*72.*word->maxheight/dpi)
-        fontsize = (1.1*72.*word->maxheight/dpi) / y2;
+    fontsize_width = 72.*wordw/dpi / width_per_point;
+    fontsize_height = size_round_off((72.*word->maxheight/dpi) / height_per_point,
+                                       median_size_pts,.25);
+    arat = fontsize_width / fontsize_height;
     ybase = page_height_pts - 72.*word->r/dpi;
-    /*
-    ** Originally y-position was ymid - word_ht/2. - y1*fontsize, but I want
-    ** all the baseline positions the same--should help with text selection
-    ** in PDF readers.
-    */
     if (word->rot==0)
-        sprintf(rotbuf,"1 0 0 1");
+        sprintf(rotbuf,"%.4f 0 0 1",arat);
     else if (word->rot==90)
-        sprintf(rotbuf,"0 1 -1 0");
+        sprintf(rotbuf,"0 %.4f -1 0",arat);
     else
         {
         double theta,sinth,costh;
@@ -999,12 +1039,12 @@ static void ocrword_to_pdf_stream(OCRWORD *word,FILE *f,double dpi,
         theta=word->rot*PI/180.;
         sinth=sin(theta);
         costh=cos(theta);
-        sprintf(rotbuf,"%.3f %.3f %.3f %.3f",costh,sinth,-sinth,costh);
+        sprintf(rotbuf,"%.3f %.3f %.3f %.3f",costh*arat,sinth*arat,-sinth,costh);
         }
     fprintf(f,"/F3 %.2f Tf\n"
               "%s %.2f %.2f Tm\n"
               "<",
-              fontsize,rotbuf,72.*word->c/dpi,ybase);
+              fontsize_height,rotbuf,72.*word->c/dpi,ybase);
     for (i=0;word->text[i]!='\0';i++)
         {
         int c;
