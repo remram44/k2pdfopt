@@ -190,7 +190,7 @@ int bmp_write(WILLUSBITMAP *bmap,char *filename,FILE *out,int quality)
         if (pdffile_init(pdf,filename,1)!=NULL)
             {
             pdffile_add_bitmap(pdf,bmap,willusbmp_dpi,quality,0);
-            pdffile_finish(pdf,NULL);
+            pdffile_finish(pdf,NULL,NULL,NULL,NULL);
             pdffile_close(pdf);
             return(0);
             }

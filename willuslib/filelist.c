@@ -1024,7 +1024,7 @@ int filelist_create_zipfile(FILELIST *fl,char *zipfile,FILE *out)
     int i;
 
 /*
-    if (which(zipexe,"zip")==0)
+    if (wsys_which(zipexe,"zip")==0)
         {
         nprintf(out,"make zipfile:  Cannot find zip exe.\n");
         return(-1);

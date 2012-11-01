@@ -227,6 +227,7 @@ void sincos(double th,double *s,double *c);
 #define ANSI_BLUE           "\x1b[1m\x1b[34m"
 #define ANSI_MAGENTA        "\x1b[1m\x1b[35m"
 #define ANSI_CYAN           "\x1b[1m\x1b[36m"
+#define ANSI_DARKCYAN       "\x1b[0m\x1b[36m"
 #define ANSI_WHITE          "\x1b[1m\x1b[37m"
 #define ANSI_NORMAL         "\x1b[0m\x1b[37m"
 #define ANSI_SAVE_CURSOR    "\x1b[s"
@@ -825,7 +826,7 @@ int win_has_own_window(void);
 int win_getppid(int pid);
 #endif
 
-/* sys.c */
+/* wsys.c */
 #define system_header(progname,verstring,author) \
     { char os[32],chip[32],compiler[32]; \
     system_version(NULL,os,chip,compiler); \
@@ -837,17 +838,20 @@ int win_getppid(int pid);
 #define WPID_RUNNING     1
 #define WPID_SLEEPING    2
 #define WPID_UNKNOWN     3
-void system_version(char *system,char *_os,char *_chip,char *_compiler);
-int win32_api(void);
-int wpid_status(int wpid);
-void wsleep(int secs);
-char *sys_full_exe_name(char *s);
-int which(char *exactname,char *exename);
-int sys_most_recent_in_path(char *exename,char *wildcard);
-void sys_computer_name(char *name,int maxlen);
-double year_double(struct tm *date);
-void sys_enter_to_exit(char *mesg);
-int sys_set_decimal_period(int setit);
+void   wsys_system_version(char *system,char *_os,char *_chip,char *_compiler);
+int    wsys_win32_api(void);
+int    wsys_wpid_status(int wpid);
+void   wsys_sleep(int secs);
+char  *wsys_full_exe_name(char *s);
+int    wsys_which(char *exactname,char *exename);
+int    wsys_most_recent_in_path(char *exename,char *wildcard);
+void   wsys_computer_name(char *name,int maxlen);
+int    wsys_filename_8dot3(char *dst,char *src,int maxlen);
+double wsys_year_double(struct tm *date);
+double wsys_utc_offset(void);
+char  *wsys_utc_string(void);
+void   wsys_enter_to_exit(char *mesg);
+int    wsys_set_decimal_period(int setit);
 
 
 /* token.c */
@@ -1145,14 +1149,71 @@ void pdffile_add_bitmap(PDFFILE *pdf,WILLUSBITMAP *bmp,double dpi,int quality,in
 void pdffile_add_bitmap_with_ocrwords(PDFFILE *pdf,WILLUSBITMAP *bmp,double dpi,
                                       int quality,int halfsize,OCRWORDS *ocrwords,
                                       int ocrwordcolor);
-void pdffile_finish(PDFFILE *pdf,char *producer);
+void pdffile_finish(PDFFILE *pdf,char *title,char *author,char *producer,char *cdate);
 int  pdf_numpages(char *filename);
 void ocrwords_box(OCRWORDS *ocrwords,WILLUSBITMAP *bmp);
 
 /* bmpmupdf.c */
-/* Mupdf supported functions */
+/* Mupdf / bitmap functions */
 int bmpmupdf_pdffile_to_bmp(WILLUSBITMAP *bmp,char *filename,int pageno,double dpi,int bpp);
-int bmpmupdf_numpages(char *filename);
+
+/* wmupdf.c */
+/* Mupdf support functions */
+typedef struct
+    {
+    int pageno;
+    double finerot_deg;
+    double rot_deg;
+    double page_width_pts;
+    double page_height_pts;
+    double x0_pts;
+    double y0_pts;
+    double crop_width_pts;
+    double crop_height_pts;
+    } WPDFSRCBOX;
+
+typedef struct
+    {
+    int dstpage;     /* Dest page */
+    double x0,y0;    /* x0,y0, in points, of lower left point on transformed source page */
+    double w,h;      /* width and height of transformed source rectangle in points */
+    double x1,y1;    /* (x,y) position of lower left source point on destination page, in points */
+    double scale;    /* Scale rectangle by this factor on destination page */
+    double srcrot_deg;  /* Rotation of source selection rectangle about x0,y0 */
+    double dstrot_deg;  /* Rotation of destination rectangle about x1,y1 */
+    double userx,usery; /* For user use */
+    double src_width_pts,src_height_pts;  /* Width/height of transformed source page in points */
+    double dst_width_pts,dst_height_pts;  /* Width/height of device page in points */
+    WPDFSRCBOX srcbox;
+    } WPDFBOX;
+
+typedef struct
+    {
+    WPDFBOX *box;
+    int n;
+    int na;
+    } WPDFBOXES;
+
+typedef struct
+    {
+    char producer[128];  /* Producer */
+    double width_pts;    /* Destination page width in pts. */
+    double height_pts;   /* Destination page height in pts. */
+    int srcpage;                 /* Ignored by wmupdf_remake_pdf */
+    double srcpage_rot_deg;      /* Ignored by wmupdf_remake_pdf */
+    double srcpage_fine_rot_deg; /* Ignored by wmupdf_remake_pdf */
+    WPDFBOXES boxes;
+    } WPDFPAGEINFO;
+
+int  wmupdf_numpages(char *filename);
+void wpdfboxes_init(WPDFBOXES *boxes);
+void wpdfboxes_free(WPDFBOXES *boxes);
+void wpdfboxes_insert_box(WPDFBOXES *boxes,WPDFBOX *box,int index);
+void wpdfboxes_add_box(WPDFBOXES *boxes,WPDFBOX *box);
+void wpdfboxes_delete(WPDFBOXES *boxes,int n);
+void wpdfpageinfo_sort(WPDFPAGEINFO *pageinfo);
+int  wmupdf_info_field(char *infile,char *label,char *buf,int maxlen);
+int  wmupdf_remake_pdf(char *infile,char *outfile,WPDFPAGEINFO *pageinfo,FILE *out);
 
 /* bmpdjvu.c */
 /* djvu supported functions */

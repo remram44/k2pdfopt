@@ -313,7 +313,7 @@ int avprintf(FILE *f,char *fmt,va_list args)
     int     status;
 
 #ifdef WIN32
-    if (win32_api())
+    if (wsys_win32_api())
         {
         status=vsprintf(ansi_buffer,fmt,args);
         ansi_parse(f,ansi_buffer);
@@ -449,7 +449,7 @@ static void ansi_code(FILE *f,int *args,int nargs,int code)
         return;
         }
 #ifdef WIN32
-    if (win32_api())
+    if (wsys_win32_api())
         switch (code)
             {
             case 'm':

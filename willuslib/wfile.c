@@ -360,7 +360,7 @@ int wfile_findfirst(const char *spec,wfile *wptr)
 
     {
 #if (defined(WIN32))
-    if (win32_api())
+    if (wsys_win32_api())
         {
         WIN32_FIND_DATA *fd;
 
@@ -411,7 +411,7 @@ int wfile_findnext(wfile *wptr)
 
     {
 #if (defined(WIN32))
-    if (win32_api())
+    if (wsys_win32_api())
         {
         WIN32_FIND_DATA *fd;
 
@@ -465,7 +465,7 @@ void wfile_findclose(wfile *wptr)
 
     {
 #if (defined(WIN32))
-    if (win32_api())
+    if (wsys_win32_api())
         {
         if ((HANDLE)wptr->winhandle==INVALID_HANDLE_VALUE)
             return;
@@ -496,7 +496,7 @@ int wfile_date(const char *filename,struct tm *filedate)
 //    OFSTRUCT    buf;
     FILETIME    ctime,mtime,atime;
 
-    if (win32_api())
+    if (wsys_win32_api())
         {
         char fn2[MAXFILENAMELEN];
 
@@ -1469,7 +1469,7 @@ int wfile_status(char *filename)
 #if (defined(WIN32))
     long    status;
 
-    if (win32_api())
+    if (wsys_win32_api())
         {
         status=GetFileAttributes(filename);
         if (status==-1)
@@ -1874,7 +1874,7 @@ char *wfile_temppath(char *path)
     static char tpath[MAXFILENAMELEN];
 
 #if (defined(WIN32))
-    if (win32_api())
+    if (wsys_win32_api())
         GetTempPath(255,tpath);
     else
 #else
@@ -3106,7 +3106,7 @@ int wfile_find_file(char *fullname,char *basename,char *folderlist[],char *drive
         }
     if (checkpath)
         {
-        status=which(fullname,basename);
+        status=wsys_which(fullname,basename);
         if (status>0)
             {
             char basespec[256];
@@ -3124,7 +3124,7 @@ int wfile_find_file(char *fullname,char *basename,char *folderlist[],char *drive
         }
     if (exedir)
         {
-        wfile_basepath(folder,sys_full_exe_name(filename));
+        wfile_basepath(folder,wsys_full_exe_name(filename));
         status=wfile_smartfind(fullname,basename,folder,0);
         if (status==0)
             return(status);

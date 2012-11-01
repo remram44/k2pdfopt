@@ -153,31 +153,6 @@ int bmpmupdf_pdffile_to_bmp(WILLUSBITMAP *bmp,char *filename,int pageno,double d
     }
 
 
-int bmpmupdf_numpages(char *filename)
-
-    {
-    fz_context *ctx;
-    fz_document *doc;
-    int np;
-
-    doc=NULL;
-    ctx = fz_new_context(NULL,NULL,FZ_STORE_DEFAULT);
-    if (!ctx)
-        return(-1);
-    fz_try(ctx) { doc=fz_open_document(ctx,filename); }
-    fz_catch(ctx) 
-        { 
-        fz_free_context(ctx);
-        return(-2);
-        }
-    np=fz_count_pages(doc);
-    fz_close_document(doc);
-    fz_flush_warnings(ctx);
-    fz_free_context(ctx);
-    return(np);
-    }
-
-
 static int bmpmupdf_pixmap_to_bmp(WILLUSBITMAP *bmp,fz_context *ctx,fz_pixmap *pixmap)
 
     {

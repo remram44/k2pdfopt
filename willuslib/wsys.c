@@ -1,5 +1,5 @@
 /*
-** sys.c        System / OS-dependent routines
+** wsys.c       System / OS-dependent routines
 **
 ** Part of willus.com general purpose C code library.
 **
@@ -54,10 +54,10 @@ Digital Mars:  __DMC__ == 0x700 (7.0) 0x720 (7.2) 0x800 (8.0)
 #if (defined(__GNUC__))
 static void gnu_compiler(char *compiler_version);
 #endif
-static int sys_decimal_is_period(void);
+static int wsys_decimal_is_period(void);
 
 
-void system_version(char *system,char *_os,char *_chip,char *_compiler)
+void wsys_system_version(char *system,char *_os,char *_chip,char *_compiler)
 
     {
     char compiler_version[80],compname[100];
@@ -91,7 +91,7 @@ void system_version(char *system,char *_os,char *_chip,char *_compiler)
 #if (defined(WIN64))
     oscode=12;
 #elif (defined(WIN32))
-    if (win32_api())
+    if (wsys_win32_api())
         oscode=7;
     else
         oscode=8;
@@ -227,7 +227,7 @@ static void gnu_compiler(char *compiler_version)
 #endif
 
 
-int win32_api(void)
+int wsys_win32_api(void)
 
     {
 #if (defined(DJEMXWIN32))
@@ -251,7 +251,7 @@ int win32_api(void)
 ** Only returns WPID_RUNNING or WPID_NO_PROCESS (can't determine if
 ** process is sleeping yet).
 */
-int wpid_status(int pid)
+int wsys_wpid_status(int pid)
 
     {
 #ifdef WIN32
@@ -300,7 +300,7 @@ int wpid_status(int pid)
     }
 
 
-void wsleep(int secs)
+void wsys_sleep(int secs)
 
     {
 #ifdef WIN32
@@ -311,7 +311,7 @@ void wsleep(int secs)
     }
 
 
-char *sys_full_exe_name(char *s)
+char *wsys_full_exe_name(char *s)
 
     {
 #if (defined(WIN32) || defined(WIN64))
@@ -324,7 +324,7 @@ char *sys_full_exe_name(char *s)
     }
 
 
-int which(char *exactname,char *exename)
+int wsys_which(char *exactname,char *exename)
 
     {
 #ifdef WIN32
@@ -339,7 +339,7 @@ int which(char *exactname,char *exename)
     }
 
 
-int sys_most_recent_in_path(char *exename,char *wildcard)
+int wsys_most_recent_in_path(char *exename,char *wildcard)
 
     {
 #ifdef WIN32
@@ -354,7 +354,7 @@ int sys_most_recent_in_path(char *exename,char *wildcard)
     }
 
 
-void sys_computer_name(char *name,int maxlen)
+void wsys_computer_name(char *name,int maxlen)
 
     {
 #ifdef WIN32
@@ -367,7 +367,7 @@ void sys_computer_name(char *name,int maxlen)
     }
 
 
-void sys_enter_to_exit(char *mesg)
+void wsys_enter_to_exit(char *mesg)
 
     {
 #if (defined(WIN32) || defined(WIN64))
@@ -385,7 +385,20 @@ void sys_enter_to_exit(char *mesg)
     }
 
 
-double year_double(struct tm *date)
+int wsys_filename_8dot3(char *dst,char *src,int maxlen)
+
+    {
+#if (defined(WIN32) || defined(WIN64))
+    return(GetShortPathName(src,dst,maxlen));
+#else
+    strncpy(dst,src,maxlen-1);
+    dst[maxlen-1]='\0';
+    return(strlen(dst));
+#endif
+    }
+
+
+double wsys_year_double(struct tm *date)
 
     {
     return(1900.+date->tm_year
@@ -397,11 +410,50 @@ double year_double(struct tm *date)
     }
 
 
+double wsys_utc_offset(void)
+
+    {
+    time_t now;
+    struct tm t1,t2;
+    double tz;
+
+    time(&now);
+    t1=(*localtime(&now));
+    t2=(*gmtime(&now));
+    tz=wfile_date_diff(&t1,&t2)/3600.;
+    return(tz);
+    }
+
+
+char *wsys_utc_string(void)
+
+    {
+    double tz;
+    int c,hr,min;
+    static char buf[8];
+
+    tz = wsys_utc_offset();
+    if (tz<0)
+        {
+        tz = -tz;
+        c='-';
+        }
+    else
+        c='+';
+    hr = (int)(tz+1e-6);
+    min=(tz-hr)*60;
+    min = (min+8)/15;
+    min *= 15;
+    sprintf(buf,"%c%02d'%02d",c,hr%24,min);
+    return(buf);
+    }
+
+
 /*
 ** Call with 1 to set decimal point to a period.
 ** Call with 0 to restore locale to original value.
 */
-int sys_set_decimal_period(int setit)
+int wsys_set_decimal_period(int setit)
 
     {
     static int sys_setlocale=0;
@@ -417,7 +469,7 @@ int sys_set_decimal_period(int setit)
             setlocale(LC_NUMERIC,orglocale);
         return(1);
         }
-    if (sys_decimal_is_period())
+    if (wsys_decimal_is_period())
         return(1);
     /* Store original locale */
     if (!sys_setlocale)
@@ -431,7 +483,7 @@ int sys_set_decimal_period(int setit)
     for (i=0;1;i++)
         {
         p=setlocale(LC_NUMERIC,localenames[i]);
-        if (sys_decimal_is_period())
+        if (wsys_decimal_is_period())
             return(1);
         if (localenames[i][0]=='\0')
             break;
@@ -441,7 +493,7 @@ int sys_set_decimal_period(int setit)
     }
 
 
-static int sys_decimal_is_period(void)
+static int wsys_decimal_is_period(void)
 
     {
     double x;

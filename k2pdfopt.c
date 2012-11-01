@@ -18,39 +18,88 @@
 ** You should have received a copy of the GNU Affero General Public License
 ** along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **
-** FUTURE MODIFICATIONS
-**
-**           v1.60?  implement by cropping/scaling/translating of
-**                   native PDF pages.
-**                   (Check for right-to-left fonts??)
-**                   - Chapter markers?
-**                   - Multithread option?
-**           Wish list  
-**                   - Little blurbs in the margins--better way to handle?
-**                   - bryce.pdf (James Bryce Holy Roman Empire)--hanging
-**                     indents like on p. 43 with the date--auto-detect?
-**                   - Options for type of Tesseract OCR (cube works best)?
-**                   - Installer program for Tesseract data?
-**                   - Better algorithm for finding whitethresh?
-**                     (contrast adjust)
-**                   - Autostraighten each column (e.g. when one page of
-**                     a book is tilted).
-**                   - Option to change suffix or specify output name?
-**                   - Figure out how to get bounding boxes for text
-**                     primitives from MuPDF so that cropping could be
-**                     done to these bounding boxes (Markom).
-**                   - Split final output into two pages for viewing on
-**                     side-by-side kindles (Markom)...?
-**                   - Should references w/lots of hanging indents be re-flowed?
-**                   - Make max_fig_gap, max_label_height in
-**                     bmpregion_find_vertical_breaks() adjustable?
-**
-**           v1.52:
-**                   - Copy/Paste-able unicode-16 strings in PDF so that
-**                     foreign characters are supported.
-**                     (how to handle in Helvetica font...)
-**
 ** VERSION HISTORY
+** v1.60     1 NOV 2012
+**           MAJOR NEW FEATURES
+**           - Option to keep native PDF contents (see full details under
+**             command-line option usage under -n for "native").
+**             User menu option "n".  This is only available if k2pdfopt
+**             has been compiled with MuPDF.
+**           - New grid option grids the source page into a fixed number
+**             of rows and columns with some overlap.  E.g. -grid 2x2.
+**             This option works well with the -n option above.
+**             This is under user menu option "mo".
+**
+**           NEW FEATURES / CHANGES
+**           - The new -dev option selects device profiles (there are
+**             only two so far:  kindle2 and nook simple touch).
+**             The user menu option for -dev is "d".
+**           - The new -mode option selects a particular mode of operation
+**             that is shorthand for a number of options.  There are
+**             currently four modes:  default (def), copy, 2-column (2col),
+**             and fw (fit width).  E.g. "-mode copy" makes k2pdfopt behave
+**             just like my "pdfr" program (thus eliminating the need for me
+**             to distribute pdfr separately).  And "-mode fw" makes k2pdfopt
+**             behave very much like sopdf's fit width option.  For more details,
+**             see the full command-line usage (k2pdfopt -?).
+**             The user menu option for -mode is "mo".
+**           - The user input system was revamped so that the menu options
+**             build up a set of command-line arguments that are passed to
+**             the main program.  This way the user can easily see the
+**             command-line options that match the selections from the menu.
+**           - Command line arguments can be put in directly at the user
+**             input menu (anything beginning with a - is considered to be
+**             a command-line option and is appended to the list).
+**           - At the user input menu, '-' will clear all menu-selected
+**             options, '--' will clear the command-line options actually
+**             entered at the command-line, and '---' will clear the options
+**             from the K2PDFOPT environment variable.
+**           - The -vb option can now take -2 as an argument, which indicates
+**             that the vertical spacing is to be exactly preserved from the
+**             source document.
+**           - New -t option to specify trimming or no trimming (-t-) of
+**             excess white space.  Default is to trim white space.
+**           - New -dpi option is same as -odpi.
+**           - The -w and -h options can take values in inches or cm now
+**             instead of pixels, and they can be negative to specify that
+**             the device size should be scaled from the source page size.
+**           - With -w and -h set to -1 to follow the source page sizes,
+**             k2pdfopt can now handle varying destination page sizes
+**             (see set_margins_and_devsize function).
+**           - The -m and -om command-line arguments can now be a comma-
+**             -delimited list of margins: left,top,right,bottom.
+**             E.g. -m 0.5,1.0,0.5,1.0.
+**           - The "Author", "Title", and "CreationDate" fields in the
+**             source PDF file are now correctly passed on to the output
+**             file.  If there is no Title field in the source, the base
+**             output file name is used.
+**           - Specifying -f2p -2 will now also set -vb -2 automatically.
+**             Use -fp -2 -vb -1 to revert to v1.51 behavior.
+**
+**           BUG FIXES
+**           - Fixed OCR word placement bug for tall (centered) bitmaps.
+**           - Make sure if crop boxes are used that padding/corner marking
+**             is turned off and OCR is turned off.
+**           - Fixed some issues when switching to Ghostscript and when
+**             processing a folder full of bitmaps.
+**           - Should work with postscript (.eps or .ps) files now
+**             (requires Ghostscript; output file is still PDF).
+**           - Fixed bmpregion_find_vertical_breaks() bug where it wasn't
+**             always correctly interpreting the last section of a region.
+**           - The -vls option works correctly when combined with -vb -1
+**             and no text wrapping now (vls_test.pdf).
+**           - Eliminated divide by zero issue in bmpregion_is_clear() when
+**             gt_in gets too small.
+**           - Put call to wrapbmp_flush() in publish_master() when flushall
+**             is set (fixes bug reported by hm88 on mobileread)
+**           - Adjusted critierion for too thick / too thin hyphen in
+**             bmpregion_hyphen_detect() to be more correct and to allow
+**             for slightly thinner hyphens.
+**           - If mupdf can't open the file in Windows, I try the 8.3 alternative
+**             file name.  This solved a problem involving a path that had a
+**             non-traditional (non-ASCII) character in it.
+**           - Fixed bug in detect_vertical_lines() that caused problems
+**             in some cases on 64-bit versions.
 **
 ** v1.51     9-21-12
 **           NEW FEATURES
@@ -653,15 +702,17 @@
 ** 8 = word wrapping II
 ** 16 = hyphens
 ** 32 = OCR
+** 64 = crop boxes
 **
 */
-// #define WILLUSDEBUGX 32
+// #define WILLUSDEBUGX 65
 // #define WILLUSDEBUG
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdarg.h>
 #include <math2.h>
 #include <constant.h>
 #include <willus.h>
@@ -685,7 +736,7 @@
 #endif
 
 
-#define VERSION "v1.51"
+#define VERSION "v1.60"
 #define GRAYLEVEL(r,g,b) ((int)(((r)*0.3+(g)*0.59+(b)*0.11)*1.002))
 #if (defined(WIN32) || defined(WIN64))
 #define TTEXT_BOLD    ANSI_WHITE
@@ -707,34 +758,34 @@
 
 #define SRC_TYPE_PDF     1
 #define SRC_TYPE_DJVU    2
-#define SRC_TYPE_OTHER   3
+#define SRC_TYPE_PS      3
+#define SRC_TYPE_BITMAPFOLDER 4
+#define SRC_TYPE_OTHER   5
+
+#define int_swap(x,y) {int t; t=(x); (x)=(y); (y)=t;}
+#define double_swap(x,y) {double t; t=(x); (x)=(y); (y)=t;}
+
+typedef struct
+    {
+    char *name;
+    char *alias;
+    int width;
+    int height;
+    int dpi;
+    int color;
+    int mark_corners;
+    int padding[4];
+    } DEVPROFILE;
+
+static DEVPROFILE devprof[4] =
+    {
+    {"Kindle 2","k2",560,735,167,0,1,{0,0,3,4}},
+    {"Nook Simple Touch","nookst",552,725,167,0,1,{0,0,0,0}},
+    {"Kindle DX","dx",800,1180,167,0,1,{0,0,0,0}},
+    {"","",0,0,167,0,1,{0,0,0,0}}
+    };
 
 /* DATA STRUCTURES */
-
-typedef struct
-    {
-    int page;        /* Source page */
-    double rot_deg;  /* Source rotation (happens first) */
-    double x0,y0;    /* x0,y0, in points, of lower left point on rectangle */
-    double w,h;      /* width and height of rectangle in points */
-    double scale;    /* Scale rectangle by this factor on destination page */
-    double x1,y1;    /* (x,y) position of lower left point on destination page, in points */
-    } PDFBOX;
-
-typedef struct
-    {
-    PDFBOX *box;
-    int n;
-    int na;
-    } PDFBOXES;
-
-typedef struct
-    {
-    int pageno;          /* Source page number */
-    double page_rot_deg; /* Source page rotation */
-    PDFBOXES boxes;
-    } PAGEINFO;
-
 typedef struct
     {
     int ch;    /* Hyphen starting point -- < 0 for no hyphen */
@@ -781,6 +832,12 @@ typedef struct
 
 typedef struct
     {
+    BMPREGION *bmpregion;
+    int n,na;
+    } BMPREGIONS;
+
+typedef struct
+    {
     WILLUSBITMAP bmp;
     int rows;
     int published_pages;
@@ -789,6 +846,12 @@ typedef struct
     int wordcount;
     char debugfolder[256];
     } MASTERINFO;
+
+typedef struct
+    {
+    char *s;
+    int na;
+    } STRBUF;
 
 static int verbose=0;
 static int debug=0;
@@ -805,8 +868,8 @@ static char *usageintro=
 "any are found, converts those bitmaps to a PDF as if they were pages of a\n"
 "PDF file.  If there are no bitmaps in the folder and if PDF files are in\n"
 "the folder, then each PDF file will be converted in sequence.\n\n"
-"Output files are always .pdf and have _k2opt added to the source name.\n"
-"(See -o option to specify alternate output name.)\n\n";
+"Output files are always .pdf and have _k2opt added to the source name by\n"
+"default (see -o option to specify alternate output name.)\n\n";
 
 static char *usageenv=
 "K2PDFOPT environment variable\n"
@@ -876,6 +939,17 @@ static char *k2pdfopt_options=
 "                  or defects smaller than this size are ignored when bounding\n"
 "                  rectangular regions.  The period at the end of a sentence is\n"
 "                  typically over 1 point in size.  The default is 1.0.\n"
+"-dev <name>       Select device profile (sets width, height, dpi, and corner\n"
+"                  marking for selected devices).  Currently the selection is\n"
+"                  limited.  <name> just has to have enough characters to\n"
+"                  uniquely pick the device.  Use -dev ? to list the devices.\n"
+"                  Default is -dev kindle2.\n"
+"-dpi <dpival>     Same as -odpi.\n"
+"-dr <value>       Display resolution multiplier.  Default = 1.0.  Using a\n"
+"                  value greater than 1 should improve the resolution of the\n"
+"                  output file (but will make it larger in size).  E.g. -dr 2\n"
+"                  will double the output DPI, the device width (in pixels),\n"
+"                  and the device height (in pixels).\n"
 "-ds <factor>      Override the document size with a scale factor.  E.g. if\n"
 "                  your PDF reader says the PDF file is 17 x 22 inches and\n"
 "                  it should actually be 8.5 x 11 inches, use -ds 0.5.  Default\n"
@@ -897,13 +971,30 @@ static char *k2pdfopt_options=
 "                  than the screen in order to fit better.  Use -1 to fit the\n"
 "                  object no matter what.  Use -2 as a special case--all\n"
 "                  \"red-boxed\" regions (see -sm option) are placed one per\n"
-"                  page. Default is -f2p 0.  See also -jf.\n"
+"                  page.  Default is -f2p 0.  See also -jf.\n"
+"                  Note:  -f2p -2 will automatically also set -vb -2 to\n"
+"                  exactly preserve the spacing in the red-boxed region.  If\n"
+"                  you want to compress the vertical spacing in the red-boxed\n"
+"                  region, use -ftp -2 -vb -1.\n"
 "-fc[-]            For multiple column documents, fit [don't fit] columns to\n"
 "                  the width of the reader screen regardless of -odpi.\n"
 "                  Default is to fit the columns to the reader.\n"
 "-g <gamma>        Set gamma value of output bitmaps. A value less than 1.0\n"
 "                  makes the page darker and may make the font more readable.\n"
 "                  Default is 0.5.\n"
+"-grid <C>x<R>[x<O>][+]  Grid the source page into <C> columns by <R> rows with\n"
+"                  with <O> percent overlap.  No regard will be made for trying\n"
+"                  to break the page between columns or rows of text.  If a +\n"
+"                  is specified, the destination page order will go across and\n"
+"                  then down, otherwise it will go down and then across.  To\n"
+"                  turn off gridding, specify a zero value for the columns or\n"
+"                  for the rows.  Default is no gridding.  The default overlap\n"
+"                  is 2%%.  Example:  -grid 2x2x5.  By default, gridding also\n"
+"                  sets the following options, which can be overridden by\n"
+"                  following the grid option with other command options:\n"
+"                  -n -wrap- -f2p -2 -vb -2 -col 1.  For example, if you want\n"
+"                  a column search done on each grid piece, you can put this:\n"
+"                  -grid 2x2 -col 2.\n"
 "-gtc <inches>     Threshold value for detecting column gaps (expert mode).\n"
 "                  Sets how many of the pixels in the column shaft can be\n"
 "                  non-white (total height of a line crossing the shaft in\n"
@@ -921,18 +1012,29 @@ static char *k2pdfopt_options=
 "                  Default = 0.006.\n"
 "-gtw <inches>     Threshold for detecting word gaps (expert mode).\n"
 "                  See -gtr.  Default = .0015.\n"
-"-h <height>       Set height of output in pixels (def=735).  See -hq.\n"
+"-h <height>[in|cm] Set height of output device in pixels, inches, or cm.  The\n"
+"                  default units are pixels, and the default value is 735 (the\n"
+"                  height of the Kindle 2 screen in pixels).\n"
+"                  Example:  -h 6.5in would set the device height to 6.5 in\n"
+"                  (using the output dpi to convert to pixels--see -dpi).\n"
+"                  Set this to a negative value if you want the output device\n"
+"                  height to scale from the source page height.  E.g. -h -2\n"
+"                  would make the output device height twice the source page\n"
+"                  height.  See also -w, -dpi, -dr.\n"
+/*
 "-hq               Higher quality (convert source to higher res bitmaps).\n"
 "                  Equivalent to -idpi 400 -odpi 333 -w 1120 -h 1470.\n"
+*/
 "-hy[-]            Turn on [off] hyphen detection/elimination when wrapping\n"
 "                  text.  Default is on.\n"
 #ifdef HAVE_MUPDF
-"-gs[-]            Force use of Ghostscript instead of MuPDF to read PDFs.\n"
+"-gs[-][-]         Force use of Ghostscript instead of MuPDF to read PDFs.\n"
 "                  K2pdfopt has built-in PDF translation (via the MuPDF\n"
 "                  library) but will try to use Ghostscript if Ghostscript\n"
 "                  is available and the internal (MuPDF) translation fails\n"
 "                  (virtually never happens).  You can force Ghostscript to\n"
-"                  be used with this -gs option.  Use -gs- to turn off.\n"
+"                  be used with this -gs option.  Use -gs- to use Ghostscript\n"
+"                  only if MuPDF fails.  Use -gs-- to never use Ghostscript.\n"
 "                  Download ghostscript at http://www.ghostscript.com.\n"
 #endif
 "-idpi <dpi>       Set pixels per inch for input file.  Use a negative value\n"
@@ -964,9 +1066,71 @@ static char *k2pdfopt_options=
 "                  margin[s] of the source file.  Default = 0.25 inches.\n"
 "                  E.g. -m 0.5 (set all margins to 0.5 inches)\n"
 "                       -mb 0.75 (set bottom margin to 0.75 inches)\n"
+"                  You can also give four comma-delimited numbers after -m\n"
+"                  to set all margins, e.g. -m 1.0,0.5,1.0,0.5 to set the\n"
+"                  left, top, right, and bottom margins to 1, 0.5, 1, and\n"
+"                  0.5, respectively.\n"
 "-mc[-]            Mark [don't mark] corners of the output bitmaps with a\n"
 "                  small dot to prevent the reading device from re-scaling.\n"
 "                  Default = mark.\n"
+"-mode <mode>      Shortcut for setting multiple options at once which\n"
+"                  determine the basic way in which k2pdfopt will behave.\n"
+"                  Available modes are:\n"
+"                      copy   Same as -n- -wrap- -col 1 -vb -2 -w -1 -h -1\n"
+"                             -dpi 150 -rt 0 -c -t- -f2p -2 -m 0 -om 0 -pl 0\n"
+"                             -pr 0 -pt 0 -pb 0 -mc-.  Makes k2pdfopt\n"
+"                             behave exactly like my pdfr program--source\n"
+"                             pages are simply copied to the output file, but\n"
+"                             rendered as bitmaps.  No trimming or re-sizing\n"
+"                             is done.  Can also use -mode pdfr.\n"
+"                      fw     Same as -n -wrap- -col 1 -vb -2 -t -ls.  Makes\n"
+"                             k2pdfopt behave like sopdf's \"fit width\"\n"
+"                             option.  Can also use -mode sopdf.\n"
+"                      2col   Same as -n -wrap- -col 2 -vb -2 -t.\n"
+"                             Optimizes for a 2-column scientific article with\n"
+"                             native PDF output.\n"
+"                      def    Default k2pdfopt mode: -n -wrap -col 2 -vb 1.75\n"
+"                             -dev k2 -rt auto -c- -t -f2p 0 -m 0.25 -om 0.02\n"
+"                             -ls-.\n"
+"                  You can modify modes by overriding their options after\n"
+"                  specifying the mode, e.g. -mode fw -vb -1.\n"
+#ifdef HAVE_MUPDF
+"-n[-]             Use \"native\" PDF output format, i.e. try to perserve the\n"
+"                  native source PDF contents, i.e. do not write the output\n"
+"                  PDF file as a set of bitmaps rendered from the source file\n"
+"                  but instead use the source PDF's native content along with\n"
+"                  additional PDF instructions to translate, scale, and crop\n"
+"                  the source content.  With native PDF output, if the source\n"
+"                  file has selectable text, the text remains selectable in\n"
+"                  the output file.  The output file can also be zoomed\n"
+"                  without loss of fidelity.  This may also result in a\n"
+"                  smaller output file (but not always).  By default, this\n"
+"                  output format is turned on but is disabled if text\n"
+"                  wrapping is also turned on.\n"
+"                  NOTES:\n"
+"                  1. Native PDF output cannot be used with text wrapping\n"
+"                     on (see -wrap option).\n"
+"                  2. Native PDF output is not recommended for source\n"
+"                     files which are scanned (there is no benefit unless\n"
+"                     the scanned document includes a layer of OCR text).\n"
+"                  3. Native PDF output is incompatible with OCR (see -ocr),\n"
+"                     though OCR is typically not necessary if the native PDF\n"
+"                     contents are kept.\n"
+"                  4. Native PDF output may have unpredictable results when\n"
+"                     the contents of two different source pages are put onto\n"
+"                     one destination page (it depends on how the source PDF\n"
+"                     file is structured).  If this is causing problems, use\n"
+"                     the -bp (break pages) option.\n"
+"                  5. Native PDF output can only be used with PDF source\n"
+"                     files.\n"
+"                  6. Contrast adjust, gamma correction, and sharpening\n"
+"                     are disabled with native PDF output.\n"
+"                  7. It is recommended that you use -vb -2 with native PDF\n"
+"                     output, particularly if you are having difficulty\n"
+"                     selecting/searching text in the output PDF file.\n"
+"                  8. This option works well with -mode fw or with the\n"
+"                     -grid option.  It is used by default in those cases.\n"
+#endif
 "-o <namefmt>      Set the output file name using <namefmt>.  %s will be\n"
 "                  replaced with the base name of the source file, and %d\n"
 "                  will be replaced with the source file count (starting\n"
@@ -984,6 +1148,10 @@ static char *k2pdfopt_options=
 "                  inches.  Default = 0.02 inches.\n"
 "                  E.g. -om 0.25 (set all margins on device to 0.25 inches)\n"
 "                       -omb 0.4 (set bottom margin on device to 0.4 inches)\n"
+"                  You can also give four comma-delimited numbers after -om\n"
+"                  to set all margins, e.g. -om 0.2,0.3,0.4,0.5 to set the\n"
+"                  left, top, right, and bottom margins to 0.2, 0.3, 0.4, and\n"
+"                  0.5, respectively.\n"
 #ifdef HAVE_OCR
 "-ocr[-] [g|t]     Attempt [don't attempt] to use optical character\n"
 "                  recognition (OCR) in order to embed searchable text into\n"
@@ -1000,7 +1168,7 @@ static char *k2pdfopt_options=
 "                  See also -ocr.\n"
 #endif
 "-odpi <dpi>       Set pixels per inch of output screen (def=167). See also\n"
-"                  -fc and -hq.\n"
+"                  -dr, -w, -h, -fc.  You can also use -dpi for this.\n"
 "-p <pagelist>     Specify pages to convert.  <pagelist> must not have any\n"
 "                  spaces.  E.g. -p 1-3,5,9,10- would do pages 1 through 3,\n"
 "                  page 5, page 9, and pages 10 through the end.\n"
@@ -1035,7 +1203,16 @@ static char *k2pdfopt_options=
 "                  where k2pdfopt will mark the source file with the regions it\n"
 "                  finds on them and the order in which it processes them and\n"
 "                  save it as <srcfile>_marked.pdf.  Default is not to show\n"
-"                  marked source.\n"
+"                  marked source.  Red regions are found on the first pass\n"
+"                  (use -f2p -2 to put each red region on a separate page).\n"
+"                  Green lines mark vertical regions affected by -vb and -vs.\n"
+"                  Gray lines mark individual rows of text (top, bottom, and\n"
+"                  baseline).  Blue boxes show individual words (passed to OCR\n"
+"                  if -ocr is specified).\n"
+"-t[-]             Trim [don't trim] the white space from around the edges of\n"
+"                  any output region.  Default is to trim.  Using -t- is not\n"
+"                  recommended unless you want to exactly duplicate the source\n"
+"                  document.\n"
 "-ui[-]            User input query turned on [off].  Default = on for linux or\n"
 "                  if not run from command line in Windows.\n"
 "-v                Verbose output.\n"
@@ -1043,7 +1220,9 @@ static char *k2pdfopt_options=
 "                  cause them to be treated as separate regions.  E.g. -vb 2\n"
 "                  will break regions anywhere the vertical gap between them\n"
 "                  exceeds 2 times the median gap between lines.  Use -vb -1\n"
-"                  to disallow region breaking.  Default is -vb 1.75.\n"
+"                  to disallow region breaking.  Use -vb -2 to disallow region\n"
+"                  breaking and to exactly preserve all vertical spacing within\n"
+"                  each region.  Default is -vb 1.75.\n"
 /*
 "-vm <mult>        Vertical spacing multiplier.  Reduces gaps and line spacings\n"
 "                  in the document using the multiplier <mult>.\n"
@@ -1060,15 +1239,18 @@ static char *k2pdfopt_options=
 "                  exceeds 1.5 (times single spacing).  Default = -1.2.\n"
 "                  See also -vs.\n"
 "-vs <maxgap>      Preserve up to <maxgap> inches of vertical spacing between\n"
-"                  regions in the document.  Default value is 0.25.  See also\n"
-"                  -vls.\n"
-"-w <width>        Set width of output in pixels (def=560). See -hq.\n"
+"                  regions in the document (marked in green when using -sm\n"
+"                  option).  This value has no effect if you use a negative\n"
+"                  value for -vb.  The default value is 0.25.\n"
+"                  See also -vls, -vb.\n"
+"-w <width>[in|cm] Set width of output device.  Default is 560.  See -h.\n"
 "-wrap[-|+]        Enable [disable] text wrapping.  Default = enabled.  If\n"
 "                  -wrap+, regions of text with lines shorter than the mobile\n"
 "                  device screen are re-flowed to fit the screen width.  If\n"
 "                  you use -wrap+, you may want to also specify -fc- so that\n"
 "                  narrow columns of text are not magnified to fit your device.\n"
-"                  See also -ws, -j, -pi, -fc.\n"
+"                  Text wrapping disables native PDF output (see -n option).\n"
+"                  See also -ws, -j, -pi, -fc, -n.\n"
 /*
 "-whmax <height>   Max height allowed for wrapping a row (inches).\n"
 */
@@ -1123,17 +1305,24 @@ static double user_src_dpi=-2.0;
 static double document_scale_factor=1.0;
 static int src_dpi=300;
 #ifdef HAVE_MUPDF
-static int usegs=0;
+static int user_usegs=0;
 #else
-static int usegs=1;
+static int user_usegs=1;
 #endif
+static int usegs;
 static int query_user=1;
 static int query_user_explicit=0;
 static int jpeg_quality=-1;
 static int dst_width=DEFAULT_WIDTH; /* Full device width in pixels */
-static int dst_height=DEFAULT_HEIGHT;
-static int dst_userwidth=DEFAULT_WIDTH;
-static int dst_userheight=DEFAULT_HEIGHT;
+static int dst_height=DEFAULT_HEIGHT; /* pixels */
+static double dst_userwidth=DEFAULT_WIDTH; /* pixels */
+static double dst_userheight=DEFAULT_HEIGHT; /* pixels */
+static double dst_display_resolution=1.0;
+#define UNITS_PIXELS      0
+#define UNITS_INCHES      1
+#define UNITS_CM          2
+static int dst_userwidth_units=UNITS_PIXELS;
+static int dst_userheight_units=UNITS_PIXELS;
 static int dst_justify=-1; // 0 = left, 1 = center
 static int dst_figure_justify=-1; // -1 = same as dst_justify.  0=left 1=center 2=right
 static double dst_min_figure_height_in=0.75;
@@ -1179,17 +1368,22 @@ static int show_marked_source=0;
 static char k2pdfopt_os[64];
 static char k2pdfopt_chip[64];
 static char k2pdfopt_compiler[64];
-static int use_crop_boxes=0;
+static int use_crop_boxes=1;
 static int preserve_indentation=1;
 static double defect_size_pts=1.0;
 static double max_vertical_gap_inches=0.25;
 static double vertical_multiplier=1.0;
 static double vertical_line_spacing=-1.2;
 static double vertical_break_threshold=1.75;
+static int src_trim=1;
 static int erase_vertical_lines=0;
 static int k2_hyphen_detect=1;
 static double overwrite_minsize_mb=10;
 static int dst_fit_to_page=0;
+static int src_grid_rows=-1;
+static int src_grid_cols=-1;
+static int src_grid_overlap_percentage=2;
+static int src_grid_order=0; /* 0=down then across, 1=across then down */
 /*
 ** Undocumented cmd-line args
 */
@@ -1208,6 +1402,9 @@ static int beginning_gap_internal=-1;
 static int last_h5050_internal=-1;
 static int just_flushed_internal=0;
 static int gap_override_internal; /* If > 0, apply this gap in wrapbmp_flush() and then reset. */
+#ifdef HAVE_MUPDF
+static char *mupdferr_trygs=TTEXT_WARN "\a\n ** ERROR reading from " TTEXT_BOLD2 "%s" TTEXT_WARN "using MuPDF.  Trying Ghostscript...\n\n" TTEXT_NORMAL;
+#endif
 
 static void k2_exit(int val);
 static void k2pdfopt_sys_close(void);
@@ -1216,7 +1413,8 @@ static void k2pdfopt_sys_init(void);
 static void k2pdfopt_ocr_init(void);
 #endif
 static void k2_enter_to_exit(void);
-static int parse_cmd_args(int argc,char *argv[],int setvals,int procfiles,char *firstfile);
+static int parse_cmd_args(STRBUF *env,STRBUF *cmdline,STRBUF *userinput,
+                          int setvals,int procfiles);
 static void k2pdfopt_header(void);
 static int k2pdfopt_usage(void);
 static int prcmdopts(char *s,int nl);
@@ -1224,7 +1422,10 @@ static int cmdoplines(char *s);
 static char *pr1cmdopt(char *s);
 static void prlines(char *s,int nlines);
 static int wildcount(char *wildspec);
-static int user_input(int filecount,char *firstfile);
+static int user_input(int filecount,STRBUF *env,STRBUF *cmdline,STRBUF *usermenu);
+static void menu_help(void);
+static void allopts_echo(STRBUF *o1,int o1clear,STRBUF *o2,int o2clear,STRBUF *o3);
+static void one_opt_echo(STRBUF *opts,char *coloring,int *column);
 static int user_float(char *message,double defval,double *dstval,int nmax,
                       double min,double max,char *extra_message);
 static int user_integer(char *message,int defval,int *dstval,int min,int max);
@@ -1236,7 +1437,11 @@ static void strcpy_no_spaces(char *d,char *s);
 static int valid_page_range(char *s);
 static void k2pdfopt_proc_wildarg(char *arg);
 static void k2pdfopt_proc_arg(char *arg);
-static void adjust_params_init(void);
+static void set_margins_and_devsize(BMPREGION *region,MASTERINFO *masterinfo,
+                                    WPDFPAGEINFO *pageinfo);
+static int  set_devsize_pixels(double user_size,int user_units,double source_size_in);
+static void set_value_with_units(char *s,double *val,int *units);
+static int  valid_numerical_char(int c);
 static void set_region_widths(void);
 static double k2pdfopt_proc_one(char *filename,double rot_deg);
 static int overwrite_fail(char *outname);
@@ -1257,22 +1462,22 @@ static int bmpregion_column_height_and_gap_test(BMPREGION *column,BMPREGION *reg
                                         int r1,int r2,int cmid,
                                         int *colcount,int *rowcount);
 static int bmpregion_is_clear(BMPREGION *region,int *row_is_clear,double gt_in);
-static void bmpregion_multicolumn_add(BMPREGION *region,MASTERINFO *masterinfo,int level,
-                                      PAGEINFO *pageinfo,int colgap0_pixels);
+static void bmpregion_source_page_add(BMPREGION *region,MASTERINFO *masterinfo,int level,
+                                      WPDFPAGEINFO *pageinfo,int colgap0_pixels);
 static void bmpregion_vertically_break(BMPREGION *region,MASTERINFO *masterinfo,
                           int allow_text_wrapping,double force_scale,
-                          int *colcount,int *rowcount,PAGEINFO *pageinfo,
+                          int *colcount,int *rowcount,WPDFPAGEINFO *pageinfo,
                           int colgap_pixels,int ncols);
 static void bmpregion_add(BMPREGION *region,BREAKINFO *breakinfo,
                           MASTERINFO *masterinfo,int allow_text_wrapping,
                           int trim_flags,int allow_vertical_breaks,
                           double force_scale,int justify_flags,int caller_id,
-                          int *colcount,int *rowcount,PAGEINFO *pageinfo,
+                          int *colcount,int *rowcount,WPDFPAGEINFO *pageinfo,
                           int mark_flags,int rowbase_delta);
 static void dst_add_gap_src_pixels(char *caller,MASTERINFO *masterinfo,int pixels);
 static void dst_add_gap(MASTERINFO *masterinfo,double inches);
-static void bmp_src_to_dst(MASTERINFO *masterinfo,WILLUSBITMAP *src,int justification_flags,
-                           int whitethresh,int nocr,int dpi);
+static void bmp_src_to_dst(MASTERINFO *masterinfo,WILLUSBITMAP *src,WPDFPAGEINFO *pageinfo,
+                           int justification_flags,int whitethresh,int nocr,int dpi);
 static void bmp_fully_justify(WILLUSBITMAP *jbmp,WILLUSBITMAP *src,int nocr,int whitethresh,
                               int just);
 #ifdef HAVE_OCR
@@ -1290,7 +1495,7 @@ static int height2_calc(int *rc,int n);
 static void trim_to(int *count,int *i1,int i2,double gaplen);
 static void bmpregion_analyze_justification_and_line_spacing(BMPREGION *region,
                                    BREAKINFO *breakinfo,MASTERINFO *masterinfo,
-                                   int *colcount,int *rowcount,PAGEINFO *pageinfo,
+                                   int *colcount,int *rowcount,WPDFPAGEINFO *pageinfo,
                                    int allow_text_wrapping,double force_scale);
 static int bmpregion_is_centered(BMPREGION *region,BREAKINFO *breakinfo,int i1,int i2,
                                  int *textheight);
@@ -1318,16 +1523,16 @@ static int wrapbmp_width(void);
 static int wrapbmp_remaining(void);
 static void wrapbmp_add(BMPREGION *region,int gap,int line_spacing,int rbase,int gio,
                                           int justification_flags);
-static void wrapbmp_flush(MASTERINFO *masterinfo,int allow_full_justify,PAGEINFO *pageinfo,
+static void wrapbmp_flush(MASTERINFO *masterinfo,int allow_full_justify,WPDFPAGEINFO *pageinfo,
                           int use_bgi);
 static void wrapbmp_hyphen_erase(void);
 static void bmpregion_one_row_wrap_and_add(BMPREGION *region,BREAKINFO *breakinfo,
                                            int index,int i0,int i1,
                                            MASTERINFO *masterinfo,int justflags,
                                            int *colcount,int *rowcount,
-                                           PAGEINFO *pageinfo,int rheight,int mean_row_gap,
+                                           WPDFPAGEINFO *pageinfo,int rheight,int mean_row_gap,
                                            int rowbase,int marking_flags,int pi);
-static void publish_master(MASTERINFO *masterinfo,PAGEINFO *pageinfo,int flushall);
+static void publish_master(MASTERINFO *masterinfo,WPDFPAGEINFO *pageinfo,int flushall);
 static int break_point(MASTERINFO *masterinfo,int maxsize);
 static void white_margins(WILLUSBITMAP *src,WILLUSBITMAP *srcgrey);
 static void get_white_margins(BMPREGION *region);
@@ -1339,12 +1544,6 @@ static double bitmap_orientation(WILLUSBITMAP *bmp);
 static double bmp_inflections_vertical(WILLUSBITMAP *srcgrey,int ndivisions,int delta,int *wthresh);
 static double bmp_inflections_horizontal(WILLUSBITMAP *srcgrey,int ndivisions,int delta,int *wthresh);
 static int inflection_count(double *x,int n,int delta,int *wthresh);
-static void pdfboxes_init(PDFBOXES *boxes);
-static void pdfboxes_free(PDFBOXES *boxes);
-/*
-static void pdfboxes_add_box(PDFBOXES *boxes,PDFBOX *box);
-static void pdfboxes_delete(PDFBOXES *boxes,int n);
-*/
 static void word_gaps_add(BREAKINFO *breakinfo,int lcheight,double *median_gap);
 static void bmp_detect_vertical_lines(WILLUSBITMAP *bmp,WILLUSBITMAP *cbmp,double dpi,double minwidth_in,
                                       double maxwidth_in,double minheight_in,double anglemax_deg,
@@ -1355,14 +1554,43 @@ static int vert_line_erase(WILLUSBITMAP *bmp,WILLUSBITMAP *cbmp,WILLUSBITMAP *tm
 static void willus_dmem_alloc_warn(int index,void **ptr,int size,char *funcname,
                                 int exitcode);
 static void willus_dmem_free(int index,double **ptr,char *funcname);
+/*
+static void bmpregions_init(BMPREGIONS *regions);
+static void bmpregions_free(BMPREGIONS *regions);
+static void bmpregions_add_bmpregion(BMPREGIONS *regions,BMPREGION *bmpregion);
+*/
+static void strbuf_init(STRBUF *sbuf);
+static void strbuf_cat(STRBUF *sbuf,char *s);
+static void strbuf_cat_with_quotes(STRBUF *sbuf,char *s);
+static void strbuf_cat_no_spaces(STRBUF *sbuf,char *s);
+static void strbuf_cpy(STRBUF *sbuf,char *s);
+static void strbuf_clear(STRBUF *sbuf);
+static void strbuf_ensure(STRBUF *sbuf,int n);
+static void strbuf_free(STRBUF *sbuf);
+static void strbuf_sprintf(STRBUF *sbuf,char *fmt,...);
+static void devprofiles_echo(FILE *out);
+static DEVPROFILE *devprofile_get(char *name);
+static int devprofile_set_to_device(DEVPROFILE *dp);
+static char *devprofile_select(void);
 
 
 int main(int argc,char *argv[])
 
     {
     int i,j,filecount;
-    char firstfile[256];
+    // char firstfile[256];
+    STRBUF _cmdline,_env,_usermenu;
+    STRBUF *cmdline,*env,*usermenu;
 
+    cmdline=&_cmdline;
+    env=&_env;
+    usermenu=&_usermenu;
+    strbuf_init(cmdline);
+    strbuf_init(env);
+    strbuf_init(usermenu);
+    strbuf_cpy(env,getenv("K2PDFOPT"));
+    for (i=1;i<argc;i++)
+        strbuf_cat_with_quotes(cmdline,argv[i]);
     k2pdfopt_sys_init();
     wrapbmp_init();
     gpdf=&_gpdf;
@@ -1378,7 +1606,7 @@ int main(int argc,char *argv[])
     query_user=-1;
     query_user_explicit=0;
     /* Only set ansi and user interface */
-    filecount=parse_cmd_args(argc,argv,2,0,firstfile);
+    filecount=parse_cmd_args(env,cmdline,usermenu,2,0);
     if (show_usage)
         {
         k2pdfopt_header();
@@ -1399,12 +1627,18 @@ int main(int argc,char *argv[])
             if (!k2pdfopt_usage())
                 {
                 k2pdfopt_sys_close();
+                strbuf_free(usermenu);
+                strbuf_free(env);
+                strbuf_free(cmdline);
                 return(0);
                 }
             }
         if (query_user!=0)
             k2_enter_to_exit();
         k2pdfopt_sys_close();
+        strbuf_free(usermenu);
+        strbuf_free(env);
+        strbuf_free(cmdline);
         return(0);
         }
     if (query_user<0)
@@ -1432,23 +1666,24 @@ int main(int argc,char *argv[])
     dst_break_pages=0;
     dst_gamma=0.5;
     column_fitted=0;
-    dst_color=0;
     wrapbmp_set_color(dst_color);
     jpeg_quality=-1;
     verbose=0;
 #ifdef HAVE_MUPDF
-    usegs=0;
+    user_usegs=0;
 #else
-    usegs=1;
+    user_usegs=1;
 #endif
-    dst_width=dst_userwidth=DEFAULT_WIDTH;
-    dst_height=dst_userheight=DEFAULT_HEIGHT;
+    usegs=user_usegs;
+    devprofile_set_to_device(devprofile_get("k2"));
+    dst_width=dst_userwidth;
+    dst_height=dst_userheight;
+    dst_display_resolution=1.0;
     src_autostraighten=0;
     cdthresh=.01;
     contrast_max=2.0;
     user_src_dpi=-2.0;
     document_scale_factor=1.0;
-    dst_dpi=167;
     strcpy(dst_opname_format,"%s_k2opt");
 #ifdef HAVE_OCR
     dst_ocr=0;
@@ -1466,11 +1701,6 @@ int main(int argc,char *argv[])
     mar_bot=-1.0;
     mar_left=-1.0;
     mar_right=-1.0;
-    pad_left=0;
-    pad_right=3;
-    pad_bottom=4;
-    pad_top=0;
-    mark_corners=1;
     dst_mar=0.02;
     dst_martop=-1.0;
     dst_marbot=-1.0;
@@ -1490,7 +1720,7 @@ int main(int argc,char *argv[])
     vertical_multiplier=1.0;
     vertical_line_spacing=-1.2;
     defect_size_pts=0.75;
-    use_crop_boxes=0;
+    use_crop_boxes=1;
     text_wrap=1;
     no_wrap_ar_limit=0.2;
     no_wrap_height_limit_inches=0.55;
@@ -1506,6 +1736,10 @@ int main(int argc,char *argv[])
     erase_vertical_lines=0;
     k2_hyphen_detect=1;
     dst_fit_to_page=0;
+    src_grid_rows=-1;
+    src_grid_cols=-1;
+    src_grid_overlap_percentage=2;
+    src_grid_order=0; /* 0=down then across, 1=across then down */
     overwrite_minsize_mb=10;
     line_spacing_internal=0;
     last_scale_factor_internal=-1.0;
@@ -1517,31 +1751,56 @@ int main(int argc,char *argv[])
     pagelist[0]='\0';
 
     /*
-    ** Get all command-line settings
+    ** Set all options from command-line arguments
     */
-    parse_cmd_args(argc,argv,1,0,NULL);
+    parse_cmd_args(env,cmdline,usermenu,1,0);
     /*
     ** Get user input
     */
-    if (user_input(filecount,firstfile)==-1)
+    if (user_input(filecount,env,cmdline,usermenu)==-1)
         {
+        strbuf_free(usermenu);
+        strbuf_free(env);
+        strbuf_free(cmdline);
         k2pdfopt_sys_close();
         return(0);
         }
 
     /*
-    ** -f2p -2 affects other options.
+    ** Check compatibility between various settings
+    */
+    /*
+    ** -f2p -2 means text wrapping gets turned off and -vb is set to -1 or less.
     */
     if (dst_fit_to_page==-2)
         {
-        vertical_break_threshold=-1.;
+        if (vertical_break_threshold > -1.)
+            vertical_break_threshold=-1.;
         text_wrap=0;
         }
+
+    /*
+    ** If text wrapping is on, can't use crop boxes
+    */
+    if (text_wrap>0)
+        use_crop_boxes=0;
+
+    /*
+    ** Apply display resolution
+    */
+    dst_dpi *= dst_display_resolution;
+    if (dst_userwidth_units==UNITS_PIXELS && dst_userwidth>0)
+        dst_userwidth *= dst_display_resolution;
+    if (dst_userheight_units==UNITS_PIXELS && dst_userheight>0)
+        dst_userheight *= dst_display_resolution;
+
     /*
     ** With all parameters set, adjust output DPI so viewable region
     ** width >= MIN_REGION_WIDTH_INCHES
+    ** NULL = first call, before any source page dimensions are known.
+    ** Otherwise, bitmap region with source page dimensions set.
     */
-    adjust_params_init();
+    set_margins_and_devsize(NULL,NULL,NULL);
     /*
     ** Set source DPI
     */
@@ -1555,10 +1814,13 @@ int main(int argc,char *argv[])
     */
     if (uifile[0]!='\0')
         k2pdfopt_proc_wildarg(uifile);
-    parse_cmd_args(argc,argv,0,1,NULL);
+    parse_cmd_args(env,cmdline,usermenu,0,1);
     /*
     ** All done.
     */
+    strbuf_free(usermenu);
+    strbuf_free(env);
+    strbuf_free(cmdline);
     k2_enter_to_exit();
     k2pdfopt_sys_close();
     return(0);
@@ -1582,7 +1844,7 @@ static void k2pdfopt_sys_close(void)
 
     {
     wrapbmp_free();
-    sys_set_decimal_period(0);
+    wsys_set_decimal_period(0);
 #ifdef HAVE_OCR
     if (dst_ocr && k2_ocr_inited)
         {
@@ -1599,8 +1861,8 @@ static void k2pdfopt_sys_close(void)
 static void k2pdfopt_sys_init(void)
 
     {
-    system_version(NULL,k2pdfopt_os,k2pdfopt_chip,k2pdfopt_compiler);
-    sys_set_decimal_period(1);
+    wsys_system_version(NULL,k2pdfopt_os,k2pdfopt_chip,k2pdfopt_compiler);
+    wsys_set_decimal_period(1);
     }
 
 
@@ -1667,7 +1929,7 @@ static void k2_enter_to_exit(void)
         fgets(buf,15,stdin);
         return;
         }
-    sys_enter_to_exit(mesg);
+    wsys_enter_to_exit(mesg);
     }
 
 /*
@@ -1678,15 +1940,22 @@ static void k2_enter_to_exit(void)
 ** procfiles == 1 to process files
 **           == 0 to count files only
 */
-static int parse_cmd_args(int argc,char *argv[],int setvals,int procfiles,char *firstfile)
+static int parse_cmd_args(STRBUF *env,STRBUF *cmdline,STRBUF *usermenu,
+                          int setvals,int procfiles)
 
     {
     CMDLINEINPUT _cl,*cl;
+    STRBUF *allopts,_allopts;
     int filecount,readnext;
 
+    allopts=&_allopts;
+    strbuf_init(allopts);
+    strbuf_cpy(allopts,env->s);
+    strbuf_cat(allopts,cmdline->s);
+    strbuf_cat(allopts,usermenu->s);
     cl=&_cl;
     filecount=0;
-    cmdlineinput_init(cl,argc,argv,getenv("K2PDFOPT"));
+    cmdlineinput_init(cl,0,NULL,allopts->s);
     readnext=1;
     while (1)
         {
@@ -1765,6 +2034,22 @@ static int parse_cmd_args(int argc,char *argv[],int setvals,int procfiles,char *
                 defect_size_pts=atof(cl->cmdarg);
             continue;
             }
+        if (!stricmp(cl->cmdarg,"-dev"))
+            {
+            if (cmdlineinput_next(cl)==NULL)
+                break;
+            if (setvals==2 && !strcmp(cl->cmdarg,"?"))
+                {
+                devprofiles_echo(stdout);
+                k2_exit(0);
+                }
+            if (setvals==1)
+                {
+                if (!devprofile_set_to_device(devprofile_get(cl->cmdarg)))
+                    aprintf(TTEXT_WARN "\aDevice profile '%s' not known." TTEXT_NORMAL "\n",cl->cmdarg);
+                }
+            continue;
+            }
         if (!stricmp(cl->cmdarg,"-pi") || !stricmp(cl->cmdarg,"-pi-"))
             {
             if (setvals==1)
@@ -1778,10 +2063,17 @@ static int parse_cmd_args(int argc,char *argv[],int setvals,int procfiles,char *
             continue;
             }
 #ifdef HAVE_MUPDF
-        if (!stricmp(cl->cmdarg,"-gs") || !stricmp(cl->cmdarg,"-gs-"))
+        if (!stricmp(cl->cmdarg,"-gs") || !stricmp(cl->cmdarg,"-gs-")
+                                       || !stricmp(cl->cmdarg,"-gs--"))
             {
             if (setvals==1)
-                usegs=(cl->cmdarg[3]=='-' ? 0 : 1);
+                user_usegs=(cl->cmdarg[3]=='-' ? (cl->cmdarg[4]=='-' ? -1 : 0) : 1);
+            continue;
+            }
+        if (!stricmp(cl->cmdarg,"-n") || !stricmp(cl->cmdarg,"-n-"))
+            {
+            if (setvals==1)
+                use_crop_boxes=(cl->cmdarg[2]=='-') ? 0 : 1;
             continue;
             }
 #endif
@@ -1801,6 +2093,78 @@ static int parse_cmd_args(int argc,char *argv[],int setvals,int procfiles,char *
             {
             if (setvals==1)
                 dst_landscape=(cl->cmdarg[3]=='-') ? 0 : 1;
+            continue;
+            }
+        if (!stricmp(cl->cmdarg,"-mode"))
+            {
+            if (cmdlineinput_next(cl)==NULL)
+                break;
+            if (setvals==1)
+                {
+                if (!stricmp(cl->cmdarg,"pdfr") 
+                          || !stricmp(cl->cmdarg,"copy"))
+                    {
+                    /* -n- -wrap- -col 1 -vb -2 -w -1 -h -1 -dpi 150 -rt 0 -c -t- -f2p -2 */
+                    /* -m 0 -om 0 -pl 0 -pr 0 -pt 0 -pb 0 -mc- */
+                    use_crop_boxes=0;
+                    text_wrap=0;
+                    max_columns=1;
+                    vertical_break_threshold=-2;
+                    dst_userwidth=-1.0;
+                    dst_userwidth_units=UNITS_PIXELS;
+                    dst_userheight=-1.0;
+                    dst_userheight_units=UNITS_PIXELS;
+                    dst_dpi=150;
+                    src_rot=0.;
+                    dst_color=1;
+                    src_trim=0;
+                    dst_fit_to_page=-2;
+                    mar_left=mar_top=mar_right=mar_bot=0.;
+                    dst_mar=dst_marleft=dst_martop=dst_marright=dst_marbot=0.;
+                    pad_left=pad_top=pad_bottom=pad_right=0;
+                    mark_corners=0;
+                    }
+                else if (!stricmp(cl->cmdarg,"fw") 
+                          || !stricmp(cl->cmdarg,"sopdf")
+                          || !stricmp(cl->cmdarg,"fitwidth"))
+                    {
+                    /* -wrap- -col 1 -vb -2 -t -ls */
+                    use_crop_boxes=1;
+                    text_wrap=0;
+                    max_columns=1;
+                    vertical_break_threshold=-2;
+                    src_trim=1;
+                    dst_landscape=1;
+                    }
+                else if (!stricmp(cl->cmdarg,"2col")
+                          || !stricmp(cl->cmdarg,"col2"))
+                    {
+                    use_crop_boxes=1;
+                    text_wrap=0;
+                    max_columns=2;
+                    vertical_break_threshold=-2;
+                    src_trim=1;
+                    }
+                else if (!stricmp(cl->cmdarg,"def") 
+                          || !stricmp(cl->cmdarg,"default")
+                          || !stricmp(cl->cmdarg,"std")
+                          || !stricmp(cl->cmdarg,"standard"))
+                    {
+                    devprofile_set_to_device(devprofile_get("k2"));
+                    use_crop_boxes=1;
+                    text_wrap=1;
+                    max_columns=2;
+                    vertical_break_threshold=1.75;
+                    src_rot=SRCROT_AUTO;
+                    src_trim=1;
+                    dst_fit_to_page=0;
+                    mar_left=mar_top=mar_right=mar_bot=0.25;
+                    dst_mar=dst_marleft=dst_martop=dst_marright=dst_marbot=0.02;
+                    }
+                else
+                    aprintf(TTEXT_WARN "\a\n** Unknown mode:  %s **\n\n" TTEXT_NORMAL,
+                             cl->cmdarg);
+                }
             continue;
             }
         if (!stricmp(cl->cmdarg,"-o"))
@@ -1832,12 +2196,57 @@ static int parse_cmd_args(int argc,char *argv[],int setvals,int procfiles,char *
                 overwrite_minsize_mb=atof(cl->cmdarg);
             continue;
             }
+        if (!stricmp(cl->cmdarg,"-grid"))
+            {
+            if (cmdlineinput_next(cl)==NULL)
+                break;
+            if (setvals==1)
+                {
+                char buf[128];
+                double v[3];
+                int na,i;
+
+                strncpy(buf,cl->cmdarg,127);
+                buf[127]='\0';
+                src_grid_order=0;
+                for (i=0;buf[i]!='\0';i++)
+                    {
+                    if (tolower(buf[i])=='x')
+                        buf[i]=' ';
+                    if (buf[i]=='+' && buf[i+1]=='\0')
+                        src_grid_order=1;
+                    }
+                na=string_read_doubles(buf,v,3);
+                if (na>=2)
+                    {
+                    src_grid_cols=(int)(v[0]+.5);
+                    src_grid_rows=(int)(v[1]+.5);
+                    if (na>2)
+                        src_grid_overlap_percentage=(int)(v[2]+.5);
+                    }
+                else
+                    src_grid_cols = src_grid_rows = -1;
+                if (src_grid_cols>0 && src_grid_rows>0)
+                    {
+                    use_crop_boxes=1;
+                    dst_fit_to_page=-2;
+                    vertical_break_threshold=-2;
+                    text_wrap=1;
+                    max_columns=1;
+                    }
+                }
+            continue;
+            }
         if (!stricmp(cl->cmdarg,"-f2p"))
             {
             if (cmdlineinput_next(cl)==NULL)
                 break;
             if (setvals==1)
+                {
                 dst_fit_to_page=atoi(cl->cmdarg);
+                if (dst_fit_to_page == -2)
+                    vertical_break_threshold=-2.;
+                }
             continue;
             }
         if (!stricmp(cl->cmdarg,"-vb"))
@@ -1972,6 +2381,12 @@ static int parse_cmd_args(int argc,char *argv[],int setvals,int procfiles,char *
 #endif
 #endif
             readnext=0;
+            continue;
+            }
+        if (!stricmp(cl->cmdarg,"-t") || !stricmp(cl->cmdarg,"-t-"))
+            {
+            if (setvals==1)
+                src_trim=(cl->cmdarg[2]=='-') ? 0 : 1;
             continue;
             }
         if (!stricmp(cl->cmdarg,"-s") || !stricmp(cl->cmdarg,"-s-"))
@@ -2265,7 +2680,7 @@ static int parse_cmd_args(int argc,char *argv[],int setvals,int procfiles,char *
                 user_src_dpi=atof(cl->cmdarg);
             continue;
             }
-        if (!stricmp(cl->cmdarg,"-odpi"))
+        if (!stricmp(cl->cmdarg,"-odpi") || !stricmp(cl->cmdarg,"-dpi"))
             {
             if (cmdlineinput_next(cl)==NULL)
                 break;
@@ -2306,12 +2721,20 @@ static int parse_cmd_args(int argc,char *argv[],int setvals,int procfiles,char *
                 }
             continue;
             }
+        if (!stricmp(cl->cmdarg,"-dr"))
+            {
+            if (cmdlineinput_next(cl)==NULL)
+                break;
+            if (setvals==1)
+                dst_display_resolution=atof(cl->cmdarg);
+            continue;
+            }
         if (!stricmp(cl->cmdarg,"-h"))
             {
             if (cmdlineinput_next(cl)==NULL)
                 break;
             if (setvals==1)
-                dst_userheight=atoi(cl->cmdarg);
+                set_value_with_units(cl->cmdarg,&dst_userheight,&dst_userheight_units);
             continue;
             }
         if (!stricmp(cl->cmdarg,"-ws"))
@@ -2339,7 +2762,7 @@ static int parse_cmd_args(int argc,char *argv[],int setvals,int procfiles,char *
             if (cmdlineinput_next(cl)==NULL)
                 break;
             if (setvals==1)
-                dst_userwidth=atoi(cl->cmdarg);
+                set_value_with_units(cl->cmdarg,&dst_userwidth,&dst_userwidth_units);
             continue;
             }
         if (!stricmp(cl->cmdarg,"-omb"))
@@ -2379,7 +2802,19 @@ static int parse_cmd_args(int argc,char *argv[],int setvals,int procfiles,char *
             if (cmdlineinput_next(cl)==NULL)
                 break;
             if (setvals==1)
-                dst_mar=atof(cl->cmdarg);
+                {
+                double v[4];
+                int na;
+                na=string_read_doubles(cl->cmdarg,v,4);
+                if (na>=1)
+                    dst_mar=dst_marleft=dst_martop=dst_marright=dst_marbot=v[0];
+                if (na>=2)
+                    dst_martop=dst_marright=dst_marbot=v[1];
+                if (na>=3)
+                    dst_marright=dst_marbot=v[2];
+                if (na>=4)
+                    dst_marbot=v[3];
+                }
             continue;
             }
         if (!stricmp(cl->cmdarg,"-mb"))
@@ -2451,7 +2886,19 @@ static int parse_cmd_args(int argc,char *argv[],int setvals,int procfiles,char *
             if (cmdlineinput_next(cl)==NULL)
                 break;
             if (setvals==1)
-                mar_top=mar_bot=mar_left=mar_right=atof(cl->cmdarg);
+                {
+                double v[4];
+                int na;
+                na=string_read_doubles(cl->cmdarg,v,4);
+                if (na>=1)
+                    mar_left=mar_top=mar_right=mar_bot=v[0];
+                if (na>=2)
+                    mar_top=mar_right=mar_bot=v[1];
+                if (na>=3)
+                    mar_right=mar_bot=v[2];
+                if (na>=4)
+                    mar_bot=v[3];
+                }
             continue;
             }
         if (!strnicmp(cl->cmdarg,"-hq",3))
@@ -2463,7 +2910,9 @@ static int parse_cmd_args(int argc,char *argv[],int setvals,int procfiles,char *
                 dst_dpi=167;
                 user_src_dpi = -2.0;
                 dst_userwidth=DEFAULT_WIDTH;
+                dst_userwidth_units=UNITS_PIXELS;
                 dst_userheight=DEFAULT_HEIGHT;
+                dst_userheight_units=UNITS_PIXELS;
                 }
             else
                 {
@@ -2471,6 +2920,8 @@ static int parse_cmd_args(int argc,char *argv[],int setvals,int procfiles,char *
                 user_src_dpi = -2.0;
                 dst_userwidth=DEFAULT_WIDTH*2;
                 dst_userheight=DEFAULT_HEIGHT*2;
+                dst_userwidth_units=UNITS_PIXELS;
+                dst_userheight_units=UNITS_PIXELS;
                 }
             continue;
             }
@@ -2517,14 +2968,17 @@ static int parse_cmd_args(int argc,char *argv[],int setvals,int procfiles,char *
             continue;
             }
         filecount++;
+        /*
         if (filecount==1 && firstfile!=NULL)
             {
             strncpy(firstfile,cl->cmdarg,255);
             firstfile[255]='\0';
             }
+        */
         if (procfiles)
             k2pdfopt_proc_wildarg(cl->cmdarg);
         }
+    strbuf_free(allopts);
     return(filecount);
     }
 
@@ -2592,7 +3046,7 @@ static int prcmdopts(char *s,int nl)
         else
             aprintf(TTEXT_BOLD "Command Line Options (cont'd)\n"
                                "-----------------------------\n" TTEXT_NORMAL);
-        ll=nl-2;
+        ll=!i ? nl-3 : nl-2;
         while (1)
             {
             int nlo;
@@ -2699,15 +3153,15 @@ static int wildcount(char *wildspec)
     }
 
 
-static int user_input(int filecount,char *firstfile)
+static int user_input(int filecount,STRBUF *env,STRBUF *cmdline,STRBUF *usermenu)
 
     {
-    int status;
+    int status,cmdclear,envclear;
     static char *ansyesno[]={"yes","no",""};
     static char *jpegpng[]={"png","jpeg",""};
     static char *ansjust[]={"left","center","right",""};
     double defmar;
-    char specfile[512];
+    // char specfile[512];
     static char *options[] =
         {
         "a. Autostraighten (-as)",
@@ -2716,13 +3170,17 @@ static int user_input(int filecount,char *firstfile)
         "c. Color output (-c)",
         "co. Column detection (-col,-ch,...)",
         "cs. Contrast/Sharpen (-cmax,-g,-s,-wt)",
-        "d. Device resolution (-h,-w,-odpi)",
+        "d. Device selection (-dev,-h,-w,-dpi)",
         "ds. Document scale factor (-ds)",
         "f. Fit to single column (-fc)",
         "gt. Gap thresholds (-gt...)",
         "j. Justification (-j)",
         "l. Landscape mode (-ls)",
         "m. Margin to ignore (-m)",
+        "mo. Mode (-mode)",
+#ifdef HAVE_MUPDF
+        "n. Native PDF output (-n)",
+#endif
         "o. Output name (-o)",
 #ifdef HAVE_OCR
         "oc. OCR (-ocr,-ocrvis,...)",
@@ -2734,14 +3192,20 @@ static int user_input(int filecount,char *firstfile)
         "rt. Rotate source page (-sr)",
         "s. Special (-de,-evl,-gs)",
         "sm. Show marked source (-sm)",
-        "u. (or ?) Usage (command line opts)",
+        "u. Usage (command line opts)",
         "v. Vertical spacing (-vb,-vs)",
         "w. Wrap/Reflow text (-wrap,-ws)",
         "x. Exit on completion (-x)",
         ""};
 
+    status=0; /* Avoid compiler warning */
+    strbuf_clear(usermenu);
+    cmdclear=0;
+    envclear=0;
+    /*
     if (filecount>0)
         strcpy(specfile,firstfile);
+    */
     if (!query_user)
         return(0);
     while (1)
@@ -2768,11 +3232,14 @@ static int user_input(int filecount,char *firstfile)
                 }
             aprintf("\n");
             }
+        aprintf("\n");
+        allopts_echo(env,envclear,cmdline,cmdclear,usermenu);
         newmenu=0;
         while (1)
             {
             int goodspec;
 
+            /*
             if (filecount>0)
                 {
                 if (filecount==1)
@@ -2784,7 +3251,7 @@ static int user_input(int filecount,char *firstfile)
                  " or " TTEXT_BOLD2 "page range" TTEXT_NORMAL " (e.g. 2,4,8-10) to convert\n"
                  "or " TTEXT_BOLD2 "q" TTEXT_NORMAL " to quit or just "
                  TTEXT_BOLD2 "<Enter>" TTEXT_NORMAL " to convert all pages: "
-                 TTEXT_INPUT,no);
+                 TTEXT_INPUT);
                 }
             else
                 aprintf("\n(No source file specified.)\n" 
@@ -2792,16 +3259,53 @@ static int user_input(int filecount,char *firstfile)
                  " or " TTEXT_BOLD2 "?" TTEXT_NORMAL " for help"
                  " or " TTEXT_BOLD2 "q" TTEXT_NORMAL " to quit\n"
                  "or type in a file name to convert: "
-                 TTEXT_INPUT,no);
+                 TTEXT_INPUT);
+            aprintf(TTEXT_BOLD2 "Enter option above" TTEXT_NORMAL
+                " or " TTEXT_BOLD2 "?" TTEXT_NORMAL " for help"
+                " or " TTEXT_BOLD2 "cmd line opts" TTEXT_NORMAL " (e.g. -dpi 200)\n"
+                " or " TTEXT_BOLD2 "q" TTEXT_NORMAL " to quit or just "
+                TTEXT_BOLD2 "<Enter>" TTEXT_NORMAL " to start conversion: "
+                TTEXT_INPUT);
+            */
+            aprintf("\n" TTEXT_BOLD2 "Enter option above (h=help, q=quit): " TTEXT_NORMAL);
             fgets(buf,511,stdin);
             aprintf(TTEXT_NORMAL "\n");
             clean_line(buf);
-            if (buf[0]=='?' || !stricmp(buf,"help"))
-                strcpy(buf,"u");
+            if (!stricmp(buf,"?") || !stricmp(buf,"h"))
+                {
+                menu_help();
+                break;
+                }
             if (buf[0]=='\0')
+                {
+                if (cmdclear)
+                    strbuf_clear(cmdline);
+                if (envclear)
+                    strbuf_clear(env);
                 return(0);
+                }
             if (tolower(buf[0])=='q')
                 return(-1);
+            if (!strcmp(buf,"-"))
+                {
+                strbuf_clear(usermenu);
+                break;
+                }
+            if (!strcmp(buf,"--"))
+                {
+                cmdclear = !cmdclear;
+                break;
+                }
+            if (!strcmp(buf,"---"))
+                {
+                envclear = !envclear;
+                break;
+                }
+            if (buf[0]=='-')
+                {
+                strbuf_cat(usermenu,buf);
+                break;
+                }
             for (i=0;options[i][0]!='\0';i++)
                 {
                 if (options[i][1]=='.' && buf[1]=='\0' && tolower(buf[0])==tolower(options[i][0]))
@@ -2813,8 +3317,9 @@ static int user_input(int filecount,char *firstfile)
                 break;
             if (filecount>0 && valid_page_range(buf))
                 {
-                strcpy_no_spaces(pagelist,buf);
-                return(0);
+                strbuf_cat(usermenu,"-p");
+                strbuf_cat_no_spaces(usermenu,buf);
+                break;
                 }
 #if (!defined(WIN32) && !defined(WIN64))
             /* On Mac, backslashes are inserted before each space, */
@@ -2842,6 +3347,7 @@ static int user_input(int filecount,char *firstfile)
                     strcpy(buf,buf2);
                 }
             goodspec = (wildcount(buf)>0);
+            /*
             if (filecount==0 && goodspec)
                 {
                 strcpy(specfile,buf);
@@ -2850,8 +3356,13 @@ static int user_input(int filecount,char *firstfile)
                 newmenu=1;
                 break;
                 }
+            */
             if (goodspec)
-                aprintf(TTEXT_WARN "\a** Invalid entry. (File%s already specified.) **" TTEXT_NORMAL "\n",filecount>1?"s":"");
+                {
+                // aprintf(TTEXT_WARN "\a** Invalid entry. (File%s already specified.) **" TTEXT_NORMAL "\n",filecount>1?"s":"");
+                strbuf_cat_with_quotes(usermenu,buf);
+                break;
+                }
             else
                 aprintf(TTEXT_WARN "\a** Unrecognized option: %s. **" TTEXT_NORMAL "\n",buf);
             }
@@ -2862,6 +3373,7 @@ static int user_input(int filecount,char *firstfile)
             status=user_string("Auto-straighten the pages",ansyesno,src_autostraighten?"y":"n");
             if (status<0)
                 return(status);
+            strbuf_sprintf(usermenu,"-as%s",status==0?"":"-");
             src_autostraighten=(status==0) ? 4.0 : -1.0;
             }
         else if (!stricmp(buf,"b"))
@@ -2871,7 +3383,8 @@ static int user_input(int filecount,char *firstfile)
                 return(status);
             if (status==0)
                 {
-                jpeg_quality=-1;
+                strbuf_sprintf(usermenu,"-png");
+                // jpeg_quality=-1;
                 status=user_integer("Bits per color plane (1, 2, 4, or 8)",4,&dst_bpc,1,8);
                 if (status<0)
                     return(status);
@@ -2879,12 +3392,14 @@ static int user_input(int filecount,char *firstfile)
                     dst_bpc=8;
                 else if (dst_bpc>=3)
                     dst_bpc=4;
+                strbuf_sprintf(usermenu,"-bpc %d",dst_bpc);
                 if (dst_bpc<8)
                     {
                     status=user_string("Apply dithering",ansyesno,dst_dither?"y":"n");
                     if (status<0)
                         return(status);
                     dst_dither=(status==0) ? 1 : 0;
+                    strbuf_sprintf(usermenu,"-d%s",dst_dither?"":"-");
                     }
                 }
             else
@@ -2893,6 +3408,7 @@ static int user_input(int filecount,char *firstfile)
                                      90,&jpeg_quality,1,99);
                 if (status<0)
                     return(status);
+                strbuf_sprintf(usermenu,"-jpg %d",jpeg_quality);
                 }
             }
         else if (!stricmp(buf,"bp"))
@@ -2901,10 +3417,14 @@ static int user_input(int filecount,char *firstfile)
             if (status<0)
                 return(status);
             dst_break_pages=!status;
+            strbuf_sprintf(usermenu,"-bp%s",dst_break_pages?"":"-");
             status=user_integer("Fit-to-page value",dst_fit_to_page,&dst_fit_to_page,
                                  -2,999);
             if (status<0)
                 return(status);
+            if (dst_fit_to_page==-2)
+                vertical_break_threshold = -2.;
+            strbuf_sprintf(usermenu,"-f2p %d",dst_fit_to_page);
             }
         else if (!stricmp(buf,"c"))
             {
@@ -2912,7 +3432,8 @@ static int user_input(int filecount,char *firstfile)
             if (status<0)
                 return(status);
             dst_color=!status;
-            wrapbmp_set_color(dst_color);
+            strbuf_sprintf(usermenu,"-c%s",dst_color?"":"-");
+            // wrapbmp_set_color(dst_color);
             }
         else if (!stricmp(buf,"co"))
             {
@@ -2921,32 +3442,39 @@ static int user_input(int filecount,char *firstfile)
                 return(status);
             if (max_columns==3)
                 max_columns=4;
+            strbuf_sprintf(usermenu,"-col %d",max_columns);
             if (max_columns>1)
                 {
                 status=user_float("Min gap between columns (inches)",min_column_gap_inches,
                             &min_column_gap_inches,1,0.0,20.,NULL);
                 if (status<0)
                     return(status);
+                strbuf_sprintf(usermenu,"-cg %g",min_column_gap_inches);
                 status=user_float("Max gap between columns (inches)",max_column_gap_inches,
                             &max_column_gap_inches,1,0.,99.,NULL);
                 if (status<0)
                     return(status);
+                strbuf_sprintf(usermenu,"-cgmax %g",max_column_gap_inches);
                 status=user_float("Min column height (inches)",min_column_height_inches,
                             &min_column_height_inches,1,0.05,20.,NULL);
                 if (status<0)
                     return(status);
+                strbuf_sprintf(usermenu,"-ch %g",min_column_height_inches);
                 status=user_float("Column gap range (0 - 1)",column_gap_range,
                             &column_gap_range,1,0.0,1.,NULL);
                 if (status<0)
                     return(status);
+                strbuf_sprintf(usermenu,"-cgr %g",column_gap_range);
                 status=user_float("Column row gap height (inches)",column_row_gap_height_in,
                             &column_row_gap_height_in,1,0.001,5.0,NULL);
                 if (status<0)
                     return(status);
+                strbuf_sprintf(usermenu,"-crgh %g",column_row_gap_height_in);
                 status=user_float("Column offset maximum (0 to 1 or -1 to disable)",column_offset_max,
                             &column_offset_max,1,-1.5,1.,NULL);
                 if (status<0)
                     return(status);
+                strbuf_sprintf(usermenu,"-comax %g",column_offset_max);
                 }
             }
         else if (!stricmp(buf,"cs"))
@@ -2955,29 +3483,48 @@ static int user_input(int filecount,char *firstfile)
                              -200.,200.,NULL);
             if (status<0)
                 return(status);
+            strbuf_sprintf(usermenu,"-cmax %g",contrast_max);
             status=user_string("Sharpen the output images",ansyesno,dst_sharpen?"y":"n");
             if (status<0)
                 return(status);
             dst_sharpen=!status;
+            strbuf_sprintf(usermenu,"-s%s",dst_sharpen?"":"-");
             status=user_float("Gamma value (1.0=no adjustment)",dst_gamma,&dst_gamma,1,
                              0.01,100.,NULL);
             if (status<0)
                 return(status);
+            strbuf_sprintf(usermenu,"-g %g",dst_gamma);
             status=user_integer("White threshold (-1=autocalc)",src_whitethresh,&src_whitethresh,-1,255);
             if (status<0)
                 return(status);
+            strbuf_sprintf(usermenu,"-wt %d",src_whitethresh);
             }
         else if (!stricmp(buf,"d"))
             {
-            status=user_integer("Destination pixel width",DEFAULT_WIDTH,&dst_userwidth,10,6000);
+            char *p;
+
+            p=devprofile_select();
+            if (p!=NULL && !strcmp(p,"q"))
+                return(status);
+            if (p!=NULL)
+                {
+                strbuf_sprintf(usermenu,"-dev %s",p);
+                continue;
+                }   
+            status=user_float("Destination pixel width",DEFAULT_WIDTH,&dst_userwidth,1,-100.,20000.,NULL);
             if (status<0)
                 return(status);
-            status=user_integer("Destination pixel height",DEFAULT_HEIGHT,&dst_userheight,10,8000);
+            strbuf_sprintf(usermenu,"-w %g",dst_userwidth);
+            dst_userwidth_units=UNITS_PIXELS;
+            status=user_float("Destination pixel height",DEFAULT_HEIGHT,&dst_userheight,1,-100.,20000.,NULL);
             if (status<0)
                 return(status);
+            strbuf_sprintf(usermenu,"-h %g",dst_userheight);
+            dst_userheight_units=UNITS_PIXELS;
             status=user_integer("Output/Destination pixels per inch",167,&dst_dpi,20,1200);
             if (status<0)
                 return(status);
+            strbuf_sprintf(usermenu,"-dpi %d",dst_dpi);
             status=user_float("Input/Source pixels per inch",user_src_dpi,&user_src_dpi,1,-10.,1200.,NULL);
             if (status<0)
                 return(status);
@@ -2988,12 +3535,14 @@ static int user_input(int filecount,char *firstfile)
                 if (status<0)
                     return(status);
                 }
+            strbuf_sprintf(usermenu,"-idpi %g",user_src_dpi);
             }
         else if (!stricmp(buf,"ds"))
             {
             status=user_float("Document scale factor (1.0=no change)",document_scale_factor,&document_scale_factor,1,0.01,100.,NULL);
             if (status<0)
                 return(status);
+            strbuf_sprintf(usermenu,"-ds %g",document_scale_factor);
             }
         else if (!stricmp(buf,"f"))
             {
@@ -3001,12 +3550,14 @@ static int user_input(int filecount,char *firstfile)
             if (status<0)
                 return(status);
             fit_columns=!status;
+            strbuf_sprintf(usermenu,"-fc%s",fit_columns?"":"-");
             }
         else if (!stricmp(buf,"gt"))
             {
             status=user_float("Gap threshold (-gtc) for columns (inches)",gtc_in,&gtc_in,1,0.,20.,NULL);
             if (status<0)
                 return(status);
+            strbuf_sprintf(usermenu,"-gtc %g",gtc_in);
             /*
             status=user_float("Gap threshold for margins (inches)",gtm_in,&gtm_in,1,0.,20.,NULL);
             if (status<0)
@@ -3015,9 +3566,11 @@ static int user_input(int filecount,char *firstfile)
             status=user_float("Gap threshold for rows (inches)",gtr_in,&gtr_in,1,0.,20.,NULL);
             if (status<0)
                 return(status);
+            strbuf_sprintf(usermenu,"-gtr %g",gtr_in);
             status=user_float("Gap threshold for words (inches)",gtw_in,&gtw_in,1,0.,20.,NULL);
             if (status<0)
                 return(status);
+            strbuf_sprintf(usermenu,"-gtw %g",gtw_in);
             }
         else if (!stricmp(buf,"j"))
             {
@@ -3045,6 +3598,8 @@ static int user_input(int filecount,char *firstfile)
                     return(status);
                 dst_fulljustify=!status;
                 }
+            strbuf_sprintf(usermenu,"-j %d%s",dst_justify,
+                              dst_fulljustify<0?"":(dst_fulljustify?"+":"-"));
             status=user_string("Apply special justification for figures (tall regions)",
                                ansyesno,dst_figure_justify>=0?"y":"n");
             if (status<0)
@@ -3063,6 +3618,7 @@ static int user_input(int filecount,char *firstfile)
                 if (status<0)
                     return(status);
                 }
+            strbuf_sprintf(usermenu,"-jf %d %g",dst_figure_justify,dst_min_figure_height_in);
             }
         else if (!stricmp(buf,"l"))
             {
@@ -3070,7 +3626,18 @@ static int user_input(int filecount,char *firstfile)
             if (status<0)
                 return(status);
             dst_landscape=!status;
+            strbuf_sprintf(usermenu,"-ls%s",dst_landscape?"":"-");
             }
+#ifdef HAVE_MUPDF
+        else if (!stricmp(buf,"n"))
+            {
+            status=user_string("Use native PDF output",ansyesno,use_crop_boxes?"y":"n");
+            if (status<0)
+                return(status);
+            use_crop_boxes=!status;
+            strbuf_sprintf(usermenu,"-n%s",use_crop_boxes?"":"-");
+            }
+#endif
         else if (!stricmp(buf,"m"))
             {
             double v[4];
@@ -3102,6 +3669,26 @@ static int user_input(int filecount,char *firstfile)
             if (i<na-1)
                 i++;
             mar_bot=v[i];
+            strbuf_sprintf(usermenu,"-m %g,%g,%g,%g",mar_left,mar_top,mar_right,mar_bot);
+            }
+        else if (!stricmp(buf,"mo"))
+            {
+            static char *modename[]={"default","copy","fitwidth","2-column","grid",""};
+            static char *shortname[]={"def","copy","fw","2col","grid"};
+            double v[3];
+
+            status=user_string("Operating mode",modename,"default");
+            if (status<0)
+                return(status);
+            if (status<4)
+                {
+                strbuf_sprintf(usermenu,"-mode %s",shortname[status]);
+                continue;
+                }   
+            status=user_float("Grid cols,rows,overlap (comma-separated)",-1e10,v,3,1.,10.,NULL);
+            if (status<0)
+                return(status);
+            strbuf_sprintf(usermenu,"-grid %dx%dx%d",(int)(v[0]+.5),(int)(v[1]+.5),(int)(v[2]+.5));
             }
         else if (!stricmp(buf,"om"))
             {
@@ -3122,6 +3709,8 @@ static int user_input(int filecount,char *firstfile)
             if (i<na-1)
                 i++;
             dst_marbot=v[i];
+            strbuf_sprintf(usermenu,"-om %g,%g,%g,%g",
+                             dst_marleft,dst_martop,dst_marright,dst_marbot);
             }
         else if (!stricmp(buf,"o"))
             {
@@ -3129,6 +3718,8 @@ static int user_input(int filecount,char *firstfile)
             status=user_any_string("Output name format (e.g. out%02d)",dst_opname_format,127,"%s_k2opt");
             if (status<0)
                 return(status);
+            strbuf_cat(usermenu,"-o");
+            strbuf_cat_with_quotes(usermenu,dst_opname_format);
             prompt=(overwrite_minsize_mb >= 0.);
             status=user_string("Prompt to overwrite a file",ansyesno,prompt?"y":"n");
             if (status<0)
@@ -3142,6 +3733,7 @@ static int user_input(int filecount,char *firstfile)
                 if (status<0)
                     return(status);
                 }
+            strbuf_sprintf(usermenu,"-ow %g",overwrite_minsize_mb);
             }
 #ifdef HAVE_OCR
         else if (!stricmp(buf,"oc"))
@@ -3153,13 +3745,19 @@ static int user_input(int filecount,char *firstfile)
                 return(status);
             dst_ocr=tolower(ocropts[status][0]);
             if (dst_ocr=='n')
+                {
                 dst_ocr=0;
+                strbuf_cat(usermenu,"-ocr-");
+                }
+            else
+                strbuf_sprintf(usermenu,"-ocr %c",dst_ocr);
             if (dst_ocr)
                 {
                 status=user_float("Max OCR word height (in)",ocr_max_height_inches,
                                   &ocr_max_height_inches,1,0.,999.,"");
                 if (status<0)
                     return(status);
+                strbuf_sprintf(usermenu,"-ocrhmax %g",ocr_max_height_inches);
                 status=user_string("Show OCR text",ansyesno,"n");
                 if (status<0)
                     return(status);
@@ -3174,6 +3772,10 @@ static int user_input(int filecount,char *firstfile)
                     dst_ocr_visibility_flags |= 1;
                 else
                     dst_ocr_visibility_flags &= (~1);
+                strbuf_sprintf(usermenu,"-ocrvis %s%s%s",
+                              dst_ocr_visibility_flags&1 ? "s" : "",
+                              dst_ocr_visibility_flags&2 ? "t" : "",
+                              dst_ocr_visibility_flags&4 ? "b" : "");
                 }
             }
 #endif
@@ -3182,6 +3784,8 @@ static int user_input(int filecount,char *firstfile)
             status=user_any_string("Pages to convert (e.g. 1-5,6,9-)",pagelist,1023,"all");
             if (status<0)
                 return(status);
+            strbuf_cat(usermenu,"-p");
+            strbuf_cat_no_spaces(usermenu,pagelist);
             }
         else if (!stricmp(buf,"pd"))
             {
@@ -3191,10 +3795,12 @@ static int user_input(int filecount,char *firstfile)
                 pad_left=pad_right=pad_bottom=pad_top=defpad;
             else
                 return(status);
+            strbuf_sprintf(usermenu,"-pl %d -pr %d -pt %d -pb %d",defpad,defpad,defpad,defpad);
             status=user_string("Mark corners of bitmap with a dot",ansyesno,mark_corners?"y":"n");
             if (status<0)
                 return(status);
             mark_corners=!status;
+            strbuf_sprintf(usermenu,"-mc%s",mark_corners?"":"-");
             }
         else if (!stricmp(buf,"r"))
             {
@@ -3202,6 +3808,7 @@ static int user_input(int filecount,char *firstfile)
             if (status<0)
                 return(status);
             src_left_to_right=status;
+            strbuf_sprintf(usermenu,"-r%s",src_left_to_right?"-":"");
             }
         else if (!stricmp(buf,"rt"))
             {
@@ -3228,24 +3835,33 @@ static int user_input(int filecount,char *firstfile)
                         return(status);
                     }
                 }
+            if (src_rot==SRCROT_AUTO)
+                strbuf_sprintf(usermenu,"-rt auto");
+            else if (src_rot==SRCROT_AUTOEP)
+                strbuf_sprintf(usermenu,"-rt aep");
+            else
+                strbuf_sprintf(usermenu,"-rt %d",src_rot);
             }
         else if (!stricmp(buf,"s"))
             {
             status=user_float("Defect size in points",defect_size_pts,&defect_size_pts,1,0.0,100.,NULL);
             if (status<0)
                 return(status);
+            strbuf_sprintf(usermenu,"-de %g",defect_size_pts);
             printf("\n0. Don't erase vertical lines.\n"
                      "1. Detect and erase only free-standing vertical lines.\n"
                      "2. Detect and erase all vertical lines.\n\n");
             status=user_integer("Enter option above (0, 1, or 2)",
                                  erase_vertical_lines,&erase_vertical_lines,0,2);
+            strbuf_sprintf(usermenu,"-evl %d",erase_vertical_lines);
             if (status<0)
                 return(status);
 #ifdef HAVE_MUPDF
-            status=user_string("Use Ghostscript interpreter",ansyesno,usegs?"y":"n");
+            status=user_string("Use Ghostscript interpreter",ansyesno,user_usegs?"y":"n");
             if (status<0)
                 return(status);
-            usegs=!status;
+            user_usegs=(status==0 ? 1 : 0);
+            strbuf_sprintf(usermenu,"-gs%s",user_usegs?"":"--");
 #endif
             }
         else if (!stricmp(buf,"sm"))
@@ -3254,6 +3870,7 @@ static int user_input(int filecount,char *firstfile)
             if (status<0)
                 return(status);
             show_marked_source=!status;
+            strbuf_sprintf(usermenu,"-sm%s",show_marked_source?"":"-");
             }
         else if (!stricmp(buf,"u"))
             {
@@ -3261,17 +3878,20 @@ static int user_input(int filecount,char *firstfile)
             k2pdfopt_header();
             if (!k2pdfopt_usage())
                 return(-1);
+            /*
             if (wait_enter()<0)
                 return(-1);
+            */
             for (i=0;i<tty_rows-16;i++)
                 aprintf("\n");
             }
         else if (!stricmp(buf,"v"))
             {
             status=user_float("Vertical break threshold (-1 = don't allow)",
-                   vertical_break_threshold,&vertical_break_threshold,1,-1.,100.,NULL);
+                   vertical_break_threshold,&vertical_break_threshold,1,-2.,100.,NULL);
             if (status<0)
                 return(status);
+            strbuf_sprintf(usermenu,"-vb %g",vertical_break_threshold);
             /*
             status=user_float("Vertical Multiplier",vertical_multiplier,
                                &vertical_multiplier,1,0.1,10.,NULL);
@@ -3280,10 +3900,12 @@ static int user_input(int filecount,char *firstfile)
                                &vertical_line_spacing,1,-10.,10.,NULL);
             if (status<0)
                 return(status);
+            strbuf_sprintf(usermenu,"-vls %g",vertical_line_spacing);
             status=user_float("Max Vertical Gap (inches)",max_vertical_gap_inches,
                                &max_vertical_gap_inches,1,0.0,100.,NULL);
             if (status<0)
                 return(status);
+            strbuf_sprintf(usermenu,"-vs %g",max_vertical_gap_inches);
             }
         else if (!stricmp(buf,"w"))
             {
@@ -3299,19 +3921,25 @@ static int user_input(int filecount,char *firstfile)
                     return(status);
                 if (!status)
                     text_wrap=2;
+                strbuf_sprintf(usermenu,"-wrap%s",text_wrap==2?"+":"");
                 status=user_string("Preserve indentation",ansyesno,preserve_indentation?"y":"n");
                 if (status<0)
                     return(status);
                 preserve_indentation=!status;
+                strbuf_sprintf(usermenu,"-pi%s",preserve_indentation?"":"-");
                 status=user_string("Detect/eliminate hyphens",ansyesno,k2_hyphen_detect?"y":"n");
                 if (status<0)
                     return(status);
                 k2_hyphen_detect=!status;
+                strbuf_sprintf(usermenu,"-hy%s",k2_hyphen_detect?"":"-");
                 status=user_float("Word spacing threshold (as fraction of lowercase 'o' height)",
                                word_spacing,&word_spacing,1,0.01,10.,NULL);
                 if (status<0)
                     return(status);
+                strbuf_sprintf(usermenu,"-ws %g",word_spacing);
                 }
+            else
+                strbuf_cat(usermenu,"-wrap-");
             }
         else if (!stricmp(buf,"x"))
             {
@@ -3319,9 +3947,125 @@ static int user_input(int filecount,char *firstfile)
             if (status<0)
                 return(status);
             exit_on_complete=!status;
+            strbuf_sprintf(usermenu,"-x%s",exit_on_complete?"":"-");
             }
         aprintf("\n");
         }
+    }
+
+
+static void menu_help(void)
+
+    {
+    static char *mhelp=
+        "\nYou may enter any of the following at the prompt:\n\n"
+        TTEXT_BOLD2
+        "    (menu item)  "
+        TTEXT_NORMAL
+        "Enter the one of the 1- or 2-letter menu options.\n\n"
+        "                 E.g. " TTEXT_BOLD "d" TTEXT_NORMAL " or "
+                                 TTEXT_BOLD "mo" TTEXT_NORMAL " (followed by <Enter>).\n\n"
+        TTEXT_BOLD2
+        "    <Enter>      "
+        TTEXT_NORMAL
+        "Start the conversion process.\n\n"
+        TTEXT_BOLD2
+        "    (page range) "
+        TTEXT_NORMAL
+        "Set the pages to be converted.  E.g. " TTEXT_BOLD "1,5,6-10" TTEXT_NORMAL ".\n\n"
+        TTEXT_BOLD2
+        "    (file name)  "
+        TTEXT_NORMAL
+        "Add a file to be converted.  May have wildcards.\n"
+        "                 E.g. " TTEXT_BOLD "myfile.pdf" TTEXT_NORMAL " or "
+                                 TTEXT_BOLD "romance*.pdf" TTEXT_NORMAL ".\n\n"
+        TTEXT_BOLD2
+        "    (cmd opt)    "
+        TTEXT_NORMAL
+        "Enter any command-line option(s) (must start with -).\n"
+        "                 E.g. " TTEXT_BOLD "-dr 2 -wrap+" TTEXT_NORMAL ".\n\n"
+        TTEXT_BOLD2
+        "    -            "
+        TTEXT_NORMAL
+        "Clear all options that you've entered (no undo).\n"
+        "                 (These are shown in " ANSI_GREEN "green" TTEXT_NORMAL ".)\n\n"
+        TTEXT_BOLD2
+        "    --           "
+        TTEXT_NORMAL
+        "Clear/unclear any options entered at the command line.\n"
+        "                 (These are shown in " ANSI_BROWN "brown" TTEXT_NORMAL ".)\n\n"
+        TTEXT_BOLD2
+        "    ---          "
+        TTEXT_NORMAL
+        "Clear/unclear any options from the K2PDFOPT env. variable.\n"
+        "                 (These are shown in " ANSI_DARKCYAN "cyan" TTEXT_NORMAL ".)\n\n"
+        TTEXT_BOLD2
+        "    q            "
+        TTEXT_NORMAL
+        "Quit (abort).\n\n";
+    char buf[16];
+
+    aprintf("%s",mhelp);
+    aprintf("Press " TTEXT_BOLD "<Enter>" TTEXT_NORMAL " to re-display the menu.");
+    fgets(buf,15,stdin);
+    aprintf("\n\n");
+    }
+
+
+static void allopts_echo(STRBUF *o1,int o1clear,STRBUF *o2,int o2clear,STRBUF *o3)
+
+    {
+    int col;
+
+    aprintf("Selected options: ");
+    col=18;
+    if ((o1->s==NULL || o1->s[0]=='\n')
+         && (o2->s==NULL || o2->s[0]=='\n')
+         && (o3->s==NULL || o3->s[0]=='\n'))
+        aprintf("(none)");
+    else
+        {
+        if (!o1clear)
+            one_opt_echo(o1,ANSI_DARKCYAN,&col);
+        if (!o2clear)
+            one_opt_echo(o2,ANSI_BROWN,&col);
+        one_opt_echo(o3,ANSI_GREEN,&col);
+        }
+    aprintf("\n");
+    }
+
+
+static void one_opt_echo(STRBUF *opts,char *coloring,int *column)
+
+    {
+    int i;
+    char *s;
+
+    if (opts->s==NULL || opts->s[0]=='\0')
+        return;
+    aprintf("%s",coloring);
+    s=opts->s;
+    for (i=0;s[i]!='\0';)
+        {
+        int i0,c;
+        for (;s[i]==' ' || s[i]=='\t';i++);
+        if (s[i]=='\0')
+            break;
+        for (i0=i;s[i]!=' ' && s[i]!='\t' && s[i]!='\0';i++);
+        if (i-i0+1+(*column) > 78)
+            {
+            aprintf("\n   ");
+            (*column)=4;
+            }
+        c=s[i];
+        s[i]='\0';
+        aprintf(" %s",&s[i0]);
+        (*column) += strlen(&s[i0])+1;
+        s[i]=c;
+        if (s[i]=='\0')
+            break;
+        }
+    aprintf("%s",TTEXT_NORMAL);
     }
 
 
@@ -3339,8 +4083,10 @@ static int user_float(char *message,double defval,double *dstval,int nmax,
         {
         if (extramessage!=NULL && extramessage[0]!='\0')
             aprintf(TTEXT_BOLD2 "%s" TTEXT_NORMAL "\n",extramessage);
-        aprintf(TTEXT_BOLD2 "%s" TTEXT_NORMAL " [%g]: " TTEXT_INPUT,
-                message,defval);
+        aprintf(TTEXT_BOLD2 "%s" TTEXT_NORMAL,message);
+        if (defval > -1e9)
+            aprintf(" [%g]",defval);
+        aprintf(": ");
         fgets(buf,255,stdin);
         aprintf(TTEXT_NORMAL "\n");
         clean_line(buf);
@@ -3579,7 +4325,7 @@ static void k2pdfopt_proc_wildarg(char *arg)
         filelist_fill_from_disk_1(fl,arg,0,0);
         if (fl->n==0)
             {
-            printf("File or folder %s could not be opened.\n",arg);
+            aprintf(TTEXT_WARN "\n** File or folder %s could not be opened.\n\n" TTEXT_NORMAL,arg);
             return;
             }
         for (i=0;i<fl->n;i++)
@@ -3604,21 +4350,24 @@ static void k2pdfopt_proc_arg(char *arg)
     strcpy(filename,arg);
     if (wfile_status(filename)==0)
         {
-        printf("File or folder %s could not be opened.\n",filename);
+        aprintf(TTEXT_WARN "\n** File or folder %s could not be opened.\n\n" TTEXT_NORMAL,filename);
         return;
         }
+    /* If folder, first process all PDF/DJVU/PS files in the folder */
     if (wfile_status(filename)==2)
         {
-        static char *iolist[]={"*.png","*.jpg",""};
+        // static char *iolist[]={"*.png","*.jpg",""};
         static char *eolist[]={""};
-        static char *pdflist[]={"*.pdf",""};
+        static char *pdflist[]={"*.pdf","*.djvu","*.djv","*.ps","*.eps",""};
         FILELIST *fl,_fl;
 
         fl=&_fl;
         filelist_init(fl);
+        /*
         filelist_fill_from_disk(fl,filename,iolist,eolist,0,0);
         if (fl->n==0)
             {
+        */
             filelist_fill_from_disk(fl,filename,pdflist,eolist,0,0);
             if (fl->n>0)
                 {
@@ -3634,11 +4383,16 @@ static void k2pdfopt_proc_arg(char *arg)
                     k2pdfopt_proc_one(fullname,rot);
                     }
                 }
+        /*
             else
-                printf("No files in folder %s.\n\n",filename);
+                aprintf(TTEXT_WARN "\n** No files in folder %s.\n\n" TTEXT_NORMAL,filename);
+        */
+            filelist_free(fl);
+        /*
+            return;
             }
         filelist_free(fl);
-        return;
+        */
         }
     if (fabs(src_rot-SRCROT_AUTO)<.5 || fabs(src_rot-SRCROT_AUTOEP)<.5)
         rot=k2pdfopt_proc_one(filename,SRCROT_AUTO);
@@ -3653,29 +4407,61 @@ static void k2pdfopt_proc_arg(char *arg)
 ** Should only be called once, after all params are set.
 **
 */
-static void adjust_params_init(void)
+static void set_margins_and_devsize(BMPREGION *region,MASTERINFO *masterinfo,
+                                    WPDFPAGEINFO *pageinfo)
 
     {
-    if (dst_landscape)
+    static int count=0;
+    double swidth_in,sheight_in;
+    int new_width,new_height;
+
+    if (region==NULL)
         {
-        dst_width=dst_userheight;
-        dst_height=dst_userwidth;
+        count=0;
+        if (dst_mar<0.)
+            dst_mar=0.02;
+        if (dst_martop<0.)
+            dst_martop=dst_mar;
+        if (dst_marbot<0.)
+            dst_marbot=dst_mar;
+        if (dst_marleft<0.)
+            dst_marleft=dst_mar;
+        if (dst_marright<0.)
+            dst_marright=dst_mar;
+        swidth_in = 8.5;
+        sheight_in = 11.0;
         }
     else
         {
-        dst_width=dst_userwidth;
-        dst_height=dst_userheight;
+        count++;
+        swidth_in = (double)region->bmp->width / src_dpi;
+        sheight_in = (double)region->bmp->height / src_dpi;
         }
-    if (dst_mar<0.)
-        dst_mar=0.02;
-    if (dst_martop<0.)
-        dst_martop=dst_mar;
-    if (dst_marbot<0.)
-        dst_marbot=dst_mar;
-    if (dst_marleft<0.)
-        dst_marleft=dst_mar;
-    if (dst_marright<0.)
-        dst_marright=dst_mar;
+    new_width=set_devsize_pixels(dst_userwidth,dst_userwidth_units,swidth_in);
+    new_height=set_devsize_pixels(dst_userheight,dst_userheight_units,sheight_in);
+    if (dst_landscape)
+        int_swap(new_width,new_height)
+    if (count==1 || (count>1 && (new_width!=dst_width || new_height!=dst_height)))
+        {
+        /* Flush master bitmap before changing it */
+        if (count>1)
+            publish_master(masterinfo,pageinfo,1);
+        dst_width=new_width;
+        dst_height=new_height;
+        masterinfo->bmp.width=dst_width;
+        /* dst_height*1.5*area_ratio */
+        masterinfo->bmp.height=1.5*swidth_in*sheight_in*dst_dpi*dst_dpi/dst_width;
+        bmp_alloc(&masterinfo->bmp);
+        bmp_fill(&masterinfo->bmp,255,255,255);
+        masterinfo->rows=0;
+        if (pageinfo!=NULL)
+            {
+            pageinfo->width_pts = 72. * dst_width / dst_dpi;
+            pageinfo->height_pts = 72. * dst_height / dst_dpi;
+            if (dst_landscape)
+                double_swap(pageinfo->width_pts,pageinfo->height_pts)
+            }
+        }
     if ((double)dst_width/dst_dpi - dst_marleft - dst_marright < MIN_REGION_WIDTH_INCHES)
         {
         int olddpi;
@@ -3684,18 +4470,54 @@ static void adjust_params_init(void)
         aprintf(TTEXT_BOLD2 "Output DPI of %d is too large.  Reduced to %d." TTEXT_NORMAL "\n\n",
                 olddpi,dst_dpi);
         }
+    set_region_widths();
     }
+
+
+static int set_devsize_pixels(double user_size,int user_units,double source_size_in)
+
+    {
+    
+    if (user_size==0.)
+        return((int)(source_size_in*dst_dpi+.5));
+    if (user_size<0.)
+        return((int)(source_size_in*(-user_size)*dst_dpi+.5));
+    if (user_units==UNITS_CM)
+        return((int)((user_size/2.54)*dst_dpi+.5));
+    if (user_units==UNITS_INCHES)
+        return((int)(user_size*dst_dpi+.5));
+    return((int)(user_size+.5));
+    }
+
+
+static void set_value_with_units(char *s,double *val,int *units)
+
+    {
+    int i;
+
+    (*val)=atof(s);
+    for (i=0;valid_numerical_char(s[i]);i++);
+    if (tolower(s[i])=='i')
+        (*units)=UNITS_INCHES;
+    else if (tolower(s[i])=='c')
+        (*units)=UNITS_CM;
+    else
+        (*units)=UNITS_PIXELS;
+    }
+
+
+static int valid_numerical_char(int c)
+
+    {
+    return((c>='0' && c<='9') || c=='+' || c=='-' || c=='.' || tolower(c)=='e' || tolower(c)=='d');
+    }
+
 
 static void set_region_widths(void)
 
     {
     max_region_width_inches=display_width_inches=(double)dst_width/dst_dpi;
     max_region_width_inches -= (dst_marleft+dst_marright);
-    /* This is ensured by adjust_dst_dpi() as of v1.17 */
-    /*
-    if (max_region_width_inches < MIN_REGION_WIDTH_INCHES)
-        max_region_width_inches = MIN_REGION_WIDTH_INCHES;
-    */
     }
 
 
@@ -3705,34 +4527,41 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
     static MASTERINFO _masterinfo,*masterinfo;
     char dstfile[256];
     char markedfile[256];
-    char cmd[512];
     char rotstr[128];
-    PAGEINFO _pageinfo,*pageinfo;
+    WPDFPAGEINFO _pageinfo,*pageinfo;
     WILLUSBITMAP _src,*src;
     WILLUSBITMAP _srcgrey,*srcgrey;
     WILLUSBITMAP _marked,*marked;
     int i,status,white,pw,np,src_type,or_detect,orep_detect,second_time_through;
     int pagecount,pagestep,pages_done,is_gray;
+    int errcnt,pixwarn;
     FILELIST *fl,_fl;
     int folder,dpi;
-    double size,area_ratio,bormean;
-#ifdef HAVE_MUPDF
-    static char *mupdferr1=TTEXT_WARN "\a\n ** ERROR reading from " TTEXT_BOLD2 "%s" TTEXT_WARN ".  Will try Ghostscript!\n\n" TTEXT_NORMAL;
-#endif
-    static char *mupdferr=TTEXT_WARN "\a\n ** ERROR reading page %d from " TTEXT_BOLD2 "%s" TTEXT_WARN ".  Will try Ghostscript!\n\n" TTEXT_NORMAL;
-    static char *djvuerr=TTEXT_WARN "\a\n ** ERROR reading page %d from " TTEXT_BOLD2 "%s" TTEXT_NORMAL ".\n\n";
+    double size,bormean;
+    char mupdffilename[MAXFILENAMELEN];
+    static char *readerr=TTEXT_WARN "\a\n ** ERROR reading page %d from " TTEXT_BOLD2 "%s" TTEXT_WARN ".\n\n" TTEXT_NORMAL;
+    static char *readlimit=TTEXT_WARN "\a\n ** (No more read errors will be echoed for file %s.)\n\n" TTEXT_NORMAL;
 
+    sprintf(_pageinfo.producer,"K2pdfopt %s",VERSION);
+    /* Reset usegs for each document */
+    usegs=user_usegs;
+    errcnt=0;
+    pixwarn=0;
+    strncpy(mupdffilename,filename,MAXFILENAMELEN-1);
+    mupdffilename[MAXFILENAMELEN-1]='\0';
     masterinfo=&_masterinfo;
 #ifdef HAVE_OCR
     if (dst_ocr)
         k2pdfopt_ocr_init();
 #endif
+#ifdef HAVE_MUPDF
     if (use_crop_boxes)
         {
         pageinfo=&_pageinfo;
-        pdfboxes_init(&pageinfo->boxes);
+        wpdfboxes_init(&pageinfo->boxes);
         }
     else
+#endif
         pageinfo=NULL;
     or_detect=(fabs(rot_deg-SRCROT_AUTO)<.5);
     orep_detect=(fabs(src_rot-SRCROT_AUTOEP)<.5);
@@ -3745,7 +4574,6 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
         dpi=300;
     else
         dpi=src_dpi;
-    set_region_widths();
     folder=(wfile_status(filename)==2);
     /*
     if (folder && !second_time_through)
@@ -3780,13 +4608,13 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
         filelist_fill_from_disk(fl,filename,iolist,eolist,0,0);
         if (fl->n<=0)
             {
-            printf("No bitmaps %s!\n",folder?"found":"created");
-            printf("Command:  %s.\n\n",cmd);
-            k2_enter_to_exit();
-            exit(10);
+            if (!second_time_through)
+                aprintf(TTEXT_WARN "\n** No bitmaps found in folder %s.\n\n" 
+                        TTEXT_NORMAL,filename);
+            return(0.);
             }
         if (!second_time_through)
-            printf("%d bitmaps %s.\n",(int)fl->n,folder?"found":"created");
+            printf("%d bitmaps found in %s.\n",(int)fl->n,filename);
         filelist_sort_by_name(fl);
         }
     src=&_src;
@@ -3809,6 +4637,7 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
         for (ii=0;ii<256;ii++)
             masterinfo->bmp.red[ii]=masterinfo->bmp.blue[ii]=masterinfo->bmp.green[ii]=ii;
         }
+    /*
     masterinfo->bmp.width=dst_width;
     area_ratio = 8.5*11.0*dst_dpi*dst_dpi / (dst_width*dst_height);
     masterinfo->bmp.height=dst_height*area_ratio*1.5;
@@ -3818,6 +4647,7 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
         bmp_fill(&masterinfo->bmp,255,255,255);
         }
     masterinfo->rows=0;
+    */
     masterinfo->published_pages=0;
     masterinfo->wordcount=0;
     pw=0;
@@ -3851,6 +4681,8 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
             aprintf(TTEXT_WARN "\n\aCannot open PDF file %s for output!" TTEXT_NORMAL "\n\n",dstfile);
             k2_exit(30);
             }
+        if (pageinfo!=NULL)
+            pdffile_close(gpdf);
         if (show_marked_source)
             {
             filename_substitute(markedfile,"%s_marked",filename,0,"pdf");
@@ -3862,14 +4694,22 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
             }
         }
     bmp_set_pdf_dpi(dpi); /* Input DPI */
-    if (!stricmp(wfile_ext(filename),"pdf"))
+    if (folder)
+        src_type = SRC_TYPE_BITMAPFOLDER;
+    else if (!stricmp(wfile_ext(filename),"pdf"))
         src_type = SRC_TYPE_PDF;
     else if (!stricmp(wfile_ext(filename),"djvu"))
         src_type = SRC_TYPE_DJVU;
     else if (!stricmp(wfile_ext(filename),"djv"))
         src_type = SRC_TYPE_DJVU;
+    else if (!stricmp(wfile_ext(filename),"ps"))
+        src_type = SRC_TYPE_PS;
+    else if (!stricmp(wfile_ext(filename),"eps"))
+        src_type = SRC_TYPE_PS;
     else
         src_type = SRC_TYPE_OTHER;
+    if (src_type==SRC_TYPE_PS)
+        usegs=1;
 #ifndef HAVE_DJVU
     if (src_type==SRC_TYPE_DJVU)
         {
@@ -3882,10 +4722,23 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
 #endif
     if (src_type==SRC_TYPE_PDF || src_type==SRC_TYPE_DJVU)
         {
-        sys_set_decimal_period(1);
+        wsys_set_decimal_period(1);
 #ifdef HAVE_MUPDF
         if (src_type==SRC_TYPE_PDF)
-            np=bmpmupdf_numpages(filename);
+            {
+            np=wmupdf_numpages(mupdffilename);
+#if (defined(WIN32) || defined(WIN64))
+            if (np<0)
+                {
+                int ns;
+                ns=wsys_filename_8dot3(mupdffilename,filename,MAXFILENAMELEN-1);
+                if (ns>0 && stricmp(filename,mupdffilename))
+                    np=wmupdf_numpages(mupdffilename);
+                else
+                    strcpy(mupdffilename,filename);
+                }
+#endif
+            }
         else
 #endif
 #ifdef HAVE_DJVU
@@ -3894,23 +4747,23 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
         else
 #endif
             np=-1;
-        sys_set_decimal_period(1);
+        wsys_set_decimal_period(1);
 #ifdef HAVE_MUPDF
-        if (np==-1 && !usegs && src_type==SRC_TYPE_PDF)
+        if (np==-1 && (usegs<=0) && src_type==SRC_TYPE_PDF)
             {
-            aprintf(mupdferr1,filename);
-            usegs=1;
+            aprintf(mupdferr_trygs,filename);
+            if (usegs==0)
+                usegs=1;
             }
 #endif
         if (np<=0 && src_type==SRC_TYPE_PDF)
             np=pdf_numpages(filename);
-        pagecount=pagelist_count(pagelist,np);
         }
+    else if (src_type==SRC_TYPE_BITMAPFOLDER)
+        np=fl->n;
     else
-        {
         np=-1;
-        pagecount=-1;
-        }
+    pagecount = np<0 ? -1 : pagelist_count(pagelist,np);
     if (pagecount<0 || !or_detect)
         pagestep=1;
     else
@@ -3923,9 +4776,12 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
     if (np>0 && pagecount==0)
         {
         if (!second_time_through)
-            aprintf("\a\n" TTEXT_WARN "No pages to convert (-p %s)!" TTEXT_NORMAL "\n\n",pagelist);
-        if (use_crop_boxes)
-            pdfboxes_free(&pageinfo->boxes);
+            aprintf("\a\n" TTEXT_WARN "No %ss to convert (-p %s)!" TTEXT_NORMAL "\n\n",
+                     folder?"file":"page",pagelist);
+#ifdef HAVE_MUPDF
+        if (pageinfo!=NULL)
+            wpdfboxes_free(&pageinfo->boxes);
+#endif
         bmp_free(&masterinfo->bmp);
         if (folder)
             filelist_free(fl);
@@ -3937,12 +4793,12 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
         if (pagecount>0)
            {
            if (pagecount<np)
-               aprintf("%d out of %d page%s",pagecount,np,np>1?"s":"");
+               aprintf("%d out of %d %s%s",pagecount,np,folder?"file":"page",np>1?"s":"");
            else
-               aprintf("%d page%s",np,np>1?"s":"");
+               aprintf("%d %s%s",np,folder?"file":"page",np>1?"s":"");
            }
         else
-           aprintf("pages");
+           aprintf("%ss",folder?"file":"page");
         aprintf(" from " TTEXT_BOLD2 "%s" TTEXT_NORMAL " ...\n",filename);
         }
     if (or_detect)
@@ -3956,125 +4812,104 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
 
         pageno=0;
         is_gray=0;
+        if (pagecount>0 && i+1>pagecount)
+            break;
+        pageno = pagelist_page_by_index(pagelist,i,np);
+        if (!pagelist_page_by_index(pagelist,pageno,np))
+            continue;
         if (folder)
             {
-            if (i>=fl->n)
-                break;
-            wfile_fullname(bmpfile,fl->dir,fl->entry[i].name);
+            if (pageno-1>=fl->n)
+                continue;
+            wfile_fullname(bmpfile,fl->dir,fl->entry[pageno-1].name);
             status=bmp_read(src,bmpfile,stdout);
+            if (status<0)
+                {
+                if (!second_time_through)
+                    aprintf(TTEXT_WARN "\n\aCould not read file %s.\n" TTEXT_NORMAL,bmpfile);
+                continue;
+                }
+            is_gray=bmp_is_grayscale(src);
             }
         else
             { 
-            /* If it's not a PDF/DJVU, only read it once. */
-            if (i>0 && src_type!=SRC_TYPE_PDF && src_type!=SRC_TYPE_DJVU)
-                break;
-            if (pagecount>0 && i+1>pagecount)
-                break;
-            pageno = pagelist_page_by_index(pagelist,i,np);
-            if ((src_type==SRC_TYPE_PDF || src_type==SRC_TYPE_DJVU) 
-                     && !pagelist_page_by_index(pagelist,pageno,np))
-                continue;
-            status=-1;
-            if (!usegs || src_type==SRC_TYPE_DJVU)
-                {
-                static int errcnt=0;
+            double npix;
 
-                sys_set_decimal_period(1);
-                /* Check bitmap size */
-                status= bmp_get_one_document_page(src,src_type,filename,
-                                                  pageno,10.,8,stdout);
-                sys_set_decimal_period(1);
-                if (status<0)
-                    {
-                    if (errcnt==0)
-                        aprintf(src_type==SRC_TYPE_PDF ? mupdferr : djvuerr,pageno,filename);
-                    errcnt++;
-                    /* Switch to PS for rest of pages. */
-                    if (src_type==SRC_TYPE_PDF)
-                        usegs=1;
-                    }
-                if (status>=0)
-                    {
-                    double npix;
-                    npix = (double)(dpi/10.)*(dpi/10.)*src->width*src->height;
-                    if (npix > 2.5e8)
-                        {
-                        static int pixwarn=0;
-                        if (!pixwarn)
-                            {
-                            int ww,hh;
-                            ww=(int)((double)(dpi/10.)*src->width+.5);
-                            hh=(int)((double)(dpi/10.)*src->height+.5);
-                            aprintf("\a\n" TTEXT_WARN "\n\a ** Source resolution is very high (%d x %d pixels)!\n"
-                                    "    You may want to reduce the -odpi or -idpi setting!\n"
-                                    "    k2pdfopt may crash when reading the source file..."
-                                    TTEXT_NORMAL "\n\n",ww,hh);
-                            pixwarn=1;
-                            }
-                        }
-                    sys_set_decimal_period(1);
-                    if (dst_color)
-                        status= bmp_get_one_document_page(src,src_type,filename,
-                                                          pageno,dpi,24,stdout);
-                    else
-                        {
-                        status= bmp_get_one_document_page(src,src_type,filename,
-                                                          pageno,dpi,8,stdout);
-                        is_gray=1;
-                        }
-                    if (debug && or_detect)
-                        printf("Checking orientation of page %d ... ",pageno);
-                    sys_set_decimal_period(1);
-                    if (status<0)
-                        {
-                        if (errcnt==0)
-                            aprintf(src_type==SRC_TYPE_PDF ? mupdferr : djvuerr,pageno,filename);
-                        errcnt++;
-                        /* Switch to PS for rest of pages. */
-                        if (src_type==SRC_TYPE_PDF)
-                            usegs=1;
-                        }
-                    }
-                }
-            if (status<0 && src_type==SRC_TYPE_PDF)
-                {
-                if (willusgs_init(stdout) < 0)
-                    {
-                    k2_enter_to_exit();
-                    exit(20);
-                    }
-                bmp_set_pdf_pageno(i+1);
-                /*
-                aprintf("Converting " TTEXT_BOLD2 "%s" TTEXT_NORMAL 
-                    " page %2d to %d dpi bitmap ... ",filename,i,dpi);
-                fflush(stdout);
-                */
-                sys_set_decimal_period(1);
-                status=bmp_read(src,filename,NULL);
-                sys_set_decimal_period(1);
-                }
-            }
-        if (status<0)
-            {
-            /* Allow to continue */
-            /*
-            if (!folder)
+            /* If not a PDF/DJVU/PS file, only read it once. */
+            if (i>0 && src_type!=SRC_TYPE_PDF && src_type!=SRC_TYPE_DJVU
+                    && src_type!=SRC_TYPE_PS)
                 break;
-            */
-            if (!second_time_through)
-                aprintf(TTEXT_WARN "\n\aCould not read file %s.\n" TTEXT_NORMAL,bmpfile);
-            continue;
+
+            /* Pre-read at low dpi to check bitmap size */
+            wsys_set_decimal_period(1);
+            status=bmp_get_one_document_page(src,src_type,mupdffilename,pageno,10.,8,stdout);
+            wsys_set_decimal_period(1);
+            if (status<0)
+                {
+                errcnt++;
+                if (errcnt<=10)
+                    {
+                    aprintf(readerr,pageno,filename);
+                    if (errcnt==10)
+                        aprintf(readlimit,filename);
+                    }
+                /* Error reading PS probably means we've run out of pages. */
+                if (src_type==SRC_TYPE_PS)
+                    break;
+                continue;
+                }
+
+            /* Sanity check the bitmap size */
+            npix = (double)(dpi/10.)*(dpi/10.)*src->width*src->height;
+            if (npix > 2.5e8 && !pixwarn)
+                {
+                int ww,hh;
+                ww=(int)((double)(dpi/10.)*src->width+.5);
+                hh=(int)((double)(dpi/10.)*src->height+.5);
+                aprintf("\a\n" TTEXT_WARN "\n\a ** Source resolution is very high (%d x %d pixels)!\n"
+                        "    You may want to reduce the -odpi or -idpi setting!\n"
+                        "    k2pdfopt may crash when reading the source file..."
+                        TTEXT_NORMAL "\n\n",ww,hh);
+                pixwarn=1;
+                }
+
+            /* Read again at nominal source dpi */
+            wsys_set_decimal_period(1);
+            if (dst_color)
+                status=bmp_get_one_document_page(src,src_type,mupdffilename,pageno,dpi,24,stdout);
+            else
+                {
+                status=bmp_get_one_document_page(src,src_type,mupdffilename,pageno,dpi,8,stdout);
+                is_gray=1;
+                }
+            wsys_set_decimal_period(1);
+            if (status<0)
+                {
+                errcnt++;
+                if (errcnt<=10)
+                    {
+                    aprintf(readerr,pageno,filename);
+                    if (errcnt==10)
+                        aprintf(readlimit,filename);
+                    }
+                /* Error reading PS probably means we've run out of pages. */
+                if (src_type==SRC_TYPE_PS)
+                    break;
+                continue;
+                }
             }
-        if (use_crop_boxes)
+        /* Got Good Page Render */
+        if (pageinfo!=NULL)
             {
-            pageinfo->pageno = pageno;
-            pageinfo->page_rot_deg=0.;
+            pageinfo->srcpage = pageno;
+            pageinfo->srcpage_rot_deg=0.;
+            pageinfo->srcpage_fine_rot_deg = 0.;
             }
         if (!or_detect && !orep_detect && rot_deg!=0)
             {
             bmp_rotate_right_angle(src,rot_deg);
-            if (use_crop_boxes)
-                pageinfo->page_rot_deg=rot_deg;
+            if (pageinfo!=NULL)
+                pageinfo->srcpage_rot_deg=rot_deg;
             }
         if (is_gray || bmp_is_grayscale(src))
             bmp_copy(srcgrey,src);
@@ -4092,6 +4927,8 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
             {
             double bor,rotnow;
 
+            if (debug)
+                printf("Checking orientation of page %d ... ",pageno);
             bor=bitmap_orientation(srcgrey);
             if (debug)
                 printf("orientation factor = %g\n",bor);
@@ -4123,6 +4960,8 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
                 bmp_rotate_right_angle(srcgrey,rotnow);
                 if (dst_color)
                     bmp_rotate_right_angle(src,rotnow);
+                if (pageinfo!=NULL)
+                    pageinfo->srcpage_rot_deg=rotnow;
                 }
             }
         if (erase_vertical_lines>0)
@@ -4132,8 +4971,8 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
             {
             double rot;
             rot=bmp_autostraighten(src,srcgrey,white,src_autostraighten,0.1,debug,stdout);
-            if (use_crop_boxes)
-                pageinfo->page_rot_deg += rot;
+            if (pageinfo!=NULL)
+                pageinfo->srcpage_fine_rot_deg = rot;
             }
         white_margins(src,srcgrey);
         aprintf("\n" TTEXT_HEADER "SOURCE PAGE %d",pageno);
@@ -4167,9 +5006,11 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
             }
         masterinfo->bgcolor=white;
         masterinfo->fit_to_page = dst_fit_to_page;
-        /* Check to see if master bitmap might need more room */
-        bmpregion_multicolumn_add(&region,masterinfo,1,pageinfo,
-                                 pages_done==0. ? 0. : (int)(0.25*src_dpi+.5));
+        /* Set destination size (flush output bitmap if it changes) */
+        set_margins_and_devsize(&region,masterinfo,pageinfo);
+        /* Parse the source bitmap for viewable regions */
+        bmpregion_source_page_add(&region,masterinfo,1,pageinfo,
+                                  pages_done==0. ? 0. : (int)(0.25*src_dpi+.5));
         pages_done++;
         if (verbose)
             {
@@ -4207,8 +5048,10 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
             if (bormean < 1./thresh)
                 {
                 printf("Rotating clockwise.\n");
-                if (use_crop_boxes)
-                    pdfboxes_free(&pageinfo->boxes);
+#ifdef HAVE_MUPDF
+                if (pageinfo!=NULL)
+                    wpdfboxes_free(&pageinfo->boxes);
+#endif
                 bmp_free(&masterinfo->bmp);
                 if (folder)
                     filelist_free(fl);
@@ -4216,8 +5059,10 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
                 }
             }
         printf("No rotation necessary.\n");
-        if (use_crop_boxes)
-            pdfboxes_free(&pageinfo->boxes);
+#ifdef HAVE_MUPDF
+        if (pageinfo!=NULL)
+            wpdfboxes_free(&pageinfo->boxes);
+#endif
         bmp_free(&masterinfo->bmp);
         if (folder)
             filelist_free(fl);
@@ -4226,16 +5071,54 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
     if (!dst_break_pages && dst_fit_to_page!=-2)
         publish_master(masterinfo,pageinfo,1);
     {
-    char producer[64];
-    sprintf(producer,"K2pdfopt %s",VERSION);
-    pdffile_finish(gpdf,producer);
-    pdffile_close(gpdf);
+    char cdate[128],author[256],title[256];
+
+#ifdef HAVE_MUPDF
+    if (src_type==SRC_TYPE_PDF)
+        {
+        if (wmupdf_info_field(mupdffilename,"Author",author,255)<0)
+            author[0]='\0';
+        if (wmupdf_info_field(mupdffilename,"CreationDate",cdate,127)<0)
+            cdate[0]='\0';
+        if (wmupdf_info_field(mupdffilename,"Title",title,255)<0)
+            title[0]='\0';
+        }
+    else
+#endif
+        author[0]=title[0]=cdate[0]='\0';
+    if (pageinfo==NULL)
+        {
+        pdffile_finish(gpdf,title,author,_pageinfo.producer,cdate);
+        pdffile_close(gpdf);
+        }
+    else
+        {
+        /* Re-write PDF file using crop boxes */
+#if (WILLUSDEBUGX & 64)
+int i;
+for (i=0;i<pageinfo->boxes.n;i++)
+{
+WPDFBOX *box;
+box=&pageinfo->boxes.box[i];
+printf("Box %d:\n",i);
+printf("    srcpage=%2d, dstpage=%2d\n",box->srcbox.pageno,box->dstpage);
+printf("    x0=%5.1f, y0=%5.1f\n",box->x0,box->y0);
+printf("    w =%5.1f, h =%5.1f\n",box->w,box->h);
+printf("    x1=%5.1f, y1=%5.1f\n",box->x1,box->y1);
+printf("    sr=%5.1f, dr=%5.1f\n\n",box->srcrot_deg,box->dstrot_deg);
+}
+#endif
+#ifdef HAVE_MUPDF
+        wmupdf_remake_pdf(mupdffilename,dstfile,pageinfo,stdout);
+        wpdfboxes_free(&pageinfo->boxes);
+#endif
+        }
     if (show_marked_source)
         {
-        pdffile_finish(mpdf,producer);
+        pdffile_finish(mpdf,title,author,_pageinfo.producer,cdate);
         pdffile_close(mpdf);
         }
-    }
+    } // cdate, author, title selection
     if (debug || verbose)
         printf("Cleaning up ...\n\n");
     /*
@@ -4256,8 +5139,6 @@ static double k2pdfopt_proc_one(char *filename,double rot_deg)
         aprintf(TTEXT_BOLD "%d pages" TTEXT_NORMAL " written to " TTEXT_MAGENTA "%s" TTEXT_NORMAL " (%.1f MB).\n\n",pages_done,markedfile,size/1024./1024.);
         }
     bmp_free(&masterinfo->bmp);
-    if (use_crop_boxes)
-        pdfboxes_free(&pageinfo->boxes);
     if (folder)
         filelist_free(fl);
     return(0.);
@@ -4537,11 +5418,44 @@ static int bmp_get_one_document_page(WILLUSBITMAP *src,int src_type,char *filena
                                      int pageno,double dpi,int bpp,FILE *out)
 
     {
-#ifdef HAVE_MUPDF
     if (src_type==SRC_TYPE_PDF)
-        return(bmpmupdf_pdffile_to_bmp(src,filename,pageno,dpi*document_scale_factor,bpp));
-    else
+        {
+        int status;
+#ifdef HAVE_MUPDF
+        static char *mupdferr_trygs=TTEXT_WARN "\a\n ** ERROR reading from " TTEXT_BOLD2 "%s" TTEXT_WARN "using MuPDF.  Trying Ghostscript...\n\n" TTEXT_NORMAL;
+
+        status=0;
+        if (usegs<=0)
+            {
+            status=bmpmupdf_pdffile_to_bmp(src,filename,pageno,dpi*document_scale_factor,bpp);
+            if (!status || usegs<0)
+                return(status);
+            }
+        /* Switch to Postscript since MuPDF failed */
+        if (usegs==0)
+            {
+            aprintf(mupdferr_trygs,filename);
+            usegs=1;
+            }
 #endif
+        if (willusgs_init(stdout) < 0)
+            {
+            k2_enter_to_exit();
+            exit(20);
+            }
+        bmp_set_pdf_pageno(pageno);
+        bmp_set_pdf_dpi(dpi);
+        /*
+        aprintf("Converting " TTEXT_BOLD2 "%s" TTEXT_NORMAL 
+            " page %2d to %d dpi bitmap ... ",filename,i,dpi);
+        fflush(stdout);
+        */
+        status=bmp_read(src,filename,NULL);
+        if (!status && bpp==8)
+            bmp_convert_to_greyscale(src);
+        return(status);
+        }
+    else
 #ifdef HAVE_DJVU
     if (src_type==SRC_TYPE_DJVU)
         return(bmpdjvu_djvufile_to_bmp(src,filename,pageno,dpi*document_scale_factor,bpp,out));
@@ -4572,11 +5486,11 @@ static int wait_enter(void)
 ** level = recursion level.  First call = 1, then 2, ...
 **
 */
-static void bmpregion_multicolumn_add(BMPREGION *region,MASTERINFO *masterinfo,int level,
-                                      PAGEINFO *pageinfo,int colgap0_pixels)
+static void bmpregion_source_page_add(BMPREGION *region,MASTERINFO *masterinfo,int level,
+                                      WPDFPAGEINFO *pageinfo,int colgap0_pixels)
 
     {
-    static char *funcname="bmpregion_multicolumn_add";
+    static char *funcname="bmpregion_source_page_add";
     int *row_black_count;
     int r2,rh,r0,cgr,maxlevel;
     BMPREGION *srcregion,_srcregion;
@@ -4590,15 +5504,69 @@ static void bmpregion_multicolumn_add(BMPREGION *region,MASTERINFO *masterinfo,i
     willus_dmem_alloc_warn(2,(void **)&rowcount,sizeof(int)*(region->r2+1),funcname,10);
     maxlevel = max_columns/2;
     if (debug)
-        printf("@bmpregion_multicolumn_add (%d,%d) - (%d,%d) lev=%d\n",
+        printf("@bmpregion_source_page_add (%d,%d) - (%d,%d) lev=%d\n",
                region->c1,region->r1,region->c2,region->r2,level);
     newregion=&_newregion;
     (*newregion)=(*region);
     /* Establish colcount, rowcount arrays */
-    bmpregion_trim_margins(newregion,colcount,rowcount,0xf);
+    bmpregion_trim_margins(newregion,colcount,rowcount,src_trim ? 0xf : 0);
     (*newregion)=(*region);
     srcregion=&_srcregion;
     (*srcregion)=(*region);
+    /* Blind Grid Output (no attempt to find breaks between rows or columns) */
+    if (src_grid_cols > 0 && src_grid_rows > 0)
+        {
+        int i,nr;
+        nr=src_grid_cols*src_grid_rows;
+        for (i=0;i<nr;i++)
+            {
+            int r,c,gw,gh,gwo,gho;
+
+            gwo=(src_grid_overlap_percentage*region->bmp8->width+region->bmp8->width/2)/100;
+            gho=(src_grid_overlap_percentage*region->bmp8->height+region->bmp8->height/2)/100;
+            gw=region->bmp8->width/src_grid_cols+gwo;
+            gh=region->bmp8->height/src_grid_rows+gho;
+            if (src_grid_order==0)
+                {
+                r=i%src_grid_rows;
+                c=i/src_grid_rows;
+                }
+            else
+                {
+                r=i/src_grid_cols;
+                c=i%src_grid_cols;
+                }
+            srcregion->c1=c*region->bmp8->width/src_grid_cols-gwo/2;
+            if (srcregion->c1<0)
+                srcregion->c1=0;
+            srcregion->c2=srcregion->c1+gw-1;
+            if (srcregion->c2>region->bmp8->width-1)
+                {
+                srcregion->c2=region->bmp8->width-1;
+                srcregion->c1=srcregion->c2-gw+1;
+                if (srcregion->c1<0)
+                    srcregion->c1=0;
+                }
+            srcregion->r1=r*region->bmp8->height/src_grid_rows-gho/2;
+            if (srcregion->r1<0)
+                srcregion->r1=0;
+            srcregion->r2=srcregion->r1+gh-1;
+            if (srcregion->r2>region->bmp8->height-1)
+                {
+                srcregion->r2=region->bmp8->height-1;
+                srcregion->r1=srcregion->r2-gh+1;
+                if (srcregion->r1<0)
+                    srcregion->r1=0;
+                }
+            bmpregion_vertically_break(srcregion,masterinfo,text_wrap,
+                          fit_columns?-2.0:-1.0,colcount,rowcount,pageinfo,0,2*level);
+            if (masterinfo->fit_to_page==-2)
+                publish_master(masterinfo,pageinfo,1);
+            }
+        willus_dmem_free(2,(double **)&rowcount,funcname);
+        willus_dmem_free(1,(double **)&colcount,funcname);
+        return;
+        }
     /* How many page regions do we need? */
     minh = min_column_height_inches;
     if (minh < .01)
@@ -4661,8 +5629,19 @@ static void bmpregion_multicolumn_add(BMPREGION *region,MASTERINFO *masterinfo,i
                 aprintf("%s",ierr);
                 break;
                 }
-            rh=bmpregion_find_multicolumn_divider(srcregion,row_black_count,pageregion,&npr,
-                                                  colcount,rowcount);
+            /*
+            if (maxlevel==1)
+            */
+                rh=bmpregion_find_multicolumn_divider(srcregion,row_black_count,
+                                                      pageregion,&npr,colcount,rowcount);
+            /*
+            else
+                {
+                BMPREGIONS *subregion,_subregion;
+
+                subregion=&_subregion;
+                }
+            */
             if (verbose)
                 printf("rh=%d/%d\n",rh,region->r2-region->r1+1);
             }
@@ -4714,7 +5693,7 @@ static void bmpregion_multicolumn_add(BMPREGION *region,MASTERINFO *masterinfo,i
                 else
                     colgap_pixels = colgap0_pixels;
                 if (level<maxlevel)
-                    bmpregion_multicolumn_add(newregion,masterinfo,level+1,pageinfo,
+                    bmpregion_source_page_add(newregion,masterinfo,level+1,pageinfo,
                                               colgap_pixels);
                 else
                     {
@@ -4923,13 +5902,13 @@ static int bmpregion_find_multicolumn_divider(BMPREGION *region,int *row_black_c
     breakinfo->textrow=NULL;
     breakinfo_alloc(101,breakinfo,region->r2-region->r1+1);
     bmpregion_find_vertical_breaks(region,breakinfo,colcount,rowcount,column_row_gap_height_in);
-/*
-{
-printf("region (%d,%d)-(%d,%d) has %d breaks:\n",region->c1,region->r1,region->c2,region->r2,breakinfo->n);
-for (i=0;i<breakinfo->n;i++)
-printf("    Rows %d - %d\n",breakinfo->textrow[i].r1,breakinfo->textrow[i].r2);
-}
-*/
+    if (debug)
+        {
+        printf("region (%d,%d)-(%d,%d) has %d breaks:\n",
+                region->c1,region->r1,region->c2,region->r2,breakinfo->n);
+        for (i=0;i<breakinfo->n;i++)
+            printf("    Rows %d - %d\n",breakinfo->textrow[i].r1,breakinfo->textrow[i].r2);
+        }
     newregion=&_newregion;
     (*newregion)=(*region);
     min_height_pixels=min_column_height_inches*src_dpi; /* src->height/15; */ 
@@ -4952,6 +5931,12 @@ printf("    Rows %d - %d\n",breakinfo->textrow[i].r1,breakinfo->textrow[i].r2);
         {
         rowmin[i]=region->r2+2;
         rowmax[i]=-1;
+        }
+    /* Un-trim top/bottom rows if requested */
+    if (!src_trim && breakinfo->n>0)
+        {
+        breakinfo->textrow[0].r1=region->r1;
+        breakinfo->textrow[breakinfo->n-1].r2=region->r2;
         }
 
     /* Start with top-most and bottom-most regions, look for column dividers */
@@ -5046,10 +6031,16 @@ printf("    Rows %d - %d\n",breakinfo->textrow[i].r1,breakinfo->textrow[i].r2);
                         pageregion[(*npr)].r2=breakinfo->textrow[itop-1].r2;
                         if (pageregion[(*npr)].r2 > pageregion[(*npr)].bmp8->height-1)
                             pageregion[(*npr)].r2 = pageregion[(*npr)].bmp8->height-1;
-                        bmpregion_trim_margins(&pageregion[(*npr)],colcount,rowcount,0xf);
+                        bmpregion_trim_margins(&pageregion[(*npr)],colcount,rowcount,src_trim?0xf:0);
                         /* Special flag to indicate full-width region */
                         pageregion[(*npr)].c1 = -1-pageregion[(*npr)].c1;
                         (*npr)=(*npr)+1;
+                        }
+                    /* Un-trim columns if requested */
+                    if (!src_trim)
+                        {
+                        column[0].c1=region->c1;
+                        column[1].c2=region->c2;
                         }
                     pageregion[(*npr)]=column[0];
                     (*npr)=(*npr)+1;
@@ -5068,7 +6059,7 @@ printf("Returning %d divider column = %d - %d\n",region->r2-region->r1+1,newregi
     if (verbose)
         printf("NO GOOD REGION FOUND.\n");
     pageregion[(*npr)]=(*region);
-    bmpregion_trim_margins(&pageregion[(*npr)],colcount,rowcount,0xf);
+    bmpregion_trim_margins(&pageregion[(*npr)],colcount,rowcount,src_trim?0xf:0);
     /* Special flag to indicate full-width region */
     pageregion[(*npr)].c1 = -1-pageregion[(*npr)].c1;
     (*npr)=(*npr)+1;
@@ -5161,7 +6152,7 @@ static int bmpregion_is_clear(BMPREGION *region,int *row_black_count,double gt_i
 printf("(%d,%d)-(%d,%d):  c=%d, pt=%d (gt_in=%g)\n",
 region->c1,region->r1,region->c2,region->r2,c,pt,gt_in);
 */
-    return(1+(int)10*c/pt);
+    return(pt<=0 ? 1 : 1+(int)10*c/pt);
     }
 
 
@@ -5213,15 +6204,16 @@ static void bmpregion_row_histogram(BMPREGION *region)
 **         be checked for multiple columns, but the text may be wrapped
 **         (controlled by allow_text_wrapping input).
 **
-** force_scale == -2 :  Use same scale for entire column--fit to device
+** force_scale == -2 :  Use same scale for entire region/column--fit to device
 **
 ** This function looks for vertical gaps in the region and breaks it at
-** the widest ones (if there are significantly wider ones).
+** the largest vertical gaps (if there are significantly larger gaps than the
+** typical gap--indicating section breaks in the document).
 **
 */
 static void bmpregion_vertically_break(BMPREGION *region,MASTERINFO *masterinfo,
                           int allow_text_wrapping,double force_scale,
-                          int *colcount,int *rowcount,PAGEINFO *pageinfo,
+                          int *colcount,int *rowcount,WPDFPAGEINFO *pageinfo,
                           int colgap_pixels,int ncols)
 
     {
@@ -5235,9 +6227,10 @@ static void bmpregion_vertically_break(BMPREGION *region,MASTERINFO *masterinfo,
 
 #if (WILLUSDEBUGX & 1)
 printf("\n\n@bmpregion_vertically_break.  colgap_pixels=%d\n\n",colgap_pixels);
+printf("    region = (%d,%d) - (%d,%d)\n",region->c1,region->r1,region->c2,region->r2);
+printf("    vertical_break_threshold=%g\n",vertical_break_threshold);
 #endif
-    trim_flags=0xf;
-    allow_vertical_breaks=1;
+    allow_vertical_breaks=(vertical_break_threshold > -1.5);
     justification_flags=0x8f; /* Don't know region justification status yet.  Use user settings. */
     rbdelta=-1;
     breakinfo=&_breakinfo;
@@ -5257,31 +6250,7 @@ breakinfo_echo(breakinfo);
 #if (WILLUSDEBUGX & 2)
 breakinfo_echo(breakinfo);
 #endif
-/*
-newregion=&_newregion;
-for (i=0;i<breakinfo->n;i++)
-{
-(*newregion)=(*region);
-newregion->r1=breakinfo->textrow[i].r1;
-newregion->r2=breakinfo->textrow[i].r2;
-bmpregion_add(newregion,breakinfo,masterinfo,allow_text_wrapping,force_scale,0,1,
-              colcount,rowcount,pageinfo,0,0xf);
-}
-breakinfo_free(breakinfo);
-return;
-*/
-/*
-    if (!vertical_breaks)
-        {
-        caller_id=100;
-        marking_flags=0;
-        bmpregion_add(region,breakinfo,masterinfo,allow_text_wrapping,trim_flags,
-                      allow_vertical_breaks,force_scale,justification_flags,
-                      caller_id,colcount,rowcount,pageinfo,marking_flags,rbdelta);
-        breakinfo_free(breakinfo);
-        return;
-        }
-*/
+
     /* Red, numbered region */
     mark_source_page(region,1,0xf);
     bregion=&_bregion;
@@ -5349,15 +6318,21 @@ region_height_inches);
         }
     else
         revert=0;
+#if (WILLUSDEBUGX & 1)
+printf("Entering vert region loop, %d regions.\n",breakinfo->n);
+printf("    region 1:  r1=%d, r2=%d\n",breakinfo->textrow[0].r1,breakinfo->textrow[0].r2);
+printf("    region %d:  r1=%d, r2=%d\n",breakinfo->n,breakinfo->textrow[breakinfo->n-1].r1,breakinfo->textrow[breakinfo->n-1].r2);
+#endif
+    /* Un-trim top and bottom region if necessary */
+    if (!src_trim && breakinfo->n>0)
+        {
+        breakinfo->textrow[0].r1=region->r1;
+        breakinfo->textrow[breakinfo->n-1].r2=region->r2;
+        }
+
     /* Add the regions (broken vertically) */
     caller_id=1;
-    /*
-    if (trim_left_and_right)
-        trim_flags=0xf;
-    else
-        trim_flags=0xc;
-    */
-    trim_flags=0xf;
+    trim_flags=src_trim ? 0xf : 0x80;
     for (regcount=i1=i=0;i1<breakinfo->n;i++)
         {
         int i2;
@@ -5390,7 +6365,7 @@ region_height_inches);
             marking_flags=(i1==0?0:1)|(i2==breakinfo->n-1?0:2);
             /* Green */
             mark_source_page(bregion,3,marking_flags);
-            nowrap = ((regwidth <= max_region_width_inches  && allow_text_wrapping<2)
+            nowrap = ((regwidth <= max_region_width_inches && allow_text_wrapping<2)
                     || (ar1 > no_wrap_ar_limit && rh1 > no_wrap_height_limit_inches));
             /*
             ** If between regions, or if the next region isn't going to be
@@ -5489,7 +6464,7 @@ static void bmpregion_add(BMPREGION *region,BREAKINFO *breakinfo,MASTERINFO *mas
                           int allow_text_wrapping,int trim_flags,
                           int allow_vertical_breaks,double force_scale,
                           int justification_flags,int caller_id,
-                          int *colcount,int *rowcount,PAGEINFO *pageinfo,
+                          int *colcount,int *rowcount,WPDFPAGEINFO *pageinfo,
                           int mark_flags,int rowbase_delta)
 
     {
@@ -5503,6 +6478,8 @@ static void bmpregion_add(BMPREGION *region,BREAKINFO *breakinfo,MASTERINFO *mas
 #if (WILLUSDEBUGX & 1)
 printf("@bmpregion_add (%d,%d) - (%d,%d)\n",region->c1,region->r1,region->c2,region->r2);
 printf("    trimflags = %X\n",trim_flags);
+printf("    allow_text_wrapping = %d\n",allow_text_wrapping);
+printf("    allow_vert_breaks = %d\n",allow_vertical_breaks);
 #endif
     if (debug)
         {
@@ -5583,6 +6560,9 @@ printf("allow_text_wrapping=%d, region_width_inches=%g, max_region_width_inches=
 allow_text_wrapping,region_width_inches,max_region_width_inches);
 */
     /* New in v1.50, if allow_text_wrapping==2, unwrap short lines. */
+/*
+printf("tw=%d, region_width_inches=%g, max_region_width_inches=%g\n",allow_text_wrapping,region_width_inches,max_region_width_inches);
+*/
     if (allow_text_wrapping==2 
          || (allow_text_wrapping==1 && region_width_inches > max_region_width_inches))
         {
@@ -5706,8 +6686,9 @@ allow_text_wrapping,region_width_inches,max_region_width_inches);
     if (w>0 && h>0)
         {
         WILLUSBITMAP *tmp,_tmp;
-        int nocr;
+        int nocr,have_pagebox;
 
+        have_pagebox=0;
         last_scale_factor_internal=(double)w/bmp->width;
 #ifdef HAVE_OCR
         if (dst_ocr)
@@ -5744,8 +6725,67 @@ bmp_write(tmp,filename,stdout,100);
         /* Check special justification for tall regions */
         if (tall_region && dst_figure_justify>=0)
             justification_flags = dst_figure_justify;
-        bmp_src_to_dst(masterinfo,tmp,justification_flags,region->bgcolor,nocr,
-                       (int)((double)src_dpi*tmp->width/bmp->width+.5));
+#ifdef HAVE_MUPDF
+        /* Add source region corresponding to "tmp" bitmap to pageinfo structure */
+        if (pageinfo!=NULL)
+            {
+            WPDFBOX _wpdfbox,*wpdfbox;
+            WPDFSRCBOX *srcbox;
+
+            wpdfbox=&_wpdfbox;
+            srcbox=&wpdfbox->srcbox;
+            wpdfbox->dstpage = -1; /* -1 while still on master bitmap */
+            wpdfbox->dst_width_pts = pageinfo->width_pts;
+            wpdfbox->dst_height_pts = pageinfo->height_pts;
+            srcbox->pageno = pageinfo->srcpage;
+            srcbox->finerot_deg = pageinfo->srcpage_fine_rot_deg;
+            srcbox->rot_deg = pageinfo->srcpage_rot_deg;
+            srcbox->page_width_pts = 72.*newregion->bmp8->width/src_dpi;
+            srcbox->page_height_pts = 72.*newregion->bmp8->height/src_dpi;
+            /* Clip the source crop box with the page crop margins */
+            {
+            BMPREGION *region,_region;
+            double x0,y0,w,h,mar;
+ 
+            region=&_region;
+            region->bmp = newregion->bmp;
+            get_white_margins(region);
+            x0 = 72.*newregion->c1/src_dpi;
+            y0 = 72.*(newregion->bmp8->height-1-newregion->r2)/src_dpi;
+            w = 72.*(newregion->c2-newregion->c1+1)/src_dpi;
+            h = 72.*(newregion->r2-newregion->r1+1)/src_dpi;
+            mar=region->c1*srcbox->page_width_pts/newregion->bmp->width;
+            if (mar>x0)
+                {
+                w -= (mar-x0);
+                x0=mar;
+                }
+            mar=(newregion->bmp->width-1-region->c2)*srcbox->page_width_pts/newregion->bmp->width;
+            if (w > srcbox->page_width_pts-mar-x0)
+                w = srcbox->page_width_pts-mar-x0;
+            mar=(newregion->bmp->height-1-region->r2)*srcbox->page_height_pts/newregion->bmp->height;
+            if (mar>y0)
+                {
+                h -= (mar-y0);
+                y0=mar;
+                }
+            mar=region->r1*srcbox->page_height_pts/newregion->bmp->height;
+            if (h > srcbox->page_height_pts-mar-y0)
+                h = srcbox->page_height_pts-mar-y0;
+            srcbox->x0_pts = x0;
+            srcbox->y0_pts = y0;
+            srcbox->crop_width_pts = w;
+            srcbox->crop_height_pts = h;
+            }
+            if (srcbox->crop_width_pts > 0. && srcbox->crop_height_pts > 0.)
+                {
+                wpdfboxes_add_box(&pageinfo->boxes,wpdfbox);
+                have_pagebox=1;
+                }
+            }
+#endif /* HAVE_MUPDF */
+        bmp_src_to_dst(masterinfo,tmp,have_pagebox?pageinfo:NULL,justification_flags,
+                       region->bgcolor,nocr,(int)((double)src_dpi*tmp->width/bmp->width+.5));
         bmp_free(tmp);
         }
 
@@ -5808,8 +6848,8 @@ static void dst_add_gap(MASTERINFO *masterinfo,double inches)
 ** Full justification is done if requested.
 **
 */
-static void bmp_src_to_dst(MASTERINFO *masterinfo,WILLUSBITMAP *src,int justification_flags,
-                           int whitethresh,int nocr,int dpi)
+static void bmp_src_to_dst(MASTERINFO *masterinfo,WILLUSBITMAP *src,WPDFPAGEINFO *pageinfo,
+                           int justification_flags,int whitethresh,int nocr,int dpi)
 
     {
     WILLUSBITMAP *src1,_src1;
@@ -5865,6 +6905,10 @@ srcbytespp,srcbytewidth,destwidth,destx0,dstbytewidth);
                    || ((justification_flags&0x30)==0 // Use user settings
                        && (dst_fulljustify==1
                             || (dst_fulljustify<0 && (justification_flags&0xc0)==0x40)))));
+
+    /* Cannot fully justify if using crop boxes */
+    if (pageinfo!=NULL)
+        go_full=0;
 
     /* Put fully justified text into src1 bitmap */
     if (go_full)
@@ -5926,6 +6970,24 @@ exit(10);
         }
 #endif
 
+    /*
+    ** For now:  set destination position in pageinfo structure as pixel position
+    ** relative to top of master bitmap.  scale = the height in pixels on the master bitmap.
+    */
+#ifdef HAVE_MUPDF
+    if (pageinfo!=NULL)
+        {
+        WPDFBOX *box;
+
+        box=&pageinfo->boxes.box[pageinfo->boxes.n-1];
+        /* These values will get adjusted in publish_master() */
+        box->x1 = dw;
+        box->y1 = masterinfo->rows;
+        box->userx = tmp->width;
+        box->usery = tmp->height;
+        }
+#endif
+
     /* Add tmp bitmap to dst */
     srcbytespp = tmp->bpp==24 ? 3 : 1;
     srcbytewidth = tmp->width*srcbytespp;
@@ -5944,6 +7006,7 @@ exit(10);
         pdst += srcbytewidth;
         memset(pdst,255,dw2);
         }
+
 
 #ifdef HAVE_OCR
     if (dst_ocr && nocr>1)
@@ -6589,6 +7652,9 @@ fprintf(out," %4d  %4d  %4d  %4d  %4d\n",j,r0[j-region->c1],r1[j-region->c1],r2[
             region->hyphen.r2 = rmax;
             if (region->hyphen.c2<0)
                 region->hyphen.c2=j;
+#if (WILLUSDEBUGX & 16)
+fprintf(out,"  Termination #2\n");
+#endif
             break;
             }
         // rc=(r1[j-region->c1]+r2[j-region->c1])/2;
@@ -6598,12 +7664,22 @@ fprintf(out," %4d  %4d  %4d  %4d  %4d\n",j,r0[j-region->c1],r1[j-region->c1],r2[
            /* Too far away from last values? */
            if ((double)(rmin-r1[j-region->c1])/region->lcheight > .1
                || (double)(r2[j-region->c1]-rmax)/region->lcheight > .1)
+{
+#if (WILLUSDEBUGX & 16)
+fprintf(out,"  Too far from last values.\n");
+#endif
                break;
+}
            if ((double)nrmid/region->lcheight > .1 && nrmid>1)
                {
                if ((double)fabs(rmin-r1[j-region->c1])/region->lcheight > .1
                    || (double)(rmax-r2[j-region->c1])/region->lcheight > .1)
+{
+#if (WILLUSDEBUGX & 16)
+fprintf(out,"  Too far from last values (2).\n");
+#endif
                    break;
+}
                }
            }
         if (nrmid==1 || r1[j-region->c1]<rmin)
@@ -6615,17 +7691,33 @@ fprintf(out," %4d  %4d  %4d  %4d  %4d\n",j,r0[j-region->c1],r1[j-region->c1],r2[
             double rmean;
 
             /* Can't be too thick */
-            if ((double)(rmax-rmin)/region->lcheight > .55
-                    || (double)(rmax-rmin)/region->lcheight < .08)
+            if ((double)(rmax-rmin+1)/region->lcheight > .55
+                    || (double)(rmax-rmin+1)/region->lcheight < .05)
+{
+#if (WILLUSDEBUGX & 16)
+fprintf(out,"  Too thick or too thin:  rmax=%d, rmin=%d, lch=%d rat=%g (.05 - .55).\n",
+rmax,rmin,region->lcheight,(double)(rmax-rmin+1)/region->lcheight);
+#endif
                 break;
+}
             /* Must be reasonably well centered above baseline */
             rmean=(double)(rmax+rmin)/2;
             if ((double)(region->rowbase-rmean)/region->lcheight < 0.35
                   || (double)(region->rowbase-rmean)/region->lcheight > 0.85)
+{
+#if (WILLUSDEBUGX & 16)
+fprintf(out,"  Not well centered (1).\n");
+#endif
                 break;
+}
             if ((double)(region->rowbase-rmax)/region->lcheight < 0.2
                   || (double)(region->rowbase-rmin)/region->lcheight > 0.92)
+{
+#if (WILLUSDEBUGX & 16)
+fprintf(out,"  Not well centered (2).\n");
+#endif
                 break;
+}
             }
         }
 #if (WILLUSDEBUGX & 16)
@@ -6806,7 +7898,7 @@ static void trim_to(int *count,int *i1,int i2,double gaplen)
 */
 static void bmpregion_analyze_justification_and_line_spacing(BMPREGION *region,
                                    BREAKINFO *breakinfo,MASTERINFO *masterinfo,
-                                   int *colcount,int *rowcount,PAGEINFO *pageinfo,
+                                   int *colcount,int *rowcount,WPDFPAGEINFO *pageinfo,
                                    int allow_text_wrapping,double force_scale)
 
     {
@@ -6815,7 +7907,7 @@ static void bmpregion_analyze_justification_and_line_spacing(BMPREGION *region,
     double *id,*c1,*c2,*ch,*lch,*ls;
     int *just,*indented,*short_line;
     double capheight,lcheight,fontsize;
-    int textheight,ragged_right,src_line_spacing;
+    int textheight,ragged_right,src_line_spacing,mingap;
     static char *funcname="bmpregion_analyze_justification_and_line_spacing";
 
 #if (WILLUSDEBUGX & 1)
@@ -6960,7 +8052,9 @@ printf("   src_line_spacing = %d, line_spacing = %d\n",src_line_spacing,line_spa
     mean_row_gap = line_spacing - textheight;
     if (mean_row_gap <= 1)
         mean_row_gap = 1;
-
+    mingap = mean_row_gap / 4;
+    if (mingap < 1)
+        mingap = 1;
 
     /* Try to figure out if we have a ragged right edge */
     if (ntr<3)
@@ -7107,6 +8201,14 @@ printf("Mean c1, c2 = %g, %g; stddevs = %g, %g\n",mean1,mean2,stdev1,stdev2);
 printf("textheight = %d, line_spacing = %d\n",textheight,line_spacing);
 }
 */
+
+#if (WILLUSDEBUGX & 1)
+if (!allow_text_wrapping)
+printf("Processing text row by row (no wrapping)...\n");
+#endif
+    /*
+    ** Process row by row
+    */
     for (i=i1;i<=i2;i++)
         {
         TEXTROW *textrow;
@@ -7119,6 +8221,9 @@ aprintf("Row " ANSI_YELLOW "%d of %d" ANSI_NORMAL " (wrap=%d)\n",i-i1+1,i2-i1+1,
         (*newregion)=(*region);
         newregion->r1=textrow->r1;
         newregion->r2=textrow->r2;
+#if (WILLUSDEBUGX & 1)
+printf("Row %2d:  r1=%4d, r2=%4d, linespacing=%3d\n",i,textrow->r1,textrow->r2,line_spacing);
+#endif
 
         /* The |3 tells it to use the user settings for left/right/center */
         justflags = just[i-i1]|0x3;
@@ -7157,6 +8262,8 @@ printf("wrapflush5\n");
 #ifdef WILLUSDEBUG
 printf("wrapflush5a\n");
 #endif
+
+        /* No wrapping allowed:  process whole line as one region */
         wrapbmp_flush(masterinfo,0,pageinfo,1);
         /* If default justifications, ignore all analysis and just center it. */
         if (dst_justify<0 && dst_fulljustify<0)
@@ -7172,18 +8279,57 @@ printf("wrapflush5a\n");
         bmpregion_add(newregion,breakinfo,masterinfo,0,trimflags,0,force_scale,
                       justflags,5,colcount,rowcount,pageinfo,0,
                       textrow->r2-textrow->rowbase);
+        /* Compute line spacing between rows */
+        {
+        int thisgap,gap_allowed;
+        double fs,ls_allowed;
+
+        thisgap = (i<i2) ? textrow->gap 
+                         : textrow->rowheight-(textrow->rowbase + last_rowbase_internal);
+#if (WILLUSDEBUGX & 1)
+printf("    thisgap=%3d, vls = %g\n",thisgap,vertical_line_spacing);
+#endif
+        fs = (textrow->capheight+textrow->lcheight)/1.17;
+        if (fs < fontsize/4.) /* Probably not text?? */
+            fs = fontsize;
+        ls_allowed=fabs(vertical_line_spacing)*fs*1.16;
+        /* If close to median line spacing, use median line spacing */
+        /* ... Good idea?? */
+        if (line_spacing>.5 && fabs(ls_allowed/line_spacing-1.0)<.2)
+            ls_allowed=line_spacing;
+        gap_allowed=(int)(0.5+ls_allowed-(textrow->r2-textrow->r1+1));
+#if (WILLUSDEBUGX & 1)
+printf("    gap_allowed = %3d\n",gap_allowed);
+#endif
         if (vertical_line_spacing < 0)
-            {
-            int gap1;
-            gap1 = line_spacing - (textrow->r2-textrow->r1+1);
+            gap = thisgap > gap_allowed ? gap_allowed : thisgap;
+        else
+            gap = gap_allowed;
+/*
+            gap = gap1 < gap_allowed ? gap_allowed : gap1;
             if (i<i2)
-                gap = textrow->gap > gap1 ? gap1 : textrow->gap;
+                {
+                if (textrow->gap > gap1)
+                    {
+                    int gap_allowed;
+                    srcls = (textrow->r2-textrow->r1+1)+textrow->gap;
+                    fs = (textrow->capheight+textrow->lcheight)/1.17;
+                    ls_allowed=fabs(vertical_line_spacing)*fs*1.16;
+                    gap_allowed=ls_allowed-(textrow->r2-textrow->r1+1);
+                    if (gap_allowed < textrow->gap)
+                        gap_allowed = textrow->gap;
+                    gap = gap1 > gap_allowed ? gap_allowed : gap1;
+                    }
+                else
+                    gap = textrow->gap;
+                }
             else
                 {
                 gap = textrow->rowheight - (textrow->rowbase + last_rowbase_internal);
                 if (gap < mean_row_gap/2.)
                     gap = mean_row_gap;
                 }
+
             }
         else
             {
@@ -7191,6 +8337,12 @@ printf("wrapflush5a\n");
             if (gap < mean_row_gap/2.)
                 gap = mean_row_gap;
             }
+*/
+        if (gap < mingap)
+            gap = mingap;
+#if (WILLUSDEBUGX & 1)
+printf("    gap = %3d (mingap=%d)\n",gap,mingap);
+#endif
         if (i<i2)
             dst_add_gap_src_pixels("No-wrap line",masterinfo,gap);
         else
@@ -7198,6 +8350,7 @@ printf("wrapflush5a\n");
             last_h5050_internal = textrow->h5050;
             beginning_gap_internal = gap;
             }
+        }
         }
     willus_dmem_free(14,(double **)&just,funcname);
     willus_dmem_free(13,(double **)&c1,funcname);
@@ -7355,7 +8508,7 @@ static void bmpregion_find_vertical_breaks(BMPREGION *region,BREAKINFO *breakinf
     max_fig_gap=0.16;
     max_label_height=0.5;
     /* Trim region and populate colcount/rowcount arrays */
-    bmpregion_trim_margins(region,colcount,rowcount,0xf);
+    bmpregion_trim_margins(region,colcount,rowcount,src_trim ? 0xf : 0);
     newregion=&_newregion;
     (*newregion)=(*region);
     if (debug)
@@ -7452,17 +8605,17 @@ fclose(f);
     /* Look for "row" gaps in the region so that it can be broken into */
     /* multiple "rows".                                                */
     breakinfo->n=0;
-    for (labelrow=figrow=-1,dtrc=trc=brc=0,i=region->r1;i<=region->r2;i++)
+    for (labelrow=figrow=-1,dtrc=trc=brc=0,i=region->r1;i<=region->r2+1;i++)
         {
         /* Does row have few enough black pixels to be considered blank? */
-        if (rowthresh[i-region->r1]<=10) 
+        if (i>region->r2 || rowthresh[i-region->r1]<=10) 
             {
             trc=0;
             brc++;
             /*
             ** Max allowed white space between rows = max_vertical_gap_inches
             */
-            if (dtrc==0)
+            if (dtrc==0 && i<=region->r2)
                 {
                 if (brc > brcmin)
                     newregion->r1++;
@@ -7471,7 +8624,7 @@ fclose(f);
             /*
             ** Big enough blank gap, so add one row / line
             */
-            if (dtrc+brc >= rhmin_pix)
+            if (dtrc+brc >= rhmin_pix || i>region->r2)
                 {
                 int i0,iopt;
                 double region_height_inches;
@@ -7482,27 +8635,30 @@ fclose(f);
                 if (dtrc<2)
                     dtrc=2;
                 /* Look for more optimum point */
-                for (i0=iopt=i;i<=region->r2 && i-i0<dtrc;i++)
+                if (i<=region->r2)
                     {
-                    if (rowthresh[i-region->r1]<rowthresh[iopt-region->r1])
+                    for (i0=iopt=i;i<=region->r2 && i-i0<dtrc;i++)
                         {
-                        iopt=i;
-                        if (rowthresh[i-region->r1]==0)
+                        if (rowthresh[i-region->r1]<rowthresh[iopt-region->r1])
+                            {
+                            iopt=i;
+                            if (rowthresh[i-region->r1]==0)
+                                break;
+                            }
+                        if (rowthresh[i-region->r1]>100)
                             break;
                         }
-                    if (rowthresh[i-region->r1]>100)
-                        break;
+                    /* If at end of region and haven't found perfect break, stay at end */
+                    if (i>region->r2 && rowthresh[iopt-region->r1]>0)
+                        i=region->r2;
+                    else
+                        i=iopt;
                     }
-                /* If at end of region and haven't found perfect break, stay at end */
-                if (i>region->r2 && rowthresh[iopt-region->r1]>0)
-                    i=region->r2;
-                else
-                    i=iopt;
                 newregion->r2=i-1;
                 region_height_inches = (double)(newregion->r2-newregion->r1+1)/src_dpi;
 
                 /* Could this region be a figure? */
-                if (figrow < 0 && region_height_inches >= min_fig_height)
+                if (i<=region->r2 && figrow < 0 && region_height_inches >= min_fig_height)
                     {
                     /* If so, set figrow and don't process it yet. */
                     figrow = newregion->r1;
@@ -7534,7 +8690,7 @@ fclose(f);
                         bmpregion_trim_margins(newregion,colcount,rowcount,0x1f);
                         if (newregion->r2>newregion->r1)
                             textrow_assign_bmpregion(&breakinfo->textrow[breakinfo->n++],newregion);
-                        if (gap_inches>0. && gap_inches<max_fig_gap)
+                        if (i<=region->r2 && gap_inches>0. && gap_inches<max_fig_gap)
                             {
                             /* This new region might be a figure--set it as the new figure */
                             /* and don't dump it yet.                                      */
@@ -7578,6 +8734,8 @@ fclose(f);
             brc=0;
             }
         }
+/* Re-did logic in 1.52 so that this next part is no longer necessary */
+#ifdef COMMENT
     newregion->r2=region->r2;
     if (dtrc>0 && newregion->r2-newregion->r1+1 > 0)
         {
@@ -7587,9 +8745,11 @@ fclose(f);
         newregion->c1=region->c1;
         newregion->c2=region->c2;
         bmpregion_trim_margins(newregion,colcount,rowcount,0x1f);
+printf("Final add:  %d - %d\n",newregion->r1,newregion->r2);
         if (newregion->r2>newregion->r1)
             textrow_assign_bmpregion(&breakinfo->textrow[breakinfo->n++],newregion);
         }
+#endif
     /* Compute gaps between rows and row heights */
     breakinfo_compute_row_gaps(breakinfo,region->r2);
     willus_dmem_free(15,(double **)&rowthresh,funcname);
@@ -7746,7 +8906,7 @@ printf("mg = %d x %g = %d\n",gap[breakinfo->n/2],fracgap,mg);
             gs2=breakinfo->textrow[i].gap;
             }
 #if (WILLUSDEBUGX & 2)
-printf("   rowheight[%d] = %d, mh=%d, gs1=%d, gs2=%d\n",i,trh,gs1,gs2);
+printf("   rowheight[%d] = %d, mh=%d, gs1=%d, gs2=%d\n",i,trh,mh,gs1,gs2);
 #endif
         gap_is_big = (trh >= mh || (gs1 >= mg && gs2 >= mg));
         /*
@@ -8087,7 +9247,7 @@ fclose(f);
 static void bmpregion_one_row_wrap_and_add(BMPREGION *region,BREAKINFO *rowbreakinfo,
                                            int index,int i1,int i2,
                                            MASTERINFO *masterinfo,int justflags,
-                                           int *colcount,int *rowcount,PAGEINFO *pageinfo,
+                                           int *colcount,int *rowcount,WPDFPAGEINFO *pageinfo,
                                            int line_spacing,int mean_row_gap,int rowbase,
                                            int marking_flags,int pi)
 
@@ -8553,7 +9713,7 @@ exit(10);
 
 
 static void wrapbmp_flush(MASTERINFO *masterinfo,int allow_full_justification,
-                          PAGEINFO *pageinfo,int use_bgi)
+                          WPDFPAGEINFO *pageinfo,int use_bgi)
 
     {
     BMPREGION region;
@@ -8682,6 +9842,13 @@ printf("wf:  gap=%d\n",gap);
         just = (wrapbmp_just & 0xcf) | 0x20;
     else
         just = wrapbmp_just;
+    /*
+    ** For now, set pageinfo=NULL in calls to bmpregion_add because the
+    ** pageinfo processing assumes that the BMPREGION structure it is working
+    ** with is using the original source bitmap, not the wrapbmp bitmap.
+    ** This means that word wrapping can't use the pageinfo structure for now.
+    */
+    pageinfo=NULL;
     bmpregion_add(&region,NULL,masterinfo,0,0,0,-1.0,just,2,
                   colcount,rowcount,pageinfo,0xf,wrapbmp->height-1-wrapbmp_base);
     if (wrapbmp->bpp==24)
@@ -8766,10 +9933,10 @@ count++;
 ** Publish pages from the master bitmap by finding break points that will
 ** fit the device page.
 **
-** As of 9/2012, it appears to be guaranteed that dst_width = masterinfo->bmp.width
+** dst_width = masterinfo->bmp.width
 **
 */
-static void publish_master(MASTERINFO *masterinfo,PAGEINFO *pageinfo,int flushall)
+static void publish_master(MASTERINFO *masterinfo,WPDFPAGEINFO *pageinfo,int flushall)
 
     {
     /* bmp = full-sized bitmap w/padding and margins */
@@ -8779,7 +9946,7 @@ static void publish_master(MASTERINFO *masterinfo,PAGEINFO *pageinfo,int flushal
     int rr,maxsize,r,r0,bytespp,size_reduction;
     int pl,pr,pt,pb;
     /* Local DPI, width, height */
-    int ldpi;
+    double ldpi;
     int lwidth,lheight,ltotheight;
 #ifdef HAVE_OCR
     OCRWORDS *ocrwords_pub,_ocrwords_pub;
@@ -8792,9 +9959,12 @@ static void publish_master(MASTERINFO *masterinfo,PAGEINFO *pageinfo,int flushal
         {
         aprintf("\n\n\a" TTEXT_WARN "!! Internal error, masterinfo->bmp.width=%d != dst_width=%d.\n"
                "Contact author." TTEXT_NORMAL "\n\n",masterinfo->bmp.width,dst_width);
-        sys_enter_to_exit(NULL);
+        wsys_enter_to_exit(NULL);
         exit(10);
         }
+    /* v1.52: Make sure text wrapping is flushed if we are to publish everything. */
+    if (flushall)
+        wrapbmp_flush(masterinfo,0,pageinfo,0);
     bmp=&_bmp;
     bmp_init(bmp);
     bmp1=&_bmp1;
@@ -8827,25 +9997,46 @@ static void publish_master(MASTERINFO *masterinfo,PAGEINFO *pageinfo,int flushal
     if (dst_ocr)
         ocrwords_init(ocrwords_pub);
 #endif
+#if (WILLUSDEBUGX & 64)
+printf("start:  mi->rows=%d, rr=%d\n",masterinfo->rows,rr);
+#endif
     /* While enough pixel rows in dest bitmap, break into pages */
-    while (masterinfo->rows>rr)
+    while (masterinfo->rows>0 && masterinfo->rows>=rr)
         {
         int i,bp,bw;
         /* Get a suitable breaking point for the next page */
         bp=break_point(masterinfo,maxsize);
         if (verbose)
             printf("bp: maxsize=%d, bp=%d, r0=%d\n",maxsize,bp,r0);
+#if (WILLUSDEBUGX & 64)
+printf("bp: maxsize=%d, bp=%d, r0=%d\n",maxsize,bp,r0);
+#endif
         bmp1->bpp=masterinfo->bmp.bpp;
         for (i=0;i<256;i++)
             bmp1->red[i]=bmp1->green[i]=bmp1->blue[i]=i;
         // h=bp*dst_width/masterinfo->bmp.width;
+        /*
+        ** dst_width = full device width in pixels
+        ** dst_height = full device height in pixels
+        ** maxsize = viewable height in pixels (dst_height minus margins)
+        ** (swapped if -ls)
+        */
         /* If too tall, shrink to fit */
+#if (WILLUSDEBUGX & 64)
+printf("masterinfo->rows=%d\n",masterinfo->rows);
+printf("bp=%d, maxsize=%d\n",bp,maxsize);
+printf("dst_width=%g\n",(double)dst_width);
+printf("dst_height=%g\n",(double)dst_height);
+#endif
         if (bp>maxsize)
             {
+            double devht_in;
             lheight=bp;
             ltotheight=(int)((double)dst_height*lheight/maxsize+.5);
-            lwidth=(int)((double)masterinfo->bmp.width*lheight/maxsize+.5);
-            ldpi=(int)((double)dst_dpi*lheight/maxsize+.5);
+            // lwidth=(int)((double)masterinfo->bmp.width*lheight/maxsize+.5);
+            lwidth=(int)((double)ltotheight*dst_width/dst_height+.5);
+            devht_in=(double)dst_height/dst_dpi;
+            ldpi=(double)ltotheight/devht_in;
             }
         else
             {
@@ -8857,9 +10048,141 @@ static void publish_master(MASTERINFO *masterinfo,PAGEINFO *pageinfo,int flushal
         r0=(int)(ldpi*dst_martop+.5);
         bmp1->width=lwidth;
         bmp1->height=lheight;
-        bmp_alloc(bmp1);
-        bmp_fill(bmp1,255,255,255);
+#if (WILLUSDEBUGX & 64)
+printf("bmp1 wxh = %d x %d\n",bmp1->width,bmp1->height);
+#endif
+        masterinfo->published_pages++;
+#if (WILLUSDEBUGX & 64)
+printf("mi->published_pages=%d\n",masterinfo->published_pages);
+#endif
 
+        /*
+        ** Correctly complete crop boxes that are associated with this output page
+        **
+        ** box->x1,y1,userx,usery start out as:
+        **     box->x1,y1 = position of upper-left crop box corner in master
+        **                  bitmap, in pixels.
+        **     box->userx,usery = width,height of crop box in pixels
+        **     Original assignments:
+        **         box->x1 = dw;
+        **         box->y1 = masterinfo->rows;
+        **         box->userx = tmp->width;
+        **         box->usery = tmp->height;
+        **
+        ** ... but are changed so that...
+        **
+        ** box->x1 gets the position of the lower-left point of the crop box
+        **         (when looking at the contents of the crop box right-side up)
+        **         on the destination page (when holding the device right-side up).
+        **         The position is the distance from the left side of the device
+        **         in points (again, when holding the device right-side up).
+        **
+        ** box->y1 is the same, but it is the distance from the bottom of the
+        **         device screen, in points, when holding the device right-side up.
+        **
+        ** box->scale is the scale factor between source and destination sizes.
+        **
+        */
+#ifdef HAVE_MUPDF
+        if (pageinfo!=NULL)
+            {
+            int dstpageno,r1,height;
+
+            r1=(int)(ldpi*dst_marbot+.5);
+            /* Width already has user-specified device margins factored in, but height doesn't */
+            height=bmp1->height+r0+r1;
+            dstpageno = masterinfo->published_pages;
+            for (i=0;i<pageinfo->boxes.n;i++)
+                {
+                WPDFBOX *box;
+                int w1,xd,yd;
+
+                box=&pageinfo->boxes.box[i];
+#if (WILLUSDEBUGX & 64)
+printf("    box[%2d]:  x0pts=%g, y0pts=%g, %g x %g\n",i,box->srcbox.x0_pts,box->srcbox.y0_pts,
+box->srcbox.crop_width_pts,box->srcbox.crop_height_pts);
+printf("              Top = %d, height = %d\n",(int)box->y1,(int)box->usery);
+#endif
+                if (box->dstpage>0)
+                    continue;
+                /* If crop box not on this page, skip it */
+                if (box->y1 > bp-.1)
+                    continue;
+                /* If crop-box is cut off by this page, split it */
+#if (WILLUSDEBUGX & 64)
+printf("    box[%d]:  bp=%d, ix0=%d, iy0=%d, y1=%g, usery=%g, bmp1->ht=%d\n",i,bp,
+(int)(box->srcbox.x0_pts*10.+.5),
+(int)((box->srcbox.page_height_pts-box->srcbox.y0_pts)*10.+.5),
+box->y1,box->usery,bmp1->height);
+#endif
+                if (box->y1+box->usery > bmp1->height+.1)
+                    {
+                    double newheight,dy;
+                    newheight = box->usery-(bp-box->y1);
+#if (WILLUSDEBUGX & 64)
+printf("    Splitting box.  New height=%d.\n",(int)newheight);
+#endif
+                    if (newheight>0.5)
+                        {
+                        wpdfboxes_insert_box(&pageinfo->boxes,box,i);
+                        /* Next page: adjust source crop box so we only get the part on */
+                        /* the next page */
+                        box=&pageinfo->boxes.box[i];
+                        box->srcbox.crop_height_pts *= (double)newheight/box->usery;
+                        box->y1 += (box->usery - newheight);
+                        box->usery = newheight;
+                        i++;
+                        /* This page: adjust source crop box so we only get the part on this page */
+                        box=&pageinfo->boxes.box[i];
+                        dy = box->srcbox.crop_height_pts;
+                        box->srcbox.crop_height_pts *= (double)(bp-box->y1)/box->usery;
+                        dy -= box->srcbox.crop_height_pts;
+                        box->srcbox.y0_pts += dy;
+                        box->usery = bp-box->y1;
+                        }
+                    }
+#if (WILLUSDEBUGX & 64)
+printf("    Adding box %d.\n",i);
+#endif
+                box->dstpage = dstpageno;
+                w1=(bmp1->width-masterinfo->bmp.width)/2;
+                xd=w1+box->x1;
+                yd=height-(box->y1+box->usery+r0);
+                // sr=(int)((box->srcrot_deg+765.)/90.);
+                if (dst_landscape)
+                    {
+                    yd=xd;
+                    xd=box->y1+box->usery+r0;
+                    box->x1 = box->dst_width_pts*xd/height;
+                    box->y1 = box->dst_height_pts*yd/bmp1->width;
+                    box->dstrot_deg=90.;
+                    if (box->userx > box->usery)
+                        box->scale = box->userx*box->dst_height_pts/bmp1->width
+                                     / box->srcbox.crop_width_pts;
+                    else
+                        box->scale = box->usery*box->dst_width_pts/bmp1->height
+                                     / box->srcbox.crop_height_pts;
+                    }
+                else
+                    {
+                    box->x1 = box->dst_width_pts*xd/bmp1->width;
+                    box->y1 = box->dst_height_pts*yd/height;
+                    box->dstrot_deg=0.;
+                    if (box->userx > box->usery)
+                        box->scale = box->userx*box->dst_width_pts/bmp1->width
+                                     / box->srcbox.crop_width_pts;
+                    else
+                        box->scale = box->usery*box->dst_height_pts/height
+                                     / box->srcbox.crop_height_pts;
+                    }
+                }
+            }
+        else /* (from if (pageinfo!=NULL)) */
+#endif /* HAVE_MUPDF */
+        /*
+        ** Not using crop boxes (pageinfo==NULL), so process output bitmap
+        */
+        {
         /* Create list of OCR'd words on this page and move */
         /* up positions of remaining OCR'd words.           */
 #ifdef HAVE_OCR
@@ -8873,11 +10196,12 @@ static void publish_master(MASTERINFO *masterinfo,PAGEINFO *pageinfo,int flushal
                     ocrwords_remove_words(dst_ocrwords,i,i);
                     i--;
                     }
-            ocrwords_offset(dst_ocrwords,0,-bp);
             }
 #endif
             
         /* Center masterinfo->bmp into bmp1 (horizontally) */
+        bmp_alloc(bmp1);
+        bmp_fill(bmp1,255,255,255);
         {
         int bpp,w1,bw,bw1;
         bpp=bmp1->bpp==24?3:1;
@@ -8888,7 +10212,7 @@ static void publish_master(MASTERINFO *masterinfo,PAGEINFO *pageinfo,int flushal
             memcpy(bmp_rowptr_from_top(bmp1,i)+bw1,bmp_rowptr_from_top(&masterinfo->bmp,i),bw);
 #ifdef HAVE_OCR
         if (dst_ocr)
-            ocrwords_offset(dst_ocrwords,w1,0);
+            ocrwords_offset(ocrwords_pub,w1,0);
 #endif
         }
 
@@ -8906,7 +10230,18 @@ static void publish_master(MASTERINFO *masterinfo,PAGEINFO *pageinfo,int flushal
             bmp_free(&tmp);
             }
 
-        /* Put into full-sized destination bitmap with appropriate padding and margins */
+        /*
+        ** Give output bitmap appropriate padding and margins (bmp1 -> bmp).
+        **
+        ** pl, pr, pt, pb are padding specified by user to get correct pixel mapping
+        **                on a specific device.
+        **
+        ** r0 = top margin on output device specified by user (dst_martop)
+        **
+        ** Left margin on output device (dst_marleft) was already taken into account
+        **     in bmp_src_to_dst().
+        **
+        */
         bmp->bpp=masterinfo->bmp.bpp;
         for (i=0;i<256;i++)
             bmp->red[i]=bmp->green[i]=bmp->blue[i]=i;
@@ -8930,7 +10265,6 @@ static void publish_master(MASTERINFO *masterinfo,PAGEINFO *pageinfo,int flushal
         /* Can't save grayscale as JPEG yet. */
         if (bmp->bpp==8 && jpeg_quality>=0)
             bmp_promote_to_24(bmp);
-        masterinfo->published_pages++;
         if (mark_corners)
             {
             unsigned char *p;
@@ -9041,6 +10375,9 @@ if (dst_ocr)
 }
 }
 */
+        } /* pageinfo!=NULL */
+
+        /* Clear the published page:  move everything "up" by bp pixels */
         bw=bmp_bytewidth(&masterinfo->bmp);
         for (i=bp;i<masterinfo->rows;i++)
             {
@@ -9050,6 +10387,22 @@ if (dst_ocr)
             memcpy(pdst,psrc,bw);
             }
         masterinfo->rows -= bp;
+        /* Move unused crop box positions by -bp so they track the master bitmap */
+#ifdef HAVE_MUPDF
+        if (pageinfo!=NULL)
+            for (i=0;i<pageinfo->boxes.n;i++)
+                {
+                WPDFBOX *box;
+                box=&pageinfo->boxes.box[i];
+                if (box->dstpage<0)
+                    box->y1 -= bp;
+                }
+#endif
+#ifdef HAVE_OCR
+        /* Move unused OCR words by -bp so they track the master bitmap */
+        if (dst_ocr)
+            ocrwords_offset(dst_ocrwords,0,-bp);
+#endif
         }
     bmp_free(bmp);
     bmp_free(bmp1);
@@ -9069,6 +10422,9 @@ static int break_point(MASTERINFO *masterinfo,int maxsize)
     int bp1f,bp2f;
     int bp1e,bp2e;
 
+/*
+printf("@breakpoint, mi->rows=%d, maxsize=%d\n",masterinfo->rows,maxsize);
+*/
     /* masterinfo->fit_to_page==-2 means user specified -f2p -2 which means */
     /* flush entire contents of master to single page every time.   */
     if (masterinfo->rows<maxsize || masterinfo->fit_to_page==-2)
@@ -9081,6 +10437,14 @@ static int break_point(MASTERINFO *masterinfo,int maxsize)
         scanheight=(int)(((1.+masterinfo->fit_to_page/100.)*maxsize)+.5);
     else
         scanheight=maxsize;
+    /* If available rows almost exactly fit page, just send the whole thing */
+/*
+printf("    scanheight=%d, mi->rows=%d, fabs=%g\n",scanheight,masterinfo->rows,
+fabs((double)scanheight/masterinfo->rows-1.));
+*/
+    if (abs(scanheight-masterinfo->rows)<=1
+             || fabs((double)scanheight/masterinfo->rows-1.)<.002)
+        return(masterinfo->rows);
     if (scanheight > masterinfo->rows)
         scanheight=masterinfo->rows;
     goodsize=masterinfo->bmp.width/100;
@@ -9674,58 +11038,6 @@ fclose(f);
     return(f1*f2*ni);
     }
 
-
-static void pdfboxes_init(PDFBOXES *boxes)
-
-    {
-    boxes->n=boxes->na=0;
-    boxes->box=NULL;
-    }
-
-
-static void pdfboxes_free(PDFBOXES *boxes)
-
-    {
-    static char *funcname="pdfboxes_free";
-    willus_dmem_free(24,(double **)&boxes->box,funcname);
-    }
-
-#ifdef COMMENT
-static void pdfboxes_add_box(PDFBOXES *boxes,PDFBOX *box)
-
-    {
-    static char *funcname="pdfboxes_add_box";
-
-    if (boxes->n>=boxes->na)
-        {
-        int newsize;
-
-        newsize = boxes->na < 1024 ? 2048 : boxes->na*2;
-        /* Just calls willus_mem_alloc if oldsize==0 */
-        willus_mem_realloc_robust_warn((void **)&boxes->box,newsize*sizeof(PDFBOX),
-                                   boxes->na*sizeof(PDFBOX),funcname,10);
-        boxes->na=newsize;
-        }
-    boxes->box[boxes->n++]=(*box);
-    }
-
-
-static void pdfboxes_delete(PDFBOXES *boxes,int n)
-
-    {
-    if (n>0 && n<boxes->n)
-        {
-        int i;
-        for (i=0;i<boxes->n-n;i++)
-            boxes->box[i]=boxes->box[i+n];
-        }
-    boxes->n -= n;
-    if (boxes->n < 0)
-        boxes->n = 0;
-    }
-#endif
-
-
 /*
 ** Track gaps between words so that we can tell when one is out of family.
 ** lcheight = height of a lowercase letter.
@@ -9783,10 +11095,11 @@ static void bmp_detect_vertical_lines(WILLUSBITMAP *bmp,WILLUSBITMAP *cbmp,
     int tc,iangle,irow,icol;
     int rowstep,na,angle_sign,ccthresh;
     int pixmin,halfwidth,bytewidth;
-    int bs1,nrsteps,dp;
+    int bs1,nrsteps;
     double anglestep;
     WILLUSBITMAP *tmp,_tmp;
     unsigned char *p0;
+    unsigned char *t0;
 
     if (debug)
         printf("At bmp_detect_vertical_lines...\n");
@@ -9798,7 +11111,8 @@ static void bmp_detect_vertical_lines(WILLUSBITMAP *bmp,WILLUSBITMAP *cbmp,
     tmp=&_tmp;
     bmp_init(tmp);
     bmp_copy(tmp,bmp);
-    dp = bmp_rowptr_from_top(tmp,0) - bmp_rowptr_from_top(bmp,0);
+    p0=bmp_rowptr_from_top(bmp,0);
+    t0=bmp_rowptr_from_top(tmp,0);
     bytewidth=bmp_bytewidth(bmp);
     pixmin = (int)(minwidth_in*dpi+.5);
     if (pixmin<1)
@@ -9824,7 +11138,6 @@ static void bmp_detect_vertical_lines(WILLUSBITMAP *bmp,WILLUSBITMAP *cbmp,
 bmp_write(bmp,"out.png",stdout,97);
 wfile_written_info("out.png",stdout);
 */
-    p0=bmp_rowptr_from_top(bmp,0);
     for (tc=0;tc<100;tc++)
         {
         int ccmax,ic0max,ir0max;
@@ -9858,11 +11171,12 @@ wfile_written_info("out.png",stdout);
 // printf("iangle=%2d, angle_sign=%2d, ic1=%4d, ic2=%4d\n",iangle,angle_sign,ic1,ic2);
                 for (icol=ic1;icol<=ic2;icol++)
                     {
-                    unsigned char *p;
+                    unsigned char *p,*t;
                     int cc,ic0,ir0;
                     p=p0;
+                    t=t0;
                     if (icol<0 || icol>bmp->width-1)
-                        for (irow=0;irow<nrsteps;irow++,p+=bs1)
+                        for (irow=0;irow<nrsteps;irow++,p+=bs1,t+=bs1)
                             {
                             int ic;
                             ic=icol+irow*tanthx;
@@ -9871,14 +11185,14 @@ wfile_written_info("out.png",stdout);
                             }
                     else
                         irow=0;
-                    for (ir0=ic0=cc=0;irow<nrsteps;irow++,p+=bs1)
+                    for (ir0=ic0=cc=0;irow<nrsteps;irow++,p+=bs1,t+=bs1)
                         {
                         int ic;
                         ic=icol+irow*tanthx;
                         if (ic<0 || ic>=bmp->width)
                             break;
                         if ((p[ic]<white_thresh || p[ic+bytewidth]<white_thresh)
-                            && (p[ic+dp]<white_thresh || p[ic+bytewidth+dp]<white_thresh))
+                            && (t[ic]<white_thresh || t[ic+bytewidth]<white_thresh))
                             {
                             if (cc==0)
                                 {
@@ -10127,4 +11441,237 @@ static void willus_dmem_free(int index,double **ptr,char *funcname)
         }
     else
         willus_mem_free(ptr,funcname);
+    }
+
+
+/*
+static void bmpregions_init(BMPREGIONS *regions)
+
+    {
+    regions->n=regions->na=0;
+    regions->bmpregion=NULL;
+    }
+
+
+static void bmpregions_free(BMPREGIONS *regions)
+
+    {
+    static char *funcname="bmpregions_free";
+
+    willus_mem_free((double **)&regions->bmpregion,funcname);
+    }
+
+
+static void bmpregions_add_bmpregion(BMPREGIONS *regions,BMPREGION *bmpregion)
+
+    {
+    static char *funcname="bmpregions_add_bmpregion";
+
+    if (regions->n>=regions->na)
+        {
+        int newsize;
+
+        newsize = regions->na<16 ? 32 : regions->na*2;
+        willus_mem_realloc_robust_warn((void **)&regions->bmpregion,newsize*sizeof(BMPREGION),
+                                     regions->na*sizeof(BMPREGION),funcname,10);
+        regions->na=newsize;
+        }
+    regions->bmpregion[regions->n++]=(*bmpregion);
+    }
+*/
+
+static void strbuf_init(STRBUF *sbuf)
+
+    {
+    sbuf->s=NULL;
+    sbuf->na=0;
+    }
+
+
+static void strbuf_cat(STRBUF *sbuf,char *s)
+
+    {
+    if (s!=NULL && s[0]!='\0')
+        {
+        strbuf_ensure(sbuf,(sbuf->s==NULL?0:strlen(sbuf->s))+strlen(s)+2);
+        if (sbuf->s[0]!='\0')
+            strcat(sbuf->s," ");
+        strcat(sbuf->s,s);
+        }
+    }
+
+
+static void strbuf_cat_with_quotes(STRBUF *sbuf,char *s)
+
+    {
+    if (s!=NULL && s[0]!='\0')
+        {
+        int q=0;
+        strbuf_ensure(sbuf,(sbuf->s==NULL?0:strlen(sbuf->s))+strlen(s)+4);
+        if (sbuf->s[0]!='\0')
+            strcat(sbuf->s," ");
+        q=(s[0]!='\"' && (in_string(s," ")>=0 || in_string(s,"\t")>=0));
+        if (q)
+            strcat(sbuf->s,"\"");
+        strcat(sbuf->s,s);
+        if (q)
+            strcat(sbuf->s,"\"");
+        }
+    }
+
+
+static void strbuf_cat_no_spaces(STRBUF *sbuf,char *s)
+
+    {
+    if (s!=NULL && s[0]!='\0')
+        {
+        strbuf_ensure(sbuf,(sbuf->s==NULL?0:strlen(sbuf->s))+strlen(s)+1);
+        if (sbuf->s[0]!='\0')
+            strcat(sbuf->s," ");
+        strcpy_no_spaces(&sbuf->s[strlen(sbuf->s)],s);
+        }
+    }
+
+
+static void strbuf_cpy(STRBUF *sbuf,char *s)
+
+    {
+    if (s!=NULL && s[0]!='\0')
+        {
+        strbuf_ensure(sbuf,strlen(s)+1);
+        strcpy(sbuf->s,s);
+        }
+    }
+
+
+static void strbuf_clear(STRBUF *sbuf)
+
+    {
+    if (sbuf->s!=NULL)
+        sbuf->s[0]='\0';
+    }
+
+
+static void strbuf_ensure(STRBUF *sbuf,int n)
+
+    {
+    static char *funcname="strbuf_ensure";
+    if (n>sbuf->na)
+        {
+        willus_mem_realloc_robust_warn((void**)&sbuf->s,n,sbuf->na,funcname,10);
+        if (sbuf->na==0)
+            sbuf->s[0]='\0';
+        sbuf->na=n;
+        }
+    }
+
+
+static void strbuf_free(STRBUF *sbuf)
+
+    {
+    willus_mem_free((double**)&sbuf->s,"strbuf_free");
+    sbuf->s=NULL;
+    sbuf->na=0;
+    }
+
+
+static void strbuf_sprintf(STRBUF *sbuf,char *fmt,...)
+
+    {
+    static char *funcname="strbuf_sprintf";
+
+    if (sbuf!=NULL)
+        {
+        va_list args;
+        char *buf;
+
+        willus_mem_alloc_warn((void **)&buf,1024,funcname,10);
+        va_start(args,fmt);
+        vsprintf(buf,fmt,args);
+        va_end(args);
+        strbuf_cat(sbuf,buf);
+        willus_mem_free((double **)&buf,funcname);
+        }
+    }
+
+
+static void devprofiles_echo(FILE *out)
+
+    {
+    int i;
+
+    fprintf(out,"\nAvailable devices:\n");
+    for (i=0;devprof[i].width>0;i++)
+        {
+        afprintf(out,"    %s%s%s",TTEXT_BOLD,devprof[i].name,TTEXT_NORMAL);
+        if (devprof[i].alias[0]!='\0')
+            afprintf(out," (alias %s%s%s)",TTEXT_BOLD,devprof[i].alias,TTEXT_NORMAL);
+        fprintf(out,": %d x %d, %d dpi\n",devprof[i].width,
+                                          devprof[i].height,devprof[i].dpi);
+        fprintf(out,"        Mark corners=%d, Padding (l,t,r,b)=%d,%d,%d,%d\n\n",
+            devprof[i].mark_corners,
+            devprof[i].padding[0],devprof[i].padding[1],
+            devprof[i].padding[2],devprof[i].padding[3]);
+        }
+    fprintf(out,"\n");
+    }
+
+
+static DEVPROFILE *devprofile_get(char *name)
+
+    {
+    int i,i0,c;
+
+    for (i0=i=c=0;devprof[i].width>0;i++)
+        if (in_string(devprof[i].name,name)>=0 || in_string(devprof[i].alias,name)>=0)
+            {
+            c++;
+            i0=i;
+            }
+    if (c==1)
+        return(&devprof[i0]);
+    return(NULL);
+    }
+
+
+static int devprofile_set_to_device(DEVPROFILE *dp)
+
+    {
+    if (dp==NULL)
+        return(0);
+    dst_userwidth=dp->width;
+    dst_userwidth_units=UNITS_PIXELS;
+    dst_userheight=dp->height;
+    dst_userheight_units=UNITS_PIXELS;
+    dst_dpi=dp->dpi;
+    mark_corners=dp->mark_corners;
+    pad_left=dp->padding[0];
+    pad_top=dp->padding[1];
+    pad_right=dp->padding[2];
+    pad_bottom=dp->padding[3];
+    dst_color=dp->color;
+    return(1);
+    }
+
+
+static char *devprofile_select(void)
+
+    {
+    while (1)
+        {
+        int i,n,x;
+        static char *q="q";
+
+        aprintf("Select the device:\n");
+        for (i=0;devprof[i].name[0]!='\0';i++)
+            aprintf("    %s%2d%s. %s (%s)\n",TTEXT_BOLD,i+1,TTEXT_NORMAL,devprof[i].name,devprof[i].alias);
+        aprintf("    %s%2d%s. Other (specify width, height, etc.)\n\n",TTEXT_BOLD,i+1,TTEXT_NORMAL);
+        n=user_integer("Enter selection",1,&x,1,i+1);
+        if (n<0)
+            return(q);
+        if (x==i+1)
+            break;
+        return(devprof[x-1].alias);
+        }
+    return(NULL);
     }

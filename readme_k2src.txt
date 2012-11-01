@@ -1,7 +1,7 @@
 K2pdfopt build help.
 http://willus.com
 Original: 7 September 2012
-Last updated: 21 September 2012
+Last updated: 1 November 2012
 
 This "read me" file describes the source code distribution for k2pdfopt.
 
@@ -9,8 +9,9 @@ K2pdfopt Source Files
 ---------------------
 1. k2pdfopt.c (main module)
 
-2. willus.com general-purpose C library (26 C files + 1 header file) in
+2. willus.com general-purpose C library (27 C files + 1 header file) in
    willuslib subfolder.
+   (New in k2pdfopt v1.60: wmupdf.c module)
    Compile all C files in this subfolder and build them into libwillus.a.
 
 

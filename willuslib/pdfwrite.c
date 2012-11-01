@@ -549,7 +549,7 @@ static void bmp_flate_decode(WILLUSBITMAP *bmp,gzFile gz,int halfsize)
     }
 
 
-void pdffile_finish(PDFFILE *pdf,char *producer)
+void pdffile_finish(PDFFILE *pdf,char *title,char *author,char *producer,char *cdate)
 
     {
     int icat,i,pagecount;
@@ -558,6 +558,8 @@ void pdffile_finish(PDFFILE *pdf,char *producer)
     size_t ptr;
     char nbuf[10];
     char buf[128];
+    char mdate[128];
+    char basename[256];
 
     time(&now);
     today=(*localtime(&now));
@@ -606,18 +608,24 @@ void pdffile_finish(PDFFILE *pdf,char *producer)
     for (i=0;buf[i]!='\0';i++)
         if (buf[i]=='(' || buf[i]==')')
             buf[i]=' ';
-    fprintf(pdf->f,"<<\n"
-                   "/Title (%s)\n"
-                   "/CreationDate (D:%04d%02d%02d%02d%02d%02d)\n"
-                   "/ModDate (D:%04d%02d%02d%02d%02d%02d)\n"
+    sprintf(mdate,"D:%04d%02d%02d%02d%02d%02d%s",
+                   today.tm_year+1900,today.tm_mon+1,today.tm_mday,
+                   today.tm_hour,today.tm_min,today.tm_sec,
+                   wsys_utc_string());
+    fprintf(pdf->f,"<<\n");
+    if (author!=NULL && author[0]!='\0')
+        fprintf(pdf->f,"/Author (%s)\n",author);
+    if (title==NULL || title[0]=='\0')
+        wfile_basespec(basename,pdf->filename);
+    fprintf(pdf->f,"/Title (%s)\n"
+                   "/CreationDate (%s)\n"
+                   "/ModDate (%s)\n"
                    "/Producer (%s)\n"
                    ">>\n"
                    "endobj\n",
-                   pdf->filename,
-                   today.tm_year+1900,today.tm_mon+1,today.tm_mday,
-                   today.tm_hour,today.tm_min,today.tm_sec,
-                   today.tm_year+1900,today.tm_mon+1,today.tm_mday,
-                   today.tm_hour,today.tm_min,today.tm_sec,
+                   title!=NULL && title[0]!='\0' ? title : basename,
+                   cdate!=NULL && cdate[0]!='\0' ? cdate : mdate,
+                   mdate,
                    producer==NULL ? buf : producer);
     fflush(pdf->f);
     fseek(pdf->f,0L,1);
