@@ -19,6 +19,11 @@
 ** along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **
 ** VERSION HISTORY
+** v1.61     3 NOV 2012
+**           - User menu options were not taking effect.  This is fixed.
+**           - Compiled with tesseract 3.02.02 and Leptonica 1.69.
+**           - User "help" menu fits in 25-line window now.
+**
 ** v1.60     1 NOV 2012
 **           MAJOR NEW FEATURES
 **           - Option to keep native PDF contents (see full details under
@@ -736,7 +741,7 @@
 #endif
 
 
-#define VERSION "v1.60"
+#define VERSION "v1.61"
 #define GRAYLEVEL(r,g,b) ((int)(((r)*0.3+(g)*0.59+(b)*0.11)*1.002))
 #if (defined(WIN32) || defined(WIN64))
 #define TTEXT_BOLD    ANSI_WHITE
@@ -1765,6 +1770,10 @@ int main(int argc,char *argv[])
         k2pdfopt_sys_close();
         return(0);
         }
+    /*
+    ** Re-parse after user menu entries
+    */
+    parse_cmd_args(env,cmdline,usermenu,1,0);
 
     /*
     ** Check compatibility between various settings
@@ -3962,7 +3971,7 @@ static void menu_help(void)
         TTEXT_BOLD2
         "    (menu item)  "
         TTEXT_NORMAL
-        "Enter the one of the 1- or 2-letter menu options.\n\n"
+        "Enter the one of the 1- or 2-letter menu options.\n"
         "                 E.g. " TTEXT_BOLD "d" TTEXT_NORMAL " or "
                                  TTEXT_BOLD "mo" TTEXT_NORMAL " (followed by <Enter>).\n\n"
         TTEXT_BOLD2
@@ -3992,17 +4001,15 @@ static void menu_help(void)
         TTEXT_BOLD2
         "    --           "
         TTEXT_NORMAL
-        "Clear/unclear any options entered at the command line.\n"
-        "                 (These are shown in " ANSI_BROWN "brown" TTEXT_NORMAL ".)\n\n"
+        "Clear/unclear any options entered at the command line (" ANSI_BROWN "brown" TTEXT_NORMAL ")).\n\n"
         TTEXT_BOLD2
         "    ---          "
         TTEXT_NORMAL
-        "Clear/unclear any options from the K2PDFOPT env. variable.\n"
-        "                 (These are shown in " ANSI_DARKCYAN "cyan" TTEXT_NORMAL ".)\n\n"
+        "Clear/unclear options from the K2PDFOPT env. variable (" ANSI_DARKCYAN "cyan" TTEXT_NORMAL ").\n\n"
         TTEXT_BOLD2
         "    q            "
         TTEXT_NORMAL
-        "Quit (abort).\n\n";
+        "Quit (abort).\n";
     char buf[16];
 
     aprintf("%s",mhelp);

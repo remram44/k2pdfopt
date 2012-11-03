@@ -1,16 +1,27 @@
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ -
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
 #ifndef  LEPTONICA_ALLHEADERS_H
@@ -18,21 +29,32 @@
 
 
 #define LIBLEPT_MAJOR_VERSION   1
-#define LIBLEPT_MINOR_VERSION   68
+#define LIBLEPT_MINOR_VERSION   69
 
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ - 
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
 #ifndef  LEPTONICA_ALLTYPES_H
@@ -45,17 +67,28 @@
     /* General and configuration defs */
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ -
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
 #ifndef  LEPTONICA_ENVIRON_H
@@ -328,17 +361,28 @@ enum {
     /* Imaging */
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ - 
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
 #ifndef  LEPTONICA_ARRAY_H
@@ -350,6 +394,8 @@ enum {
  *      struct Numaa
  *      struct Numa2d
  *      struct NumaHash
+ *      struct L_Dna
+ *      struct L_Dnaa
  *      struct Sarray
  *      struct L_Bytea
  *
@@ -387,7 +433,6 @@ struct Numaa
 typedef struct Numaa  NUMAA;
 
 
-
     /* Sparse 2-dimensional array of number arrays */
 struct Numa2d
 {
@@ -407,6 +452,31 @@ struct NumaHash
     struct Numa    **numa;
 };
 typedef struct NumaHash NUMAHASH;
+
+
+#define  DNA_VERSION_NUMBER     1
+
+    /* Double number array: an array of doubles */
+struct L_Dna
+{
+    l_int32          nalloc;    /* size of allocated number array      */
+    l_int32          n;         /* number of numbers saved             */
+    l_int32          refcount;  /* reference count (1 if no clones)    */
+    l_float64        startx;    /* x value assigned to array[0]        */
+    l_float64        delx;      /* change in x value as i --> i + 1    */
+    l_float64       *array;     /* number array                        */
+};
+typedef struct L_Dna  L_DNA;
+
+
+    /* Array of double number arrays */
+struct L_Dnaa
+{
+    l_int32          nalloc;    /* size of allocated ptr array          */
+    l_int32          n;         /* number of L_Dna saved                */
+    struct L_Dna   **dna;       /* array of L_Dna                       */
+};
+typedef struct L_Dnaa  L_DNAA;
 
 
 #define  SARRAY_VERSION_NUMBER     1
@@ -443,27 +513,39 @@ enum {
     L_QUADRATIC_INTERP = 2      /* quadratic  */
 };
 
-    /* Flags for added borders in Numa */
+    /* Flags for added borders in Numa and Fpix */
 enum {
-    L_EXTENDED_BORDER = 1,      /* extended with same value           */
-    L_MIRRORED_BORDER = 2       /* mirrored                           */
+    L_CONTINUED_BORDER = 1,     /* extended with same value                  */
+    L_SLOPE_BORDER = 2,         /* extended with constant normal derivative  */
+    L_MIRRORED_BORDER = 3       /* mirrored                                  */
 };
 
 
 #endif  /* LEPTONICA_ARRAY_H */
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ - 
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
 #ifndef  LEPTONICA_ARRAY_ACCESS_H
@@ -647,17 +729,28 @@ enum {
 #endif /* LEPTONICA_ARRAY_ACCESS_H */
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ - 
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
 #ifndef  LEPTONICA_BBUFFER_H
@@ -693,17 +786,28 @@ typedef struct ByteBuffer BBUFFER;
 #endif  /* LEPTONICA_BBUFFER_H */
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ - 
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
 #ifndef  LEPTONICA_BMF_H
@@ -744,17 +848,28 @@ typedef struct L_Bmf L_BMF;
 #endif  /* LEPTONICA_BMF_H */
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ - 
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
 #ifndef  LEPTONICA_CCBORD_H
@@ -847,74 +962,179 @@ typedef struct CCBorda CCBORDA;
 
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ - 
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
 #ifndef  LEPTONICA_DEWARP_H
 #define  LEPTONICA_DEWARP_H
 
-/* 
+/*
  *  dewarp.h
  *
  *     Data structure to hold arrays and results for generating
- *     a vertical disparity array based on textlines.  The disparity
- *     array is two-dimensional, and it represents a vertical
- *     displacement, relative to the flat point in the textlines.
- *     After dewarping, all points on the altered curve will have
- *     a y-value equal to the flat point.
+ *     horizontal and vertical disparity arrays based on textlines.
+ *     Each disparity array is two-dimensional.  The vertical disparity
+ *     array gives a vertical displacement, relative to the lowest point
+ *     in the textlines.  The horizontal disparty array gives a horizontal
+ *     displacement, relative to the minimum values (for even pages)
+ *     or maximum values (for odd pages) of the left and right ends of
+ *     full textlines.  Horizontal alignment always involves translations
+ *     away from the book gutter.
  *
- *     The sampled vertical disparity array is expanded to full resolution,
- *     using linear interpolation, from which it is trivially applied
- *     to the input image.
+ *     We have intentionally separated the process of building models
+ *     from the rendering process that uses the models.  For any page,
+ *     the building operation either creates an actual model (that is,
+ *     a model with at least the vertical disparity being computed, and
+ *     for which the 'success' flag is set) or fails to create a model.
+ *     However, at rendering time, a page can have one of two different
+ *     types of models.
+ *     (1) A valid model is an actual model that meets the rendering
+ *         requirements, including whether a full model (horizontal
+ *         and vertical disparity) is required, and limits on model
+ *         curvatures.  See dewarpaTestForValidModel() for details.
+ *         Valid models are identified by dewarpaInsertRefModels(), which
+ *         sets the 'valid' field.  Only valid models are used for rendering.
+ *     (2) A reference model is used by a page that doesn't have
+ *         a valid model, but has a nearby valid model of the same
+ *         parity (even/odd page) that it can use.  The range to search
+ *         for a valid model is given by the 'maxdist' field.
+ *     A page may have neither a valid nor a reference model, in
+ *     which case rendering simply copies the input image.
+ *     By default, only the vertical disparity is required for
+ *     an actual model ('fullmodel' = 0).  The 'maxdist' parameter is
+ *     input when the dewarpa is created.  The other rendering parameters
+ *     have default values given in dewarp.c.  All parameters used by
+ *     rendering can be set (or reset) using accessors.
+ *
+ *     After dewarping, use of the vertical disparity will cause all
+ *     points on each altered curve to have a y-value equal to the
+ *     minimum.  Use of horizontal disparity will cause the left
+ *     and right edges of the textlines to be vertically aligned if
+ *     they had been typeset flush-left and flush-right, respectively.
+ *
+ *     The sampled disparity arrays are expanded to full resolution,
+ *     using linear interpolation, and this is further expanded
+ *     by slope continuation to the right and below if the image
+ *     is larger than the full resolution disparity arrays.  Then
+ *     the disparity correction can be applied to the input image.
+ *     If the input pix are 2x reduced, the expansion from sampled
+ *     to full res uses the product of (sampling) * (redfactor).
+ *
+ *     The most accurate results are produced at full resolution, and
+ *     this is generally recommended.
  */
 
-#define  DEWARP_VERSION_NUMBER      1
+    /* Note on versioning of the serialization of this data structure:
+     * The dewarping utility and the stored data can be expected to change.
+     * In most situations, the serialized version is ephemeral -- it is
+     * not needed after being used.  No functions will be provided to
+     * convert between different versions. */
+#define  DEWARP_VERSION_NUMBER      2
+
+struct L_Dewarpa
+{
+    l_int32             nalloc;        /* size of dewarp ptr array           */
+    l_int32             maxpage;       /* maximum page number in array       */
+    struct L_Dewarp   **dewarp;        /* array of ptrs to page dewarp       */
+    struct Numa        *namodels;      /* list of page numbers for pages     */
+                                       /* with page models                   */
+    struct Numa        *napages;       /* list of page numbers with either   */
+                                       /* page models or ref page models     */
+    l_int32             redfactor;     /* reduction factor of input: 1 or 2  */
+    l_int32             sampling;      /* disparity arrays sampling factor   */
+    l_int32             minlines;      /* min number of long lines required  */
+    l_int32             maxdist;       /* max distance for getting ref pages */
+    l_int32             min_medcurv;   /* minimum median abs line curvature, */
+                                       /* in micro-units                     */
+    l_int32             max_medcurv;   /* maximum median abs line curvature, */
+                                       /* in micro-units                     */
+    l_int32             max_leftcurv;  /* maximum left edge line curvature,  */
+                                       /* in micro-units                     */
+    l_int32             max_rightcurv; /* maximum right edge line curvature, */
+                                       /* in micro-units                     */
+    l_int32             fullmodel;     /* both disparity arrays required     */
+    l_int32             modelsready;   /* invalid models have been removed   */
+                                       /* and refs built against valid set   */
+};
+typedef struct L_Dewarpa L_DEWARPA;
+
 
 struct L_Dewarp
 {
-    struct Pix     *pixs;        /* source pix, 1 bpp                       */
-    struct Pix     *pixd;        /* dewarped pix; 1, 8 or 32 bpp            */
-    struct FPix    *sampvdispar; /* sampled vertical disparity array        */
-    struct FPix    *samphdispar; /* sampled horizontal disparity array      */
-    struct FPix    *fullvdispar; /* full vertical disparity array           */
-    struct FPix    *fullhdispar; /* full horiztontal disparity array        */
-    struct Numa    *naflats;     /* sorted flat location of each line       */
-    struct Numa    *nacurves;    /* sorted curvature of each line           */
-    l_int32         pageno;      /* page number; important for reuse        */
-    l_int32         sampling;    /* sampling factor of disparity array      */
-    l_int32         minlines;    /* min number of long lines required       */
-    l_int32         applyhoriz;  /* flag for estimating horiz. disparity    */
-    l_int32         nx;          /* number of sampling pts in x direction   */
-    l_int32         ny;          /* number of sampling pts in y direction   */
-    l_int32         extraw;      /* extra width required for hor. disparity */
-    l_int32         success;     /* sets to 1 if model build succeeds       */
+    struct Pix     *pixs;         /* source pix, 1 bpp                       */
+    struct Pix     *pixd;         /* dewarped pix; 1, 8 or 32 bpp            */
+    struct FPix    *sampvdispar;  /* sampled vert disparity array            */
+    struct FPix    *samphdispar;  /* sampled horiz disparity array           */
+    struct FPix    *fullvdispar;  /* full vert disparity array               */
+    struct FPix    *fullhdispar;  /* full horiz disparity array              */
+    struct Numa    *naflats;      /* sorted flat location of each line       */
+    struct Numa    *nacurves;     /* sorted curvature of each line           */
+    l_int32         w;            /* width of source image                   */
+    l_int32         h;            /* height of source image                  */
+    l_int32         pageno;       /* page number; important for reuse        */
+    l_int32         sampling;     /* sampling factor of disparity arrays     */
+    l_int32         redfactor;    /* reduction factor of pixs: 1 or 2        */
+    l_int32         minlines;     /* min number of long lines required       */
+    l_int32         nlines;       /* number of long lines found              */
+    l_int32         medcurv;      /* median abs curvature in micro-units     */
+    l_int32         leftcurv;     /* left edge curvature in micro-units      */
+    l_int32         rightcurv;    /* right edge curvature in micro-units     */
+    l_int32         nx;           /* number of sampling pts in x direction   */
+    l_int32         ny;           /* number of sampling pts in y direction   */
+    l_int32         hasref;       /* 0 if normal; 1 if has a refpage         */
+    l_int32         refpage;      /* page with disparity model to use here   */
+    l_int32         success;      /* sets to 1 if model build succeeds       */
+    l_int32         valid;        /* sets to 1 if model is valid             */
+    l_int32         debug;        /* sets to 1 if debug output requested     */
 };
 typedef struct L_Dewarp L_DEWARP;
 
 #endif  /* LEPTONICA_DEWARP_H */
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ - 
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
 #ifndef  LEPTONICA_GPLOT_H
@@ -981,17 +1201,28 @@ typedef struct GPlot  GPLOT;
 #endif /* LEPTONICA_GPLOT_H */
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ - 
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
 #ifndef  LEPTONICA_HEAP_H
@@ -1054,17 +1285,28 @@ typedef struct L_Heap  L_HEAP;
 #endif  /* LEPTONICA_HEAP_H */
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ - 
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
 #ifndef  LEPTONICA_IMAGEIO_H
@@ -1196,28 +1438,38 @@ struct L_Pdf_Data
     struct Box        *mediabox;     /* bounding region for all images      */
     struct Sarray     *saprex;       /* pre-binary-stream xobject strings   */
     struct Sarray     *sacmap;       /* colormap pdf object strings         */
-    struct Numa       *objsize;      /* sizes of each pdf string object     */
-    struct Numa       *objloc;       /* location of each pdf string object  */
+    struct L_Dna      *objsize;      /* sizes of each pdf string object     */
+    struct L_Dna      *objloc;       /* location of each pdf string object  */
     l_int32            xrefloc;      /* location of xref                    */
 };
 typedef struct L_Pdf_Data  L_PDF_DATA;
 
 
 #endif  /* LEPTONICA_IMAGEIO_H */
-
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ - 
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
 #ifndef  LEPTONICA_JBCLASS_H
@@ -1327,21 +1579,32 @@ enum {
 
 
 #endif  /* LEPTONICA_JBCLASS_H */
-
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ - 
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
+
 
 #ifndef  LEPTONICA_LIST_H
 #define  LEPTONICA_LIST_H
@@ -1405,17 +1668,28 @@ typedef struct DoubleLinkedList    DLLIST;
 #endif  /* LEPTONICA_LIST_H */
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ - 
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
 #ifndef  LEPTONICA_MORPH_H
@@ -1623,17 +1897,28 @@ static const l_int32  ADDED_BORDER = 32;   /* pixels, not bits */
 #endif  /* LEPTONICA_MORPH_H */
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ - 
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
 #ifndef  LEPTONICA_PIX_H
@@ -1684,6 +1969,7 @@ static const l_int32  ADDED_BORDER = 32;   /* pixels, not bits */
  *       Edge orientation flags
  *       Line orientation flags
  *       Scan direction flags
+ *       Box size adjustment flags
  *       Horizontal warp
  *       Pixel selection for resampling
  *       Thinning flags
@@ -1898,7 +2184,7 @@ enum {
  *           we re-order the bytes from this byte stream order, and
  *           reshuffle again for byte access on 32-bit entities.
  *           So if the bytes come in sequence from left to right, we
- *           store them on little-endians in byte order: 
+ *           store them on little-endians in byte order:
  *                3 2 1 0 7 6 5 4 ...
  *           This MSB to LSB ordering allows left and right shift
  *           operations on 32 bit words to move the pixels properly.
@@ -1913,7 +2199,7 @@ enum {
  *                    3         2           1         0   (little-endian)
  *
  *           Because we use MSB to LSB ordering within the 32-bit word,
- *           the individual 8-bit samples can be accessed with 
+ *           the individual 8-bit samples can be accessed with
  *           GET_DATA_BYTE and SET_DATA_BYTE macros, using the
  *           (implicitly big-ending) ordering
  *                 red:    byte 0  (MSB)
@@ -2045,7 +2331,7 @@ struct Pta
 {
     l_int32            n;             /* actual number of pts              */
     l_int32            nalloc;        /* size of allocated arrays          */
-    l_int32            refcount;      /* reference count (1 if no clones)  */
+    l_uint32           refcount;      /* reference count (1 if no clones)  */
     l_float32         *x, *y;         /* arrays of floats                  */
 };
 typedef struct Pta PTA;
@@ -2097,14 +2383,14 @@ typedef struct PixTiling PIXTILING;
 /*-------------------------------------------------------------------------*
  *                       FPix: pix with float array                        *
  *-------------------------------------------------------------------------*/
-#define  FPIX_VERSION_NUMBER      1
+#define  FPIX_VERSION_NUMBER      2
 
 struct FPix
 {
     l_int32              w;           /* width in pixels                   */
     l_int32              h;           /* height in pixels                  */
     l_int32              wpl;         /* 32-bit words/line                 */
-    l_int32              refcount;    /* reference count (1 if no clones)  */
+    l_uint32             refcount;    /* reference count (1 if no clones)  */
     l_int32              xres;        /* image res (ppi) in x direction    */
                                       /* (use 0 if unknown)                */
     l_int32              yres;        /* image res (ppi) in y direction    */
@@ -2116,8 +2402,8 @@ typedef struct FPix FPIX;
 
 struct FPixa
 {
-    l_int32             n;            /* number of Pix in ptr array        */
-    l_int32             nalloc;       /* number of Pix ptrs allocated      */
+    l_int32             n;            /* number of fpix in ptr array       */
+    l_int32             nalloc;       /* number of fpix ptrs allocated     */
     l_uint32            refcount;     /* reference count (1 if no clones)  */
     struct FPix       **fpix;         /* the array of ptrs to fpix         */
 };
@@ -2127,14 +2413,14 @@ typedef struct FPixa FPIXA;
 /*-------------------------------------------------------------------------*
  *                       DPix: pix with double array                       *
  *-------------------------------------------------------------------------*/
-#define  DPIX_VERSION_NUMBER      1
+#define  DPIX_VERSION_NUMBER      2
 
 struct DPix
 {
     l_int32              w;           /* width in pixels                   */
     l_int32              h;           /* height in pixels                  */
     l_int32              wpl;         /* 32-bit words/line                 */
-    l_int32              refcount;    /* reference count (1 if no clones)  */
+    l_uint32             refcount;    /* reference count (1 if no clones)  */
     l_int32              xres;        /* image res (ppi) in x direction    */
                                       /* (use 0 if unknown)                */
     l_int32              yres;        /* image res (ppi) in y direction    */
@@ -2169,12 +2455,13 @@ typedef struct PixComp PIXC;
 /*-------------------------------------------------------------------------*
  *                     PixaComp: array of compressed pix                   *
  *-------------------------------------------------------------------------*/
-#define  PIXACOMP_VERSION_NUMBER      1
+#define  PIXACOMP_VERSION_NUMBER      2
 
 struct PixaComp
 {
     l_int32              n;           /* number of PixComp in ptr array    */
     l_int32              nalloc;      /* number of PixComp ptrs allocated  */
+    l_int32              offset;      /* indexing offset into ptr array    */
     struct PixComp     **pixc;        /* the array of ptrs to PixComp      */
     struct Boxa         *boxa;        /* array of boxes                    */
 };
@@ -2446,6 +2733,19 @@ enum {
 
 
 /*-------------------------------------------------------------------------*
+ *                         Box size adjustment flags                       *
+ *-------------------------------------------------------------------------*/
+enum {
+    L_ADJUST_LEFT = 0,             /* adjust left edge                     */
+    L_ADJUST_RIGHT = 1,            /* adjust right edge                    */
+    L_ADJUST_LEFT_AND_RIGHT = 2,   /* adjust both left and right edges     */
+    L_ADJUST_TOP = 3,              /* adjust top edge                      */
+    L_ADJUST_BOT = 4,              /* adjust bottom edge                   */
+    L_ADJUST_TOP_AND_BOT = 5       /* adjust both top and bottom edges     */
+};
+
+
+/*-------------------------------------------------------------------------*
  *                            Horizontal warp                              *
  *-------------------------------------------------------------------------*/
 enum {
@@ -2568,17 +2868,28 @@ enum {
 #endif  /* LEPTONICA_PIX_H */
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ - 
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
 #ifndef  LEPTONICA_PTRA_H
@@ -2648,17 +2959,28 @@ enum {
 #endif  /* LEPTONICA_PTRA_H */
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ - 
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
 #ifndef  LEPTONICA_QUEUE_H
@@ -2711,17 +3033,28 @@ typedef struct L_Queue L_QUEUE;
 #endif  /* LEPTONICA_QUEUE_H */
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ - 
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
 #ifndef  LEPTONICA_REGUTILS_H
@@ -2833,17 +3166,28 @@ enum {
 
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ - 
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
 #ifndef SUDOKU_H_INCLUDED
@@ -2895,17 +3239,28 @@ enum {
 
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ - 
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
 #ifndef  LEPTONICA_STACK_H
@@ -2950,17 +3305,28 @@ typedef struct L_Stack  L_STACK;
 
 /*====================================================================*
  -  Copyright (C) 2001 Leptonica.  All rights reserved.
- -  This software is distributed in the hope that it will be
- -  useful, but with NO WARRANTY OF ANY KIND.
- -  No author or distributor accepts responsibility to anyone for the
- -  consequences of using this software, or for whether it serves any
- -  particular purpose or works at all, unless he or she says so in
- -  writing.  Everyone is granted permission to copy, modify and
- -  redistribute this source code, for commercial or non-commercial
- -  purposes, with the following restrictions: (1) the origin of this
- -  source code must not be misrepresented; (2) modified versions must
- -  be plainly marked as such; and (3) this notice may not be removed
- -  or altered from any source or modified source distribution.
+ -
+ -  Redistribution and use in source and binary forms, with or without
+ -  modification, are permitted provided that the following conditions
+ -  are met:
+ -  1. Redistributions of source code must retain the above copyright
+ -     notice, this list of conditions and the following disclaimer.
+ -  2. Redistributions in binary form must reproduce the above
+ -     copyright notice, this list of conditions and the following
+ -     disclaimer in the documentation and/or other materials
+ -     provided with the distribution.
+ - 
+ -  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ -  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ -  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ -  A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL ANY
+ -  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ -  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ -  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ -  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ -  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ -  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ -  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *====================================================================*/
 
 #ifndef  LEPTONICA_WATERSHED_H
@@ -3007,7 +3373,7 @@ typedef struct L_WShed L_WSHED;
 
 #ifndef NO_PROTOS
 /*
- *  This file was autogen'd by xtractprotos, v. 1.4
+ *  These prototypes were autogen'd by xtractprotos, v. 1.5
  */
 #ifdef __cplusplus
 extern "C" {
@@ -3081,7 +3447,7 @@ LEPT_DLL extern void finalAccumulateLow ( l_uint32 *datad, l_int32 w, l_int32 h,
 LEPT_DLL extern void finalAccumulateThreshLow ( l_uint32 *datad, l_int32 w, l_int32 h, l_int32 wpld, l_uint32 *datas, l_int32 wpls, l_uint32 offset, l_uint32 threshold );
 LEPT_DLL extern void accumulateLow ( l_uint32 *datad, l_int32 w, l_int32 h, l_int32 wpld, l_uint32 *datas, l_int32 d, l_int32 wpls, l_int32 op );
 LEPT_DLL extern void multConstAccumulateLow ( l_uint32 *data, l_int32 w, l_int32 h, l_int32 wpl, l_float32 factor, l_uint32 offset );
-LEPT_DLL extern void absDifferenceLow ( l_uint32 *datad, l_int32 w, l_int32 h, l_int32 wpld, l_uint32 *datas1, l_uint32 *datas2, l_int32 d, l_int32 wpls );
+LEPT_DLL extern void absDifferenceLow ( l_uint32 *datad, l_int32 w, l_int32 h, l_int32 wpld, l_uint32 *datas1, l_uint32 *datas2, l_int32 d, l_int32 wpls1, l_int32 wpls2 );
 LEPT_DLL extern l_int32 l_getDataBit ( void *line, l_int32 n );
 LEPT_DLL extern void l_setDataBit ( void *line, l_int32 n );
 LEPT_DLL extern void l_clearDataBit ( void *line, l_int32 n );
@@ -3148,6 +3514,7 @@ LEPT_DLL extern l_uint8 * makeSubsampleTab2x ( void );
 LEPT_DLL extern PIX * pixBlend ( PIX *pixs1, PIX *pixs2, l_int32 x, l_int32 y, l_float32 fract );
 LEPT_DLL extern PIX * pixBlendMask ( PIX *pixd, PIX *pixs1, PIX *pixs2, l_int32 x, l_int32 y, l_float32 fract, l_int32 type );
 LEPT_DLL extern PIX * pixBlendGray ( PIX *pixd, PIX *pixs1, PIX *pixs2, l_int32 x, l_int32 y, l_float32 fract, l_int32 type, l_int32 transparent, l_uint32 transpix );
+LEPT_DLL extern PIX * pixBlendGrayInverse ( PIX *pixd, PIX *pixs1, PIX *pixs2, l_int32 x, l_int32 y, l_float32 fract );
 LEPT_DLL extern PIX * pixBlendColor ( PIX *pixd, PIX *pixs1, PIX *pixs2, l_int32 x, l_int32 y, l_float32 fract, l_int32 transparent, l_uint32 transpix );
 LEPT_DLL extern PIX * pixBlendColorByChannel ( PIX *pixd, PIX *pixs1, PIX *pixs2, l_int32 x, l_int32 y, l_float32 rfract, l_float32 gfract, l_float32 bfract, l_int32 transparent, l_uint32 transpix );
 LEPT_DLL extern PIX * pixBlendGrayAdapt ( PIX *pixd, PIX *pixs1, PIX *pixs2, l_int32 x, l_int32 y, l_float32 fract, l_int32 shift );
@@ -3155,12 +3522,10 @@ LEPT_DLL extern PIX * pixFadeWithGray ( PIX *pixs, PIX *pixb, l_float32 factor, 
 LEPT_DLL extern PIX * pixBlendHardLight ( PIX *pixd, PIX *pixs1, PIX *pixs2, l_int32 x, l_int32 y, l_float32 fract );
 LEPT_DLL extern l_int32 pixBlendCmap ( PIX *pixs, PIX *pixb, l_int32 x, l_int32 y, l_int32 sindex );
 LEPT_DLL extern PIX * pixBlendWithGrayMask ( PIX *pixs1, PIX *pixs2, PIX *pixg, l_int32 x, l_int32 y );
-LEPT_DLL extern l_int32 pixColorGray ( PIX *pixs, BOX *box, l_int32 type, l_int32 thresh, l_int32 rval, l_int32 gval, l_int32 bval );
-LEPT_DLL extern PIX * pixSnapColor ( PIX *pixd, PIX *pixs, l_uint32 srcval, l_uint32 dstval, l_int32 diff );
-LEPT_DLL extern PIX * pixSnapColorCmap ( PIX *pixd, PIX *pixs, l_uint32 srcval, l_uint32 dstval, l_int32 diff );
-LEPT_DLL extern PIX * pixLinearMapToTargetColor ( PIX *pixd, PIX *pixs, l_uint32 srcval, l_uint32 dstval );
-LEPT_DLL extern l_int32 pixelLinearMapToTargetColor ( l_uint32 scolor, l_uint32 srcmap, l_uint32 dstmap, l_uint32 *pdcolor );
-LEPT_DLL extern l_int32 pixelFractionalShift ( l_int32 rval, l_int32 gval, l_int32 bval, l_float32 fraction, l_uint32 *ppixel );
+LEPT_DLL extern PIX * pixBlendBackgroundToColor ( PIX *pixd, PIX *pixs, BOX *box, l_uint32 color, l_float32 gamma, l_int32 minval, l_int32 maxval );
+LEPT_DLL extern PIX * pixMultiplyByColor ( PIX *pixd, PIX *pixs, BOX *box, l_uint32 color );
+LEPT_DLL extern PIX * pixAlphaBlendUniform ( PIX *pixs, l_uint32 color );
+LEPT_DLL extern PIX * pixSetAlphaOverWhite ( PIX *pixs );
 LEPT_DLL extern L_BMF * bmfCreate ( const char *dir, l_int32 size );
 LEPT_DLL extern void bmfDestroy ( L_BMF **pbmf );
 LEPT_DLL extern PIX * bmfGetPix ( L_BMF *bmf, char chr );
@@ -3182,6 +3547,7 @@ LEPT_DLL extern l_int32 boxGetGeometry ( BOX *box, l_int32 *px, l_int32 *py, l_i
 LEPT_DLL extern l_int32 boxSetGeometry ( BOX *box, l_int32 x, l_int32 y, l_int32 w, l_int32 h );
 LEPT_DLL extern l_int32 boxGetRefcount ( BOX *box );
 LEPT_DLL extern l_int32 boxChangeRefcount ( BOX *box, l_int32 delta );
+LEPT_DLL extern l_int32 boxIsValid ( BOX *box, l_int32 *pvalid );
 LEPT_DLL extern BOXA * boxaCreate ( l_int32 n );
 LEPT_DLL extern BOXA * boxaCopy ( BOXA *boxa, l_int32 copyflag );
 LEPT_DLL extern void boxaDestroy ( BOXA **pboxa );
@@ -3203,9 +3569,13 @@ LEPT_DLL extern BOXAA * boxaaCopy ( BOXAA *baas, l_int32 copyflag );
 LEPT_DLL extern void boxaaDestroy ( BOXAA **pbaa );
 LEPT_DLL extern l_int32 boxaaAddBoxa ( BOXAA *baa, BOXA *ba, l_int32 copyflag );
 LEPT_DLL extern l_int32 boxaaExtendArray ( BOXAA *baa );
+LEPT_DLL extern l_int32 boxaaExtendArrayToSize ( BOXAA *baa, l_int32 size );
 LEPT_DLL extern l_int32 boxaaGetCount ( BOXAA *baa );
 LEPT_DLL extern l_int32 boxaaGetBoxCount ( BOXAA *baa );
 LEPT_DLL extern BOXA * boxaaGetBoxa ( BOXAA *baa, l_int32 index, l_int32 accessflag );
+LEPT_DLL extern BOX * boxaaGetBox ( BOXAA *baa, l_int32 iboxa, l_int32 ibox, l_int32 accessflag );
+LEPT_DLL extern l_int32 boxaaInitFull ( BOXAA *baa, BOXA *boxa );
+LEPT_DLL extern l_int32 boxaaExtendWithInit ( BOXAA *baa, l_int32 maxindex, BOXA *boxa );
 LEPT_DLL extern l_int32 boxaaReplaceBoxa ( BOXAA *baa, l_int32 index, BOXA *boxa );
 LEPT_DLL extern l_int32 boxaaInsertBoxa ( BOXAA *baa, l_int32 index, BOXA *boxa );
 LEPT_DLL extern l_int32 boxaaRemoveBoxa ( BOXAA *baa, l_int32 index );
@@ -3238,18 +3608,8 @@ LEPT_DLL extern BOX * boxAdjustSides ( BOX *boxd, BOX *boxs, l_int32 delleft, l_
 LEPT_DLL extern l_int32 boxEqual ( BOX *box1, BOX *box2, l_int32 *psame );
 LEPT_DLL extern l_int32 boxaEqual ( BOXA *boxa1, BOXA *boxa2, l_int32 maxdist, NUMA **pnaindex, l_int32 *psame );
 LEPT_DLL extern l_int32 boxaJoin ( BOXA *boxad, BOXA *boxas, l_int32 istart, l_int32 iend );
-LEPT_DLL extern l_int32 boxaGetExtent ( BOXA *boxa, l_int32 *pw, l_int32 *ph, BOX **pbox );
-LEPT_DLL extern l_int32 boxaGetCoverage ( BOXA *boxa, l_int32 wc, l_int32 hc, l_int32 exactflag, l_float32 *pfract );
-LEPT_DLL extern l_int32 boxaSizeRange ( BOXA *boxa, l_int32 *pminw, l_int32 *pminh, l_int32 *pmaxw, l_int32 *pmaxh );
-LEPT_DLL extern l_int32 boxaLocationRange ( BOXA *boxa, l_int32 *pminx, l_int32 *pminy, l_int32 *pmaxx, l_int32 *pmaxy );
-LEPT_DLL extern BOXA * boxaSelectBySize ( BOXA *boxas, l_int32 width, l_int32 height, l_int32 type, l_int32 relation, l_int32 *pchanged );
-LEPT_DLL extern NUMA * boxaMakeSizeIndicator ( BOXA *boxa, l_int32 width, l_int32 height, l_int32 type, l_int32 relation );
-LEPT_DLL extern BOXA * boxaSelectWithIndicator ( BOXA *boxas, NUMA *na, l_int32 *pchanged );
-LEPT_DLL extern BOXA * boxaPermutePseudorandom ( BOXA *boxas );
-LEPT_DLL extern BOXA * boxaPermuteRandom ( BOXA *boxad, BOXA *boxas );
-LEPT_DLL extern l_int32 boxaSwapBoxes ( BOXA *boxa, l_int32 i, l_int32 j );
-LEPT_DLL extern PTA * boxaConvertToPta ( BOXA *boxa, l_int32 ncorners );
-LEPT_DLL extern BOXA * ptaConvertToBoxa ( PTA *pta, l_int32 ncorners );
+LEPT_DLL extern l_int32 boxaSplitEvenOdd ( BOXA *boxa, BOXA **pboxae, BOXA **pboxao );
+LEPT_DLL extern BOXA * boxaMergeEvenOdd ( BOXA *boxae, BOXA *boxao );
 LEPT_DLL extern BOXA * boxaTransform ( BOXA *boxas, l_int32 shiftx, l_int32 shifty, l_float32 scalex, l_float32 scaley );
 LEPT_DLL extern BOX * boxTransform ( BOX *box, l_int32 shiftx, l_int32 shifty, l_float32 scalex, l_float32 scaley );
 LEPT_DLL extern BOXA * boxaTransformOrdered ( BOXA *boxas, l_int32 shiftx, l_int32 shifty, l_float32 scalex, l_float32 scaley, l_int32 xcen, l_int32 ycen, l_float32 angle, l_int32 order );
@@ -3261,10 +3621,14 @@ LEPT_DLL extern BOXA * boxaBinSort ( BOXA *boxas, l_int32 sorttype, l_int32 sort
 LEPT_DLL extern BOXA * boxaSortByIndex ( BOXA *boxas, NUMA *naindex );
 LEPT_DLL extern BOXAA * boxaSort2d ( BOXA *boxas, NUMAA **pnaad, l_int32 delta1, l_int32 delta2, l_int32 minh1 );
 LEPT_DLL extern BOXAA * boxaSort2dByIndex ( BOXA *boxas, NUMAA *naa );
+LEPT_DLL extern l_int32 boxaExtractAsNuma ( BOXA *boxa, NUMA **pnax, NUMA **pnay, NUMA **pnaw, NUMA **pnah, l_int32 keepinvalid );
+LEPT_DLL extern l_int32 boxaExtractAsPta ( BOXA *boxa, PTA **pptal, PTA **pptat, PTA **pptar, PTA **pptab, l_int32 keepinvalid );
 LEPT_DLL extern BOX * boxaGetRankSize ( BOXA *boxa, l_float32 fract );
 LEPT_DLL extern BOX * boxaGetMedian ( BOXA *boxa );
 LEPT_DLL extern l_int32 boxaaGetExtent ( BOXAA *boxaa, l_int32 *pw, l_int32 *ph, BOX **pbox );
 LEPT_DLL extern BOXA * boxaaFlattenToBoxa ( BOXAA *baa, NUMA **pnaindex, l_int32 copyflag );
+LEPT_DLL extern BOXA * boxaaFlattenAligned ( BOXAA *baa, l_int32 num, l_int32 copyflag );
+LEPT_DLL extern BOXAA * boxaEncapsulateAligned ( BOXA *boxa, l_int32 num, l_int32 copyflag );
 LEPT_DLL extern l_int32 boxaaAlignBox ( BOXAA *baa, BOX *box, l_int32 delta, l_int32 *pindex );
 LEPT_DLL extern PIX * pixMaskConnComp ( PIX *pixs, l_int32 connectivity, BOXA **pboxa );
 LEPT_DLL extern PIX * pixMaskBoxa ( PIX *pixd, PIX *pixs, BOXA *boxa, l_int32 op );
@@ -3277,6 +3641,22 @@ LEPT_DLL extern PIX * pixDrawBoxaRandom ( PIX *pixs, BOXA *boxa, l_int32 width )
 LEPT_DLL extern PIX * boxaaDisplay ( BOXAA *boxaa, l_int32 linewba, l_int32 linewb, l_uint32 colorba, l_uint32 colorb, l_int32 w, l_int32 h );
 LEPT_DLL extern BOXA * pixSplitIntoBoxa ( PIX *pixs, l_int32 minsum, l_int32 skipdist, l_int32 delta, l_int32 maxbg, l_int32 maxcomps, l_int32 remainder );
 LEPT_DLL extern BOXA * pixSplitComponentIntoBoxa ( PIX *pix, BOX *box, l_int32 minsum, l_int32 skipdist, l_int32 delta, l_int32 maxbg, l_int32 maxcomps, l_int32 remainder );
+LEPT_DLL extern BOXA * boxaSelectBySize ( BOXA *boxas, l_int32 width, l_int32 height, l_int32 type, l_int32 relation, l_int32 *pchanged );
+LEPT_DLL extern NUMA * boxaMakeSizeIndicator ( BOXA *boxa, l_int32 width, l_int32 height, l_int32 type, l_int32 relation );
+LEPT_DLL extern BOXA * boxaSelectWithIndicator ( BOXA *boxas, NUMA *na, l_int32 *pchanged );
+LEPT_DLL extern BOXA * boxaPermutePseudorandom ( BOXA *boxas );
+LEPT_DLL extern BOXA * boxaPermuteRandom ( BOXA *boxad, BOXA *boxas );
+LEPT_DLL extern l_int32 boxaSwapBoxes ( BOXA *boxa, l_int32 i, l_int32 j );
+LEPT_DLL extern PTA * boxaConvertToPta ( BOXA *boxa, l_int32 ncorners );
+LEPT_DLL extern BOXA * ptaConvertToBoxa ( PTA *pta, l_int32 ncorners );
+LEPT_DLL extern BOXA * boxaSmoothSequence ( BOXA *boxas, l_float32 factor, l_int32 max_error, l_int32 debug );
+LEPT_DLL extern BOXA * boxaLinearFit ( BOXA *boxas, l_float32 factor, l_int32 max_error, l_int32 debug );
+LEPT_DLL extern BOXA * boxaConstrainSize ( BOXA *boxas, l_int32 width, l_int32 widthflag, l_int32 height, l_int32 heightflag );
+LEPT_DLL extern l_int32 boxaPlotSides ( BOXA *boxa, const char *plotname, NUMA **pnal, NUMA **pnat, NUMA **pnar, NUMA **pnab, l_int32 outformat );
+LEPT_DLL extern l_int32 boxaGetExtent ( BOXA *boxa, l_int32 *pw, l_int32 *ph, BOX **pbox );
+LEPT_DLL extern l_int32 boxaGetCoverage ( BOXA *boxa, l_int32 wc, l_int32 hc, l_int32 exactflag, l_float32 *pfract );
+LEPT_DLL extern l_int32 boxaSizeRange ( BOXA *boxa, l_int32 *pminw, l_int32 *pminh, l_int32 *pmaxw, l_int32 *pmaxh );
+LEPT_DLL extern l_int32 boxaLocationRange ( BOXA *boxa, l_int32 *pminx, l_int32 *pminy, l_int32 *pmaxx, l_int32 *pmaxy );
 LEPT_DLL extern L_BYTEA * l_byteaCreate ( size_t nbytes );
 LEPT_DLL extern L_BYTEA * l_byteaInitFromMem ( l_uint8 *data, size_t size );
 LEPT_DLL extern L_BYTEA * l_byteaInitFromFile ( const char *fname );
@@ -3291,7 +3671,7 @@ LEPT_DLL extern l_int32 l_byteaAppendString ( L_BYTEA *ba, char *str );
 LEPT_DLL extern l_int32 l_byteaExtendArrayToSize ( L_BYTEA *ba, size_t size );
 LEPT_DLL extern l_int32 l_byteaJoin ( L_BYTEA *ba1, L_BYTEA **pba2 );
 LEPT_DLL extern l_int32 l_byteaSplit ( L_BYTEA *ba1, size_t splitloc, L_BYTEA **pba2 );
-LEPT_DLL extern l_int32 l_byteaFindEachSequence ( L_BYTEA *ba, l_uint8 *sequence, l_int32 seqlen, NUMA **pna );
+LEPT_DLL extern l_int32 l_byteaFindEachSequence ( L_BYTEA *ba, l_uint8 *sequence, l_int32 seqlen, L_DNA **pda );
 LEPT_DLL extern l_int32 l_byteaWrite ( const char *fname, L_BYTEA *ba, size_t startloc, size_t endloc );
 LEPT_DLL extern l_int32 l_byteaWriteStream ( FILE *fp, L_BYTEA *ba, size_t startloc, size_t endloc );
 LEPT_DLL extern CCBORDA * ccbaCreate ( PIX *pixs, l_int32 n );
@@ -3343,6 +3723,14 @@ LEPT_DLL extern l_int32 pixColorFraction ( PIX *pixs, l_int32 darkthresh, l_int3
 LEPT_DLL extern l_int32 pixNumSignificantGrayColors ( PIX *pixs, l_int32 darkthresh, l_int32 lightthresh, l_float32 minfract, l_int32 factor, l_int32 *pncolors );
 LEPT_DLL extern l_int32 pixColorsForQuantization ( PIX *pixs, l_int32 thresh, l_int32 *pncolors, l_int32 *piscolor, l_int32 debug );
 LEPT_DLL extern l_int32 pixNumColors ( PIX *pixs, l_int32 factor, l_int32 *pncolors );
+LEPT_DLL extern l_int32 pixColorGray ( PIX *pixs, BOX *box, l_int32 type, l_int32 thresh, l_int32 rval, l_int32 gval, l_int32 bval );
+LEPT_DLL extern PIX * pixSnapColor ( PIX *pixd, PIX *pixs, l_uint32 srcval, l_uint32 dstval, l_int32 diff );
+LEPT_DLL extern PIX * pixSnapColorCmap ( PIX *pixd, PIX *pixs, l_uint32 srcval, l_uint32 dstval, l_int32 diff );
+LEPT_DLL extern PIX * pixLinearMapToTargetColor ( PIX *pixd, PIX *pixs, l_uint32 srcval, l_uint32 dstval );
+LEPT_DLL extern l_int32 pixelLinearMapToTargetColor ( l_uint32 scolor, l_uint32 srcmap, l_uint32 dstmap, l_uint32 *pdcolor );
+LEPT_DLL extern PIX * pixShiftByComponent ( PIX *pixd, PIX *pixs, l_uint32 srcval, l_uint32 dstval );
+LEPT_DLL extern l_int32 pixelShiftByComponent ( l_int32 rval, l_int32 gval, l_int32 bval, l_uint32 srcval, l_uint32 dstval, l_uint32 *ppixel );
+LEPT_DLL extern l_int32 pixelFractionalShift ( l_int32 rval, l_int32 gval, l_int32 bval, l_float32 fraction, l_uint32 *ppixel );
 LEPT_DLL extern PIXCMAP * pixcmapCreate ( l_int32 depth );
 LEPT_DLL extern PIXCMAP * pixcmapCreateRandom ( l_int32 depth, l_int32 hasblack, l_int32 haswhite );
 LEPT_DLL extern PIXCMAP * pixcmapCreateLinear ( l_int32 d, l_int32 nlevels );
@@ -3382,6 +3770,7 @@ LEPT_DLL extern char * pixcmapConvertToHex ( l_uint8 *data, l_int32 nbytes, l_in
 LEPT_DLL extern l_int32 pixcmapGammaTRC ( PIXCMAP *cmap, l_float32 gamma, l_int32 minval, l_int32 maxval );
 LEPT_DLL extern l_int32 pixcmapContrastTRC ( PIXCMAP *cmap, l_float32 factor );
 LEPT_DLL extern l_int32 pixcmapShiftIntensity ( PIXCMAP *cmap, l_float32 fraction );
+LEPT_DLL extern l_int32 pixcmapShiftByComponent ( PIXCMAP *cmap, l_uint32 srcval, l_uint32 dstval );
 LEPT_DLL extern PIX * pixColorMorph ( PIX *pixs, l_int32 type, l_int32 hsize, l_int32 vsize );
 LEPT_DLL extern PIX * pixOctreeColorQuant ( PIX *pixs, l_int32 colors, l_int32 ditherflag );
 LEPT_DLL extern PIX * pixOctreeColorQuantGeneral ( PIX *pixs, l_int32 colors, l_int32 ditherflag, l_float32 validthresh, l_float32 colorthresh );
@@ -3450,18 +3839,19 @@ LEPT_DLL extern l_int32 pixTestForSimilarity ( PIX *pix1, PIX *pix2, l_int32 fac
 LEPT_DLL extern l_int32 pixGetDifferenceStats ( PIX *pix1, PIX *pix2, l_int32 factor, l_int32 mindiff, l_float32 *pfractdiff, l_float32 *pavediff, l_int32 printstats );
 LEPT_DLL extern NUMA * pixGetDifferenceHistogram ( PIX *pix1, PIX *pix2, l_int32 factor );
 LEPT_DLL extern l_int32 pixGetPSNR ( PIX *pix1, PIX *pix2, l_int32 factor, l_float32 *ppsnr );
+LEPT_DLL extern l_int32 pixCompareWithTranslation ( PIX *pix1, PIX *pix2, l_int32 thresh, l_int32 *pdelx, l_int32 *pdely, l_float32 *pscore, l_int32 debugflag );
 LEPT_DLL extern BOXA * pixConnComp ( PIX *pixs, PIXA **ppixa, l_int32 connectivity );
 LEPT_DLL extern BOXA * pixConnCompPixa ( PIX *pixs, PIXA **ppixa, l_int32 connectivity );
 LEPT_DLL extern BOXA * pixConnCompBB ( PIX *pixs, l_int32 connectivity );
 LEPT_DLL extern l_int32 pixCountConnComp ( PIX *pixs, l_int32 connectivity, l_int32 *pcount );
 LEPT_DLL extern l_int32 nextOnPixelInRaster ( PIX *pixs, l_int32 xstart, l_int32 ystart, l_int32 *px, l_int32 *py );
 LEPT_DLL extern l_int32 nextOnPixelInRasterLow ( l_uint32 *data, l_int32 w, l_int32 h, l_int32 wpl, l_int32 xstart, l_int32 ystart, l_int32 *px, l_int32 *py );
-LEPT_DLL extern BOX * pixSeedfillBB ( PIX *pixs, L_STACK *lstack, l_int32 x, l_int32 y, l_int32 connectivity );
-LEPT_DLL extern BOX * pixSeedfill4BB ( PIX *pixs, L_STACK *lstack, l_int32 x, l_int32 y );
-LEPT_DLL extern BOX * pixSeedfill8BB ( PIX *pixs, L_STACK *lstack, l_int32 x, l_int32 y );
-LEPT_DLL extern l_int32 pixSeedfill ( PIX *pixs, L_STACK *lstack, l_int32 x, l_int32 y, l_int32 connectivity );
-LEPT_DLL extern l_int32 pixSeedfill4 ( PIX *pixs, L_STACK *lstack, l_int32 x, l_int32 y );
-LEPT_DLL extern l_int32 pixSeedfill8 ( PIX *pixs, L_STACK *lstack, l_int32 x, l_int32 y );
+LEPT_DLL extern BOX * pixSeedfillBB ( PIX *pixs, L_STACK *stack, l_int32 x, l_int32 y, l_int32 connectivity );
+LEPT_DLL extern BOX * pixSeedfill4BB ( PIX *pixs, L_STACK *stack, l_int32 x, l_int32 y );
+LEPT_DLL extern BOX * pixSeedfill8BB ( PIX *pixs, L_STACK *stack, l_int32 x, l_int32 y );
+LEPT_DLL extern l_int32 pixSeedfill ( PIX *pixs, L_STACK *stack, l_int32 x, l_int32 y, l_int32 connectivity );
+LEPT_DLL extern l_int32 pixSeedfill4 ( PIX *pixs, L_STACK *stack, l_int32 x, l_int32 y );
+LEPT_DLL extern l_int32 pixSeedfill8 ( PIX *pixs, L_STACK *stack, l_int32 x, l_int32 y );
 LEPT_DLL extern l_int32 convertFilesTo1bpp ( const char *dirin, const char *substr, l_int32 upscaling, l_int32 thresh, l_int32 firstpage, l_int32 npages, const char *dirout, l_int32 outformat );
 LEPT_DLL extern PIX * pixBlockconv ( PIX *pix, l_int32 wc, l_int32 hc );
 LEPT_DLL extern PIX * pixBlockconvGray ( PIX *pixs, PIX *pixacc, l_int32 wc, l_int32 hc );
@@ -3490,23 +3880,96 @@ LEPT_DLL extern void blocksumLow ( l_uint32 *datad, l_int32 w, l_int32 h, l_int3
 LEPT_DLL extern l_float32 pixCorrelationScore ( PIX *pix1, PIX *pix2, l_int32 area1, l_int32 area2, l_float32 delx, l_float32 dely, l_int32 maxdiffw, l_int32 maxdiffh, l_int32 *tab );
 LEPT_DLL extern l_int32 pixCorrelationScoreThresholded ( PIX *pix1, PIX *pix2, l_int32 area1, l_int32 area2, l_float32 delx, l_float32 dely, l_int32 maxdiffw, l_int32 maxdiffh, l_int32 *tab, l_int32 *downcount, l_float32 score_threshold );
 LEPT_DLL extern l_float32 pixCorrelationScoreSimple ( PIX *pix1, PIX *pix2, l_int32 area1, l_int32 area2, l_float32 delx, l_float32 dely, l_int32 maxdiffw, l_int32 maxdiffh, l_int32 *tab );
-LEPT_DLL extern L_DEWARP * dewarpCreate ( PIX *pixs, l_int32 pageno, l_int32 sampling, l_int32 minlines, l_int32 applyhoriz );
+LEPT_DLL extern l_float32 pixCorrelationScoreShifted ( PIX *pix1, PIX *pix2, l_int32 area1, l_int32 area2, l_int32 delx, l_int32 dely, l_int32 *tab );
+LEPT_DLL extern l_int32 pixBestCorrelation ( PIX *pix1, PIX *pix2, l_int32 area1, l_int32 area2, l_int32 etransx, l_int32 etransy, l_int32 maxshift, l_int32 *tab8, l_int32 *pdelx, l_int32 *pdely, l_float32 *pscore, l_int32 debugflag );
+LEPT_DLL extern L_DEWARP * dewarpCreate ( PIX *pixs, l_int32 pageno );
+LEPT_DLL extern L_DEWARP * dewarpCreateReference ( l_int32 pageno, l_int32 refpage );
 LEPT_DLL extern void dewarpDestroy ( L_DEWARP **pdew );
-LEPT_DLL extern l_int32 dewarpBuildModel ( L_DEWARP *dew, l_int32 debugflag );
-LEPT_DLL extern PTAA * pixGetTextlineCenters ( PIX *pixs, l_int32 debugflag );
-LEPT_DLL extern PTA * pixGetMeanVerticals ( PIX *pixs, l_int32 x, l_int32 y );
-LEPT_DLL extern PTAA * ptaaRemoveShortLines ( PIX *pixs, PTAA *ptaas, l_float32 fract, l_int32 debugflag );
-LEPT_DLL extern FPIX * fpixBuildHorizontalDisparity ( FPIX *fpixv, l_float32 factor, l_int32 *pextraw );
-LEPT_DLL extern FPIX * fpixSampledDisparity ( FPIX *fpixs, l_int32 sampling );
-LEPT_DLL extern l_int32 dewarpApplyDisparity ( L_DEWARP *dew, PIX *pixs, l_int32 debugflag );
-LEPT_DLL extern PIX * pixApplyVerticalDisparity ( PIX *pixs, FPIX *fpix );
-LEPT_DLL extern PIX * pixApplyHorizontalDisparity ( PIX *pixs, FPIX *fpix, l_int32 extraw );
+LEPT_DLL extern L_DEWARPA * dewarpaCreate ( l_int32 nptrs, l_int32 sampling, l_int32 redfactor, l_int32 minlines, l_int32 maxdist );
+LEPT_DLL extern L_DEWARPA * dewarpaCreateFromPixacomp ( PIXAC *pixac, l_int32 sampling, l_int32 minlines, l_int32 maxdist );
+LEPT_DLL extern void dewarpaDestroy ( L_DEWARPA **pdewa );
+LEPT_DLL extern l_int32 dewarpaDestroyDewarp ( L_DEWARPA *dewa, l_int32 pageno );
+LEPT_DLL extern l_int32 dewarpaInsertDewarp ( L_DEWARPA *dewa, L_DEWARP *dew );
+LEPT_DLL extern l_int32 dewarpaExtendArrayToSize ( L_DEWARPA *dewa, l_int32 size );
+LEPT_DLL extern l_int32 dewarpBuildModel ( L_DEWARP *dew, const char *debugfile );
+LEPT_DLL extern l_int32 dewarpFindVertDisparity ( L_DEWARP *dew, PTAA *ptaa );
+LEPT_DLL extern l_int32 dewarpFindHorizDisparity ( L_DEWARP *dew, PTAA *ptaa );
+LEPT_DLL extern PTAA * dewarpGetTextlineCenters ( PIX *pixs, l_int32 debugflag );
+LEPT_DLL extern PTAA * dewarpRemoveShortLines ( PIX *pixs, PTAA *ptaas, l_float32 fract, l_int32 debugflag );
+LEPT_DLL extern l_int32 dewarpaApplyDisparity ( L_DEWARPA *dewa, l_int32 pageno, PIX *pixs, const char *debugfile );
 LEPT_DLL extern l_int32 dewarpMinimize ( L_DEWARP *dew );
-LEPT_DLL extern l_int32 dewarpPopulateFullRes ( L_DEWARP *dew );
+LEPT_DLL extern l_int32 dewarpPopulateFullRes ( L_DEWARP *dew, PIX *pix );
+LEPT_DLL extern L_DEWARP * dewarpaGetDewarp ( L_DEWARPA *dewa, l_int32 index );
+LEPT_DLL extern PIX * dewarpaGetResult ( L_DEWARPA *dewa, l_int32 index );
+LEPT_DLL extern PIX * dewarpGetResult ( L_DEWARP *dew );
+LEPT_DLL extern l_int32 dewarpaListPages ( L_DEWARPA *dewa );
+LEPT_DLL extern l_int32 dewarpaSetValidModels ( L_DEWARPA *dewa, l_int32 debug );
+LEPT_DLL extern l_int32 dewarpaInsertRefModels ( L_DEWARPA *dewa, l_int32 debug );
+LEPT_DLL extern l_int32 dewarpaStripRefModels ( L_DEWARPA *dewa );
+LEPT_DLL extern l_int32 dewarpaSetCurvatures ( L_DEWARPA *dewa, l_int32 min_medcurv, l_int32 max_medcurv, l_int32 max_leftcurv, l_int32 max_rightcurv );
+LEPT_DLL extern l_int32 dewarpaUseFullModel ( L_DEWARPA *dewa, l_int32 fullmodel );
+LEPT_DLL extern l_int32 dewarpaSetMaxDistance ( L_DEWARPA *dewa, l_int32 maxdist );
 LEPT_DLL extern L_DEWARP * dewarpRead ( const char *filename );
 LEPT_DLL extern L_DEWARP * dewarpReadStream ( FILE *fp );
 LEPT_DLL extern l_int32 dewarpWrite ( const char *filename, L_DEWARP *dew );
 LEPT_DLL extern l_int32 dewarpWriteStream ( FILE *fp, L_DEWARP *dew );
+LEPT_DLL extern L_DEWARPA * dewarpaRead ( const char *filename );
+LEPT_DLL extern L_DEWARPA * dewarpaReadStream ( FILE *fp );
+LEPT_DLL extern l_int32 dewarpaWrite ( const char *filename, L_DEWARPA *dewa );
+LEPT_DLL extern l_int32 dewarpaWriteStream ( FILE *fp, L_DEWARPA *dewa );
+LEPT_DLL extern l_int32 dewarpaInfo ( FILE *fp, L_DEWARPA *dewa );
+LEPT_DLL extern l_int32 dewarpaModelStats ( L_DEWARPA *dewa, l_int32 *pnnone, l_int32 *pnactual, l_int32 *pnvalid, l_int32 *pnref );
+LEPT_DLL extern l_int32 dewarpaShowArrays ( L_DEWARPA *dewa, l_float32 scalefact, l_int32 first, l_int32 last );
+LEPT_DLL extern l_int32 dewarpDebug ( L_DEWARP *dew, const char *subdir, l_int32 index );
+LEPT_DLL extern l_int32 dewarpShowResults ( L_DEWARPA *dewa, SARRAY *sa, BOXA *boxa, l_int32 firstpage, l_int32 lastpage, const char *pdfout );
+LEPT_DLL extern L_DNA * l_dnaCreate ( l_int32 n );
+LEPT_DLL extern L_DNA * l_dnaCreateFromIArray ( l_int32 *iarray, l_int32 size );
+LEPT_DLL extern L_DNA * l_dnaCreateFromDArray ( l_float64 *darray, l_int32 size, l_int32 copyflag );
+LEPT_DLL extern L_DNA * l_dnaMakeSequence ( l_float64 startval, l_float64 increment, l_int32 size );
+LEPT_DLL extern void l_dnaDestroy ( L_DNA **pda );
+LEPT_DLL extern L_DNA * l_dnaCopy ( L_DNA *da );
+LEPT_DLL extern L_DNA * l_dnaClone ( L_DNA *da );
+LEPT_DLL extern l_int32 l_dnaEmpty ( L_DNA *da );
+LEPT_DLL extern l_int32 l_dnaAddNumber ( L_DNA *da, l_float64 val );
+LEPT_DLL extern l_int32 l_dnaExtendArray ( L_DNA *da );
+LEPT_DLL extern l_int32 l_dnaInsertNumber ( L_DNA *da, l_int32 index, l_float64 val );
+LEPT_DLL extern l_int32 l_dnaRemoveNumber ( L_DNA *da, l_int32 index );
+LEPT_DLL extern l_int32 l_dnaReplaceNumber ( L_DNA *da, l_int32 index, l_float64 val );
+LEPT_DLL extern l_int32 l_dnaGetCount ( L_DNA *da );
+LEPT_DLL extern l_int32 l_dnaSetCount ( L_DNA *da, l_int32 newcount );
+LEPT_DLL extern l_int32 l_dnaGetDValue ( L_DNA *da, l_int32 index, l_float64 *pval );
+LEPT_DLL extern l_int32 l_dnaGetIValue ( L_DNA *da, l_int32 index, l_int32 *pival );
+LEPT_DLL extern l_int32 l_dnaSetValue ( L_DNA *da, l_int32 index, l_float64 val );
+LEPT_DLL extern l_int32 l_dnaShiftValue ( L_DNA *da, l_int32 index, l_float64 diff );
+LEPT_DLL extern l_int32 * l_dnaGetIArray ( L_DNA *da );
+LEPT_DLL extern l_float64 * l_dnaGetDArray ( L_DNA *da, l_int32 copyflag );
+LEPT_DLL extern l_int32 l_dnaGetRefcount ( L_DNA *da );
+LEPT_DLL extern l_int32 l_dnaChangeRefcount ( L_DNA *da, l_int32 delta );
+LEPT_DLL extern l_int32 l_dnaGetXParameters ( L_DNA *da, l_float64 *pstartx, l_float64 *pdelx );
+LEPT_DLL extern l_int32 l_dnaSetXParameters ( L_DNA *da, l_float64 startx, l_float64 delx );
+LEPT_DLL extern l_int32 l_dnaCopyXParameters ( L_DNA *dad, L_DNA *das );
+LEPT_DLL extern L_DNA * l_dnaRead ( const char *filename );
+LEPT_DLL extern L_DNA * l_dnaReadStream ( FILE *fp );
+LEPT_DLL extern l_int32 l_dnaWrite ( const char *filename, L_DNA *da );
+LEPT_DLL extern l_int32 l_dnaWriteStream ( FILE *fp, L_DNA *da );
+LEPT_DLL extern L_DNAA * l_dnaaCreate ( l_int32 n );
+LEPT_DLL extern void l_dnaaDestroy ( L_DNAA **pdaa );
+LEPT_DLL extern l_int32 l_dnaaAddDna ( L_DNAA *daa, L_DNA *da, l_int32 copyflag );
+LEPT_DLL extern l_int32 l_dnaaExtendArray ( L_DNAA *daa );
+LEPT_DLL extern l_int32 l_dnaaGetCount ( L_DNAA *daa );
+LEPT_DLL extern l_int32 l_dnaaGetDnaCount ( L_DNAA *daa, l_int32 index );
+LEPT_DLL extern l_int32 l_dnaaGetNumberCount ( L_DNAA *daa );
+LEPT_DLL extern L_DNA * l_dnaaGetDna ( L_DNAA *daa, l_int32 index, l_int32 accessflag );
+LEPT_DLL extern l_int32 l_dnaaReplaceDna ( L_DNAA *daa, l_int32 index, L_DNA *da );
+LEPT_DLL extern l_int32 l_dnaaGetValue ( L_DNAA *daa, l_int32 i, l_int32 j, l_float64 *pval );
+LEPT_DLL extern l_int32 l_dnaaAddNumber ( L_DNAA *daa, l_int32 index, l_float64 val );
+LEPT_DLL extern L_DNAA * l_dnaaRead ( const char *filename );
+LEPT_DLL extern L_DNAA * l_dnaaReadStream ( FILE *fp );
+LEPT_DLL extern l_int32 l_dnaaWrite ( const char *filename, L_DNAA *daa );
+LEPT_DLL extern l_int32 l_dnaaWriteStream ( FILE *fp, L_DNAA *daa );
+LEPT_DLL extern L_DNA * l_dnaMakeDelta ( L_DNA *das );
+LEPT_DLL extern NUMA * l_dnaConvertToNuma ( L_DNA *da );
+LEPT_DLL extern L_DNA * numaConvertToDna ( NUMA *na );
 LEPT_DLL extern PIX * pixMorphDwa_2 ( PIX *pixd, PIX *pixs, l_int32 operation, char *selname );
 LEPT_DLL extern PIX * pixFMorphopGen_2 ( PIX *pixd, PIX *pixs, l_int32 operation, char *selname );
 LEPT_DLL extern l_int32 fmorphopgen_low_2 ( l_uint32 *datad, l_int32 w, l_int32 h, l_int32 wpld, l_uint32 *datas, l_int32 wpls, l_int32 index );
@@ -3623,20 +4086,35 @@ LEPT_DLL extern l_int32 dpixWriteStream ( FILE *fp, DPIX *dpix );
 LEPT_DLL extern DPIX * dpixEndianByteSwap ( DPIX *dpixd, DPIX *dpixs );
 LEPT_DLL extern l_int32 fpixPrintStream ( FILE *fp, FPIX *fpix, l_int32 factor );
 LEPT_DLL extern FPIX * pixConvertToFPix ( PIX *pixs, l_int32 ncomps );
+LEPT_DLL extern DPIX * pixConvertToDPix ( PIX *pixs, l_int32 ncomps );
 LEPT_DLL extern PIX * fpixConvertToPix ( FPIX *fpixs, l_int32 outdepth, l_int32 negvals, l_int32 errorflag );
 LEPT_DLL extern PIX * fpixDisplayMaxDynamicRange ( FPIX *fpixs );
 LEPT_DLL extern DPIX * fpixConvertToDPix ( FPIX *fpix );
+LEPT_DLL extern PIX * dpixConvertToPix ( DPIX *dpixs, l_int32 outdepth, l_int32 negvals, l_int32 errorflag );
 LEPT_DLL extern FPIX * dpixConvertToFPix ( DPIX *dpix );
 LEPT_DLL extern l_int32 fpixGetMin ( FPIX *fpix, l_float32 *pminval, l_int32 *pxminloc, l_int32 *pyminloc );
 LEPT_DLL extern l_int32 fpixGetMax ( FPIX *fpix, l_float32 *pmaxval, l_int32 *pxmaxloc, l_int32 *pymaxloc );
-LEPT_DLL extern FPIX * fpixAddBorder ( FPIX *fpixs, l_int32 left, l_int32 right, l_int32 top, l_int32 bot );
-LEPT_DLL extern FPIX * fpixRemoveBorder ( FPIX *fpixs, l_int32 left, l_int32 right, l_int32 top, l_int32 bot );
-LEPT_DLL extern FPIX * fpixAddMirroredBorder ( FPIX *fpixs, l_int32 left, l_int32 right, l_int32 top, l_int32 bot );
-LEPT_DLL extern l_int32 fpixRasterop ( FPIX *fpixd, l_int32 dx, l_int32 dy, l_int32 dw, l_int32 dh, FPIX *fpixs, l_int32 sx, l_int32 sy );
+LEPT_DLL extern l_int32 dpixGetMin ( DPIX *dpix, l_float64 *pminval, l_int32 *pxminloc, l_int32 *pyminloc );
+LEPT_DLL extern l_int32 dpixGetMax ( DPIX *dpix, l_float64 *pmaxval, l_int32 *pxmaxloc, l_int32 *pymaxloc );
 LEPT_DLL extern FPIX * fpixScaleByInteger ( FPIX *fpixs, l_int32 factor );
 LEPT_DLL extern DPIX * dpixScaleByInteger ( DPIX *dpixs, l_int32 factor );
 LEPT_DLL extern FPIX * fpixLinearCombination ( FPIX *fpixd, FPIX *fpixs1, FPIX *fpixs2, l_float32 a, l_float32 b );
 LEPT_DLL extern l_int32 fpixAddMultConstant ( FPIX *fpix, l_float32 addc, l_float32 multc );
+LEPT_DLL extern DPIX * dpixLinearCombination ( DPIX *dpixd, DPIX *dpixs1, DPIX *dpixs2, l_float32 a, l_float32 b );
+LEPT_DLL extern l_int32 dpixAddMultConstant ( DPIX *dpix, l_float64 addc, l_float64 multc );
+LEPT_DLL extern l_int32 fpixSetAllArbitrary ( FPIX *fpix, l_float32 inval );
+LEPT_DLL extern l_int32 dpixSetAllArbitrary ( DPIX *dpix, l_float64 inval );
+LEPT_DLL extern FPIX * fpixAddBorder ( FPIX *fpixs, l_int32 left, l_int32 right, l_int32 top, l_int32 bot );
+LEPT_DLL extern FPIX * fpixRemoveBorder ( FPIX *fpixs, l_int32 left, l_int32 right, l_int32 top, l_int32 bot );
+LEPT_DLL extern FPIX * fpixAddMirroredBorder ( FPIX *fpixs, l_int32 left, l_int32 right, l_int32 top, l_int32 bot );
+LEPT_DLL extern FPIX * fpixAddContinuedBorder ( FPIX *fpixs, l_int32 left, l_int32 right, l_int32 top, l_int32 bot );
+LEPT_DLL extern FPIX * fpixAddSlopeBorder ( FPIX *fpixs, l_int32 left, l_int32 right, l_int32 top, l_int32 bot );
+LEPT_DLL extern l_int32 fpixRasterop ( FPIX *fpixd, l_int32 dx, l_int32 dy, l_int32 dw, l_int32 dh, FPIX *fpixs, l_int32 sx, l_int32 sy );
+LEPT_DLL extern FPIX * fpixAffinePta ( FPIX *fpixs, PTA *ptad, PTA *ptas, l_int32 border, l_float32 inval );
+LEPT_DLL extern FPIX * fpixAffine ( FPIX *fpixs, l_float32 *vc, l_float32 inval );
+LEPT_DLL extern FPIX * fpixProjectivePta ( FPIX *fpixs, PTA *ptad, PTA *ptas, l_int32 border, l_float32 inval );
+LEPT_DLL extern FPIX * fpixProjective ( FPIX *fpixs, l_float32 *vc, l_float32 inval );
+LEPT_DLL extern l_int32 linearInterpolatePixelFloat ( l_float32 *datas, l_int32 w, l_int32 h, l_float32 x, l_float32 y, l_float32 inval, l_float32 *pval );
 LEPT_DLL extern PIX * pixReadStreamGif ( FILE *fp );
 LEPT_DLL extern l_int32 pixWriteStreamGif ( FILE *fp, PIX *pix );
 LEPT_DLL extern PIX * pixReadMemGif ( const l_uint8 *cdata, size_t size );
@@ -3684,7 +4162,8 @@ LEPT_DLL extern l_int32 pixRenderPolylineArb ( PIX *pix, PTA *ptas, l_int32 widt
 LEPT_DLL extern l_int32 pixRenderPolylineBlend ( PIX *pix, PTA *ptas, l_int32 width, l_uint8 rval, l_uint8 gval, l_uint8 bval, l_float32 fract, l_int32 closeflag, l_int32 removedups );
 LEPT_DLL extern PIX * pixRenderRandomCmapPtaa ( PIX *pix, PTAA *ptaa, l_int32 polyflag, l_int32 width, l_int32 closeflag );
 LEPT_DLL extern PIX * pixRenderContours ( PIX *pixs, l_int32 startval, l_int32 incr, l_int32 outdepth );
-LEPT_DLL extern PIX * fpixRenderContours ( FPIX *fpixs, l_float32 startval, l_float32 incr, l_float32 proxim );
+LEPT_DLL extern PIX * fpixAutoRenderContours ( FPIX *fpix, l_int32 ncontours );
+LEPT_DLL extern PIX * fpixRenderContours ( FPIX *fpixs, l_float32 incr, l_float32 proxim );
 LEPT_DLL extern PIX * pixErodeGray ( PIX *pixs, l_int32 hsize, l_int32 vsize );
 LEPT_DLL extern PIX * pixDilateGray ( PIX *pixs, l_int32 hsize, l_int32 vsize );
 LEPT_DLL extern PIX * pixOpenGray ( PIX *pixs, l_int32 hsize, l_int32 vsize );
@@ -3948,6 +4427,7 @@ LEPT_DLL extern NUMA * numaSubsample ( NUMA *nas, l_int32 subfactor );
 LEPT_DLL extern NUMA * numaMakeDelta ( NUMA *nas );
 LEPT_DLL extern NUMA * numaMakeSequence ( l_float32 startval, l_float32 increment, l_int32 size );
 LEPT_DLL extern NUMA * numaMakeConstant ( l_float32 val, l_int32 size );
+LEPT_DLL extern NUMA * numaMakeAbsValue ( NUMA *nad, NUMA *nas );
 LEPT_DLL extern NUMA * numaAddBorder ( NUMA *nas, l_int32 left, l_int32 right, l_float32 val );
 LEPT_DLL extern NUMA * numaAddSpecifiedBorder ( NUMA *nas, l_int32 left, l_int32 right, l_int32 type );
 LEPT_DLL extern NUMA * numaRemoveBorder ( NUMA *nas, l_int32 left, l_int32 right );
@@ -3968,15 +4448,19 @@ LEPT_DLL extern l_int32 numaFitMax ( NUMA *na, l_float32 *pmaxval, NUMA *naloc, 
 LEPT_DLL extern l_int32 numaDifferentiateInterval ( NUMA *nax, NUMA *nay, l_float32 x0, l_float32 x1, l_int32 npts, NUMA **pnadx, NUMA **pnady );
 LEPT_DLL extern l_int32 numaIntegrateInterval ( NUMA *nax, NUMA *nay, l_float32 x0, l_float32 x1, l_int32 npts, l_float32 *psum );
 LEPT_DLL extern NUMA * numaSort ( NUMA *naout, NUMA *nain, l_int32 sortorder );
+LEPT_DLL extern NUMA * numaBinSort ( NUMA *nas, l_int32 sortorder );
 LEPT_DLL extern NUMA * numaGetSortIndex ( NUMA *na, l_int32 sortorder );
+LEPT_DLL extern NUMA * numaGetBinSortIndex ( NUMA *nas, l_int32 sortorder );
 LEPT_DLL extern NUMA * numaSortByIndex ( NUMA *nas, NUMA *naindex );
 LEPT_DLL extern l_int32 numaIsSorted ( NUMA *nas, l_int32 sortorder, l_int32 *psorted );
 LEPT_DLL extern l_int32 numaSortPair ( NUMA *nax, NUMA *nay, l_int32 sortorder, NUMA **pnasx, NUMA **pnasy );
 LEPT_DLL extern NUMA * numaPseudorandomSequence ( l_int32 size, l_int32 seed );
 LEPT_DLL extern NUMA * numaRandomPermutation ( NUMA *nas, l_int32 seed );
-LEPT_DLL extern l_int32 numaGetRankValue ( NUMA *na, l_float32 fract, l_float32 *pval );
+LEPT_DLL extern l_int32 numaGetRankValue ( NUMA *na, l_float32 fract, NUMA *nasort, l_int32 usebins, l_float32 *pval );
 LEPT_DLL extern l_int32 numaGetMedian ( NUMA *na, l_float32 *pval );
+LEPT_DLL extern l_int32 numaGetBinnedMedian ( NUMA *na, l_int32 *pval );
 LEPT_DLL extern l_int32 numaGetMode ( NUMA *na, l_float32 *pval, l_int32 *pcount );
+LEPT_DLL extern l_int32 numaGetMedianVariation ( NUMA *na, l_float32 *pmedval, l_float32 *pmedvar );
 LEPT_DLL extern l_int32 numaJoin ( NUMA *nad, NUMA *nas, l_int32 istart, l_int32 iend );
 LEPT_DLL extern NUMA * numaaFlattenToNuma ( NUMAA *naa );
 LEPT_DLL extern NUMA * numaErode ( NUMA *nas, l_int32 size );
@@ -4023,10 +4507,12 @@ LEPT_DLL extern l_int32 pixSetMaskedCmap ( PIX *pixs, PIX *pixm, l_int32 x, l_in
 LEPT_DLL extern char * parseForProtos ( const char *filein, const char *prestring );
 LEPT_DLL extern BOXA * boxaGetWhiteblocks ( BOXA *boxas, BOX *box, l_int32 sortflag, l_int32 maxboxes, l_float32 maxoverlap, l_int32 maxperim, l_float32 fract, l_int32 maxpops );
 LEPT_DLL extern BOXA * boxaPruneSortedOnOverlap ( BOXA *boxas, l_float32 maxoverlap );
-LEPT_DLL extern l_int32 convertFilesToPdf ( const char *dirname, const char *substr, l_int32 res, l_float32 scalefactor, l_int32 quality, const char *title, const char *fileout );
-LEPT_DLL extern l_int32 saConvertFilesToPdf ( SARRAY *sa, l_int32 res, l_float32 scalefactor, l_int32 quality, const char *title, const char *fileout );
-LEPT_DLL extern l_int32 saConvertFilesToPdfData ( SARRAY *sa, l_int32 res, l_float32 scalefactor, l_int32 quality, const char *title, l_uint8 **pdata, size_t *pnbytes );
+LEPT_DLL extern l_int32 convertFilesToPdf ( const char *dirname, const char *substr, l_int32 res, l_float32 scalefactor, l_int32 type, l_int32 quality, const char *title, const char *fileout );
+LEPT_DLL extern l_int32 saConvertFilesToPdf ( SARRAY *sa, l_int32 res, l_float32 scalefactor, l_int32 type, l_int32 quality, const char *title, const char *fileout );
+LEPT_DLL extern l_int32 saConvertFilesToPdfData ( SARRAY *sa, l_int32 res, l_float32 scalefactor, l_int32 type, l_int32 quality, const char *title, l_uint8 **pdata, size_t *pnbytes );
 LEPT_DLL extern l_int32 selectDefaultPdfEncoding ( PIX *pix, l_int32 *ptype );
+LEPT_DLL extern l_int32 pixaConvertToPdf ( PIXA *pixa, l_int32 res, l_float32 scalefactor, l_int32 type, l_int32 quality, const char *title, const char *fileout );
+LEPT_DLL extern l_int32 pixaConvertToPdfData ( PIXA *pixa, l_int32 res, l_float32 scalefactor, l_int32 type, l_int32 quality, const char *title, l_uint8 **pdata, size_t *pnbytes );
 LEPT_DLL extern l_int32 convertToPdf ( const char *filein, l_int32 type, l_int32 quality, const char *fileout, l_int32 x, l_int32 y, l_int32 res, L_PDF_DATA **plpd, l_int32 position, const char *title );
 LEPT_DLL extern l_int32 convertImageDataToPdf ( l_uint8 *imdata, size_t size, l_int32 type, l_int32 quality, const char *fileout, l_int32 x, l_int32 y, l_int32 res, L_PDF_DATA **plpd, l_int32 position, const char *title );
 LEPT_DLL extern l_int32 convertToPdfData ( const char *filein, l_int32 type, l_int32 quality, l_uint8 **pdata, size_t *pnbytes, l_int32 x, l_int32 y, l_int32 res, L_PDF_DATA **plpd, l_int32 position, const char *title );
@@ -4035,6 +4521,7 @@ LEPT_DLL extern l_int32 pixConvertToPdf ( PIX *pix, l_int32 type, l_int32 qualit
 LEPT_DLL extern l_int32 pixConvertToPdfData ( PIX *pix, l_int32 type, l_int32 quality, l_uint8 **pdata, size_t *pnbytes, l_int32 x, l_int32 y, l_int32 res, L_PDF_DATA **plpd, l_int32 position, const char *title );
 LEPT_DLL extern l_int32 pixWriteStreamPdf ( FILE *fp, PIX *pix, l_int32 res, const char *title );
 LEPT_DLL extern l_int32 convertSegmentedFilesToPdf ( const char *dirname, const char *substr, l_int32 res, l_int32 type, l_int32 thresh, BOXAA *baa, l_int32 quality, l_float32 scalefactor, const char *title, const char *fileout );
+LEPT_DLL extern BOXAA * convertNumberedMasksToBoxaa ( const char *dirname, const char *substr, l_int32 numpre, l_int32 numpost );
 LEPT_DLL extern l_int32 convertToPdfSegmented ( const char *filein, l_int32 res, l_int32 type, l_int32 thresh, BOXA *boxa, l_int32 quality, l_float32 scalefactor, const char *fileout );
 LEPT_DLL extern l_int32 pixConvertToPdfSegmented ( PIX *pixs, l_int32 res, l_int32 type, l_int32 thresh, BOXA *boxa, l_int32 quality, l_float32 scalefactor, const char *fileout, const char *title );
 LEPT_DLL extern l_int32 convertToPdfDataSegmented ( const char *filein, l_int32 res, l_int32 type, l_int32 thresh, BOXA *boxa, l_int32 quality, l_float32 scalefactor, l_uint8 **pdata, size_t *pnbytes );
@@ -4060,6 +4547,7 @@ LEPT_DLL extern l_int32 pixResizeImageData ( PIX *pixd, PIX *pixs );
 LEPT_DLL extern l_int32 pixCopyColormap ( PIX *pixd, PIX *pixs );
 LEPT_DLL extern l_int32 pixSizesEqual ( PIX *pix1, PIX *pix2 );
 LEPT_DLL extern l_int32 pixTransferAllData ( PIX *pixd, PIX **ppixs, l_int32 copytext, l_int32 copyformat );
+LEPT_DLL extern l_int32 pixSwapAndDestroy ( PIX **ppixd, PIX **ppixs );
 LEPT_DLL extern l_int32 pixGetWidth ( PIX *pix );
 LEPT_DLL extern l_int32 pixSetWidth ( PIX *pix, l_int32 width );
 LEPT_DLL extern l_int32 pixGetHeight ( PIX *pix );
@@ -4159,6 +4647,7 @@ LEPT_DLL extern PIX * pixAnd ( PIX *pixd, PIX *pixs1, PIX *pixs2 );
 LEPT_DLL extern PIX * pixXor ( PIX *pixd, PIX *pixs1, PIX *pixs2 );
 LEPT_DLL extern PIX * pixSubtract ( PIX *pixd, PIX *pixs1, PIX *pixs2 );
 LEPT_DLL extern l_int32 pixZero ( PIX *pix, l_int32 *pempty );
+LEPT_DLL extern l_int32 pixForegroundFraction ( PIX *pix, l_float32 *pfract );
 LEPT_DLL extern l_int32 pixCountPixels ( PIX *pix, l_int32 *pcount, l_int32 *tab8 );
 LEPT_DLL extern NUMA * pixaCountPixels ( PIXA *pixa );
 LEPT_DLL extern l_int32 pixCountPixelsInRow ( PIX *pix, l_int32 row, l_int32 *pcount, l_int32 *tab8 );
@@ -4169,16 +4658,21 @@ LEPT_DLL extern NUMA * pixSumPixelsByColumn ( PIX *pix );
 LEPT_DLL extern l_int32 pixThresholdPixelSum ( PIX *pix, l_int32 thresh, l_int32 *pabove, l_int32 *tab8 );
 LEPT_DLL extern l_int32 * makePixelSumTab8 ( void );
 LEPT_DLL extern l_int32 * makePixelCentroidTab8 ( void );
+LEPT_DLL extern l_int32 pixCountArbInRect ( PIX *pixs, BOX *box, l_int32 val, l_int32 factor, l_int32 *pcount );
 LEPT_DLL extern l_int32 pixSumPixelValues ( PIX *pix, BOX *box, l_float64 *psum );
 LEPT_DLL extern PIX * pixMirroredTiling ( PIX *pixs, l_int32 w, l_int32 h );
 LEPT_DLL extern NUMA * pixGetGrayHistogram ( PIX *pixs, l_int32 factor );
 LEPT_DLL extern NUMA * pixGetGrayHistogramMasked ( PIX *pixs, PIX *pixm, l_int32 x, l_int32 y, l_int32 factor );
+LEPT_DLL extern NUMA * pixGetGrayHistogramInRect ( PIX *pixs, BOX *box, l_int32 factor );
 LEPT_DLL extern l_int32 pixGetColorHistogram ( PIX *pixs, l_int32 factor, NUMA **pnar, NUMA **pnag, NUMA **pnab );
 LEPT_DLL extern l_int32 pixGetColorHistogramMasked ( PIX *pixs, PIX *pixm, l_int32 x, l_int32 y, l_int32 factor, NUMA **pnar, NUMA **pnag, NUMA **pnab );
 LEPT_DLL extern NUMA * pixGetCmapHistogram ( PIX *pixs, l_int32 factor );
 LEPT_DLL extern NUMA * pixGetCmapHistogramMasked ( PIX *pixs, PIX *pixm, l_int32 x, l_int32 y, l_int32 factor );
+LEPT_DLL extern NUMA * pixGetCmapHistogramInRect ( PIX *pixs, BOX *box, l_int32 factor );
+LEPT_DLL extern l_int32 pixGetRankValue ( PIX *pixs, l_int32 factor, l_float32 rank, l_uint32 *pvalue );
 LEPT_DLL extern l_int32 pixGetRankValueMaskedRGB ( PIX *pixs, PIX *pixm, l_int32 x, l_int32 y, l_int32 factor, l_float32 rank, l_float32 *prval, l_float32 *pgval, l_float32 *pbval );
 LEPT_DLL extern l_int32 pixGetRankValueMasked ( PIX *pixs, PIX *pixm, l_int32 x, l_int32 y, l_int32 factor, l_float32 rank, l_float32 *pval, NUMA **pna );
+LEPT_DLL extern l_int32 pixGetAverageValue ( PIX *pixs, l_int32 factor, l_int32 type, l_uint32 *pvalue );
 LEPT_DLL extern l_int32 pixGetAverageMaskedRGB ( PIX *pixs, PIX *pixm, l_int32 x, l_int32 y, l_int32 factor, l_int32 type, l_float32 *prval, l_float32 *pgval, l_float32 *pbval );
 LEPT_DLL extern l_int32 pixGetAverageMasked ( PIX *pixs, PIX *pixm, l_int32 x, l_int32 y, l_int32 factor, l_int32 type, l_float32 *pval );
 LEPT_DLL extern l_int32 pixGetAverageTiledRGB ( PIX *pixs, l_int32 sx, l_int32 sy, l_int32 type, PIX **ppixr, PIX **ppixg, PIX **ppixb );
@@ -4259,6 +4753,7 @@ LEPT_DLL extern l_int32 pixaaAddBox ( PIXAA *pixaa, BOX *box, l_int32 copyflag )
 LEPT_DLL extern l_int32 pixaaGetCount ( PIXAA *pixaa );
 LEPT_DLL extern PIXA * pixaaGetPixa ( PIXAA *pixaa, l_int32 index, l_int32 accesstype );
 LEPT_DLL extern BOXA * pixaaGetBoxa ( PIXAA *pixaa, l_int32 accesstype );
+LEPT_DLL extern PIX * pixaaGetPix ( PIXAA *paa, l_int32 ipixa, l_int32 ipix, l_int32 accessflag );
 LEPT_DLL extern PIXA * pixaRead ( const char *filename );
 LEPT_DLL extern PIXA * pixaReadStream ( FILE *fp );
 LEPT_DLL extern l_int32 pixaWrite ( const char *filename, PIXA *pixa );
@@ -4288,6 +4783,7 @@ LEPT_DLL extern PIXA * pixaSelectByWidthHeightRatio ( PIXA *pixas, l_float32 thr
 LEPT_DLL extern PIXA * pixaSelectWithIndicator ( PIXA *pixas, NUMA *na, l_int32 *pchanged );
 LEPT_DLL extern l_int32 pixRemoveWithIndicator ( PIX *pixs, PIXA *pixa, NUMA *na );
 LEPT_DLL extern l_int32 pixAddWithIndicator ( PIX *pixs, PIXA *pixa, NUMA *na );
+LEPT_DLL extern PIX * pixaRenderComponent ( PIX *pixs, PIXA *pixa, l_int32 index );
 LEPT_DLL extern PIXA * pixaSort ( PIXA *pixas, l_int32 sorttype, l_int32 sortorder, NUMA **pnaindex, l_int32 copyflag );
 LEPT_DLL extern PIXA * pixaBinSort ( PIXA *pixas, l_int32 sorttype, l_int32 sortorder, NUMA **pnaindex, l_int32 copyflag );
 LEPT_DLL extern PIXA * pixaSortByIndex ( PIXA *pixas, NUMA *naindex, l_int32 copyflag );
@@ -4341,7 +4837,7 @@ LEPT_DLL extern l_int32 pixcompGetDimensions ( PIXC *pixc, l_int32 *pw, l_int32 
 LEPT_DLL extern l_int32 pixcompDetermineFormat ( l_int32 comptype, l_int32 d, l_int32 cmapflag, l_int32 *pformat );
 LEPT_DLL extern PIX * pixCreateFromPixcomp ( PIXC *pixc );
 LEPT_DLL extern PIXAC * pixacompCreate ( l_int32 n );
-LEPT_DLL extern PIXAC * pixacompCreateInitialized ( l_int32 n, PIX *pix, l_int32 comptype );
+LEPT_DLL extern PIXAC * pixacompCreateInitialized ( l_int32 n, l_int32 offset, PIX *pix, l_int32 comptype );
 LEPT_DLL extern PIXAC * pixacompCreateFromPixa ( PIXA *pixa, l_int32 comptype, l_int32 accesstype );
 LEPT_DLL extern PIXAC * pixacompCreateFromFiles ( const char *dirname, const char *substr, l_int32 comptype );
 LEPT_DLL extern PIXAC * pixacompCreateFromSA ( SARRAY *sa, l_int32 comptype );
@@ -4360,11 +4856,15 @@ LEPT_DLL extern BOXA * pixacompGetBoxa ( PIXAC *pixac, l_int32 accesstype );
 LEPT_DLL extern l_int32 pixacompGetBoxaCount ( PIXAC *pixac );
 LEPT_DLL extern BOX * pixacompGetBox ( PIXAC *pixac, l_int32 index, l_int32 accesstype );
 LEPT_DLL extern l_int32 pixacompGetBoxGeometry ( PIXAC *pixac, l_int32 index, l_int32 *px, l_int32 *py, l_int32 *pw, l_int32 *ph );
+LEPT_DLL extern l_int32 pixacompGetOffset ( PIXAC *pixac );
+LEPT_DLL extern l_int32 pixacompSetOffset ( PIXAC *pixac, l_int32 offset );
 LEPT_DLL extern PIXA * pixaCreateFromPixacomp ( PIXAC *pixac, l_int32 accesstype );
 LEPT_DLL extern PIXAC * pixacompRead ( const char *filename );
 LEPT_DLL extern PIXAC * pixacompReadStream ( FILE *fp );
 LEPT_DLL extern l_int32 pixacompWrite ( const char *filename, PIXAC *pixac );
 LEPT_DLL extern l_int32 pixacompWriteStream ( FILE *fp, PIXAC *pixac );
+LEPT_DLL extern l_int32 pixacompConvertToPdf ( PIXAC *pixac, l_int32 res, l_float32 scalefactor, l_int32 type, l_int32 quality, const char *title, const char *fileout );
+LEPT_DLL extern l_int32 pixacompConvertToPdfData ( PIXAC *pixac, l_int32 res, l_float32 scalefactor, l_int32 type, l_int32 quality, const char *title, l_uint8 **pdata, size_t *pnbytes );
 LEPT_DLL extern l_int32 pixacompWriteStreamInfo ( FILE *fp, PIXAC *pixac, const char *text );
 LEPT_DLL extern l_int32 pixcompWriteStreamInfo ( FILE *fp, PIXC *pixc, const char *text );
 LEPT_DLL extern PIX * pixacompDisplayTiledAndScaled ( PIXAC *pixac, l_int32 outdepth, l_int32 tilewidth, l_int32 ncols, l_int32 background, l_int32 spacing, l_int32 border );
@@ -4499,6 +4999,7 @@ LEPT_DLL extern PTA * ptaCreate ( l_int32 n );
 LEPT_DLL extern PTA * ptaCreateFromNuma ( NUMA *nax, NUMA *nay );
 LEPT_DLL extern void ptaDestroy ( PTA **ppta );
 LEPT_DLL extern PTA * ptaCopy ( PTA *pta );
+LEPT_DLL extern PTA * ptaCopyRange ( PTA *ptas, l_int32 istart, l_int32 iend );
 LEPT_DLL extern PTA * ptaClone ( PTA *pta );
 LEPT_DLL extern l_int32 ptaEmpty ( PTA *pta );
 LEPT_DLL extern l_int32 ptaAddPt ( PTA *pta, l_float32 x, l_float32 y );
@@ -4528,8 +5029,11 @@ LEPT_DLL extern l_int32 ptaaWriteStream ( FILE *fp, PTAA *ptaa, l_int32 type );
 LEPT_DLL extern PTA * ptaSubsample ( PTA *ptas, l_int32 subfactor );
 LEPT_DLL extern l_int32 ptaJoin ( PTA *ptad, PTA *ptas, l_int32 istart, l_int32 iend );
 LEPT_DLL extern PTA * ptaReverse ( PTA *ptas, l_int32 type );
+LEPT_DLL extern PTA * ptaTranspose ( PTA *ptas );
 LEPT_DLL extern PTA * ptaCyclicPerm ( PTA *ptas, l_int32 xs, l_int32 ys );
 LEPT_DLL extern PTA * ptaSort ( PTA *ptas, l_int32 sorttype, l_int32 sortorder, NUMA **pnaindex );
+LEPT_DLL extern l_int32 ptaGetSortIndex ( PTA *ptas, l_int32 sorttype, l_int32 sortorder, NUMA **pnaindex );
+LEPT_DLL extern PTA * ptaSortByIndex ( PTA *ptas, NUMA *naindex );
 LEPT_DLL extern PTA * ptaRemoveDuplicates ( PTA *ptas, l_uint32 factor );
 LEPT_DLL extern PTAA * ptaaSortByIndex ( PTAA *ptaas, NUMA *naindex );
 LEPT_DLL extern BOX * ptaGetBoundingRegion ( PTA *pta );
@@ -4543,6 +5047,8 @@ LEPT_DLL extern l_int32 ptaGetLinearLSF ( PTA *pta, l_float32 *pa, l_float32 *pb
 LEPT_DLL extern l_int32 ptaGetQuadraticLSF ( PTA *pta, l_float32 *pa, l_float32 *pb, l_float32 *pc, NUMA **pnafit );
 LEPT_DLL extern l_int32 ptaGetCubicLSF ( PTA *pta, l_float32 *pa, l_float32 *pb, l_float32 *pc, l_float32 *pd, NUMA **pnafit );
 LEPT_DLL extern l_int32 ptaGetQuarticLSF ( PTA *pta, l_float32 *pa, l_float32 *pb, l_float32 *pc, l_float32 *pd, l_float32 *pe, NUMA **pnafit );
+LEPT_DLL extern l_int32 ptaNoisyLinearLSF ( PTA *pta, l_float32 factor, PTA **pptad, l_float32 *pa, l_float32 *pb, l_float32 *pmederr, NUMA **pnafit );
+LEPT_DLL extern l_int32 ptaNoisyQuadraticLSF ( PTA *pta, l_float32 factor, PTA **pptad, l_float32 *pa, l_float32 *pb, l_float32 *pc, l_float32 *pmederr, NUMA **pnafit );
 LEPT_DLL extern l_int32 applyLinearFit ( l_float32 a, l_float32 b, l_float32 x, l_float32 *py );
 LEPT_DLL extern l_int32 applyQuadraticFit ( l_float32 a, l_float32 b, l_float32 c, l_float32 x, l_float32 *py );
 LEPT_DLL extern l_int32 applyCubicFit ( l_float32 a, l_float32 b, l_float32 c, l_float32 d, l_float32 x, l_float32 *py );
@@ -4553,6 +5059,9 @@ LEPT_DLL extern PIX * pixGenerateFromPta ( PTA *pta, l_int32 w, l_int32 h );
 LEPT_DLL extern PTA * ptaGetBoundaryPixels ( PIX *pixs, l_int32 type );
 LEPT_DLL extern PTAA * ptaaGetBoundaryPixels ( PIX *pixs, l_int32 type, l_int32 connectivity, BOXA **pboxa, PIXA **ppixa );
 LEPT_DLL extern PIX * pixDisplayPta ( PIX *pixd, PIX *pixs, PTA *pta );
+LEPT_DLL extern PIX * pixDisplayPtaaPattern ( PIX *pixd, PIX *pixs, PTAA *ptaa, PIX *pixp, l_int32 cx, l_int32 cy );
+LEPT_DLL extern PIX * pixDisplayPtaPattern ( PIX *pixd, PIX *pixs, PTA *pta, PIX *pixp, l_int32 cx, l_int32 cy, l_uint32 color );
+LEPT_DLL extern PTA * ptaReplicatePattern ( PTA *ptas, PIX *pixp, l_int32 cx, l_int32 cy, l_int32 w, l_int32 h );
 LEPT_DLL extern PIX * pixDisplayPtaa ( PIX *pixs, PTAA *ptaa );
 LEPT_DLL extern L_PTRA * ptraCreate ( l_int32 n );
 LEPT_DLL extern void ptraDestroy ( L_PTRA **ppa, l_int32 freeflag, l_int32 warnflag );
@@ -4576,7 +5085,6 @@ LEPT_DLL extern l_int32 ptraaGetSize ( L_PTRAA *paa, l_int32 *psize );
 LEPT_DLL extern l_int32 ptraaInsertPtra ( L_PTRAA *paa, l_int32 index, L_PTRA *pa );
 LEPT_DLL extern L_PTRA * ptraaGetPtra ( L_PTRAA *paa, l_int32 index, l_int32 accessflag );
 LEPT_DLL extern L_PTRA * ptraaFlattenToPtra ( L_PTRAA *paa );
-LEPT_DLL extern NUMA * numaGetBinSortIndex ( NUMA *nas, l_int32 sortorder );
 LEPT_DLL extern l_int32 pixQuadtreeMean ( PIX *pixs, l_int32 nlevels, PIX *pix_ma, FPIXA **pfpixa );
 LEPT_DLL extern l_int32 pixQuadtreeVariance ( PIX *pixs, l_int32 nlevels, PIX *pix_ma, DPIX *dpix_msa, FPIXA **pfpixa_v, FPIXA **pfpixa_rv );
 LEPT_DLL extern l_int32 pixMeanInRectangle ( PIX *pixs, BOX *box, PIX *pixma, l_float32 *pval );
@@ -4597,6 +5105,7 @@ LEPT_DLL extern PIX * pixRankFilter ( PIX *pixs, l_int32 wf, l_int32 hf, l_float
 LEPT_DLL extern PIX * pixRankFilterRGB ( PIX *pixs, l_int32 wf, l_int32 hf, l_float32 rank );
 LEPT_DLL extern PIX * pixRankFilterGray ( PIX *pixs, l_int32 wf, l_int32 hf, l_float32 rank );
 LEPT_DLL extern PIX * pixMedianFilter ( PIX *pixs, l_int32 wf, l_int32 hf );
+LEPT_DLL extern PIX * pixRankFilterWithScaling ( PIX *pixs, l_int32 wf, l_int32 hf, l_float32 rank, l_float32 scalefactor );
 LEPT_DLL extern SARRAY * pixProcessBarcodes ( PIX *pixs, l_int32 format, l_int32 method, SARRAY **psaw, l_int32 debugflag );
 LEPT_DLL extern PIXA * pixExtractBarcodes ( PIX *pixs, l_int32 debugflag );
 LEPT_DLL extern SARRAY * pixReadBarcodes ( PIXA *pixa, l_int32 format, l_int32 method, SARRAY **psaw, l_int32 debugflag );
@@ -4624,6 +5133,7 @@ LEPT_DLL extern l_int32 pixReadHeaderMem ( const l_uint8 *data, size_t size, l_i
 LEPT_DLL extern l_int32 ioFormatTest ( const char *filename );
 LEPT_DLL extern l_int32 regTestSetup ( l_int32 argc, char **argv, L_REGPARAMS **prp );
 LEPT_DLL extern l_int32 regTestCleanup ( L_REGPARAMS *rp );
+LEPT_DLL extern l_int32 regTestCompareValues ( L_REGPARAMS *rp, l_float32 val1, l_float32 val2, l_float32 delta );
 LEPT_DLL extern l_int32 regTestComparePix ( L_REGPARAMS *rp, PIX *pix1, PIX *pix2 );
 LEPT_DLL extern l_int32 regTestCompareSimilarPix ( L_REGPARAMS *rp, PIX *pix1, PIX *pix2, l_int32 mindiff, l_float32 maxfract, l_int32 printstats );
 LEPT_DLL extern l_int32 regTestCheckFile ( L_REGPARAMS *rp, const char *localname );
@@ -4716,6 +5226,7 @@ LEPT_DLL extern l_int32 sarrayWriteStream ( FILE *fp, SARRAY *sa );
 LEPT_DLL extern l_int32 sarrayAppend ( const char *filename, SARRAY *sa );
 LEPT_DLL extern SARRAY * getNumberedPathnamesInDirectory ( const char *dirname, const char *substr, l_int32 numpre, l_int32 numpost, l_int32 maxnum );
 LEPT_DLL extern SARRAY * getSortedPathnamesInDirectory ( const char *dirname, const char *substr, l_int32 firstpage, l_int32 npages );
+LEPT_DLL extern SARRAY * convertSortedToNumberedPathnames ( SARRAY *sa, l_int32 numpre, l_int32 numpost, l_int32 maxnum );
 LEPT_DLL extern SARRAY * getFilenamesInDirectory ( const char *dirname );
 LEPT_DLL extern PIX * pixScale ( PIX *pixs, l_float32 scalex, l_float32 scaley );
 LEPT_DLL extern PIX * pixScaleToSize ( PIX *pixs, l_int32 wd, l_int32 hd );
@@ -4974,7 +5485,7 @@ LEPT_DLL extern char * stringRemoveChars ( const char *src, const char *remchars
 LEPT_DLL extern l_int32 stringFindSubstr ( const char *src, const char *sub, l_int32 *ploc );
 LEPT_DLL extern char * stringReplaceSubstr ( const char *src, const char *sub1, const char *sub2, l_int32 *pfound, l_int32 *ploc );
 LEPT_DLL extern char * stringReplaceEachSubstr ( const char *src, const char *sub1, const char *sub2, l_int32 *pcount );
-LEPT_DLL extern NUMA * arrayFindEachSequence ( const l_uint8 *data, l_int32 datalen, const l_uint8 *sequence, l_int32 seqlen );
+LEPT_DLL extern L_DNA * arrayFindEachSequence ( const l_uint8 *data, l_int32 datalen, const l_uint8 *sequence, l_int32 seqlen );
 LEPT_DLL extern l_int32 arrayFindSequence ( const l_uint8 *data, l_int32 datalen, const l_uint8 *sequence, l_int32 seqlen, l_int32 *poffset, l_int32 *pfound );
 LEPT_DLL extern void * reallocNew ( void **pindata, l_int32 oldsize, l_int32 newsize );
 LEPT_DLL extern l_uint8 * l_binaryRead ( const char *filename, size_t *pnbytes );
@@ -4999,6 +5510,7 @@ LEPT_DLL extern void * lept_calloc ( size_t nmemb, size_t size );
 LEPT_DLL extern void lept_free ( void *ptr );
 LEPT_DLL extern l_int32 lept_mkdir ( const char *subdir );
 LEPT_DLL extern l_int32 lept_rmdir ( const char *subdir );
+LEPT_DLL extern void lept_direxists ( const char *dirname, l_int32 *pexists );
 LEPT_DLL extern l_int32 lept_rm ( const char *subdir, const char *filename );
 LEPT_DLL extern l_int32 lept_mv ( const char *srcfile, const char *newfile );
 LEPT_DLL extern l_int32 lept_cp ( const char *srcfile, const char *newfile );
@@ -5009,6 +5521,7 @@ LEPT_DLL extern char * genPathname ( const char *dir, const char *fname );
 LEPT_DLL extern char * genTempFilename ( const char *dir, const char *tail, l_int32 usetime, l_int32 usepid );
 LEPT_DLL extern l_int32 extractNumberFromFilename ( const char *fname, l_int32 numpre, l_int32 numpost );
 LEPT_DLL extern l_int32 genRandomIntegerInRange ( l_int32 range, l_int32 seed, l_int32 *pval );
+LEPT_DLL extern l_int32 lept_roundftoi ( l_float32 fval );
 LEPT_DLL extern char * getLeptonicaVersion (  );
 LEPT_DLL extern void startTimer ( void );
 LEPT_DLL extern l_float32 stopTimer ( void );
@@ -5039,7 +5552,6 @@ LEPT_DLL extern PIX * pixReadStreamWebP ( FILE *fp );
 LEPT_DLL extern l_int32 readHeaderWebP ( const char *filename, l_int32 *pwidth, l_int32 *pheight );
 LEPT_DLL extern l_int32 pixWriteWebP ( const char *filename, PIX *pixs, l_int32 quality );
 LEPT_DLL extern l_int32 pixWriteStreamWebP ( FILE *fp, PIX *pixs, l_int32 quality );
-LEPT_DLL extern l_int32 pixWriteWebPwithTargetPSNR ( const char *filename, PIX *pixs, l_float64 target_psnr, l_int32 *pquality );
 LEPT_DLL extern l_int32 pixaWriteFiles ( const char *rootname, PIXA *pixa, l_int32 format );
 LEPT_DLL extern l_int32 pixWrite ( const char *filename, PIX *pix, l_int32 format );
 LEPT_DLL extern l_int32 pixWriteStream ( FILE *fp, PIX *pix, l_int32 format );
@@ -5064,9 +5576,8 @@ LEPT_DLL extern l_uint8 * zlibUncompress ( l_uint8 *datain, size_t nin, size_t *
 #ifdef __cplusplus
 }
 #endif  /* __cplusplus */
-#endif  /* NO_PROTOS */
+#endif /* NO_PROTOS */
 
 
 #endif /* LEPTONICA_ALLHEADERS_H */
-
 

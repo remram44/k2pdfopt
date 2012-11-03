@@ -1,7 +1,7 @@
 K2pdfopt build help.
 http://willus.com
 Original: 7 September 2012
-Last updated: 1 November 2012
+Last updated: 3 November 2012
 
 This "read me" file describes the source code distribution for k2pdfopt.
 
@@ -39,8 +39,8 @@ There are also a number of required 3rd-party open-source C/C++ libraries:
     FOR OCR VERSIONS OF K2PDFOPT (search for HAVE_OCR in k2pdfopt.c)
     ----------------------------------------------------------------
     9.  GOCR 0.49 (sourceforge.net/jocr/)
-    10. Leptonica 1.68 (leptonica.com)
-    11. Tesseract 3.01 (C++) (code.google.com/tesseract-ocr/) -- SEE NOTE 2.
+    10. Leptonica 1.69 (leptonica.com)
+    11. Tesseract 3.02.02 (C++) (code.google.com/tesseract-ocr/) -- SEE NOTE 2.
 
     If you don't include MuPDF, DjVuLibre, or OCR, then k2pdfopt will
     look for an installation of Ghostscript.
@@ -95,11 +95,11 @@ to libxxx.a files in d:\3rdparty_lib and headers are in d:\3rdparty_include):
 
     3. gcc -Ofast -m32 -Wall -c -Id:\3rdparty_include k2pdfopt.c
 
-    4. g++ -Ofast -m32 -Wall -o k2pdfopt.exe k2pdfopt.o resfile.o -static-libgcc -static-libstdc++ d:\mingw\i386\lib\crt_noglob.o -Ld:\3rdparty_lib -lwillus -lgocr -ltesseract -lleptonica -ldjvu -lmupdf -lfreetype -ljbig2 -ljpeglib -lopenjpeg -lpng -lzlib -lgdi32
+    4. g++ -Ofast -m32 -Wall -o k2pdfopt.exe k2pdfopt.o resfile.o -static-libgcc -static-libstdc++ d:\mingw\i386\lib\crt_noglob.o -Ld:\3rdparty_lib -lwillus -lgocr -ltesseract -lleptonica -ldjvu -lmupdf -lfreetype -ljbig2 -ljpeglib -lopenjpeg -lpng -lzlib -lgdi32 -lwsock32
 
 
 Build Steps on Linux and OS/X (64-bit)
 --------------------------------------
 1. gcc -Wall -O3 -ffast-math -m64 -o k2pdfopt.o -c k2pdfopt.c
 
-2. g++ -O3 -ffast-math -m64 -o k2pdfopt k2pdfopt.o -static-libgcc -lwillus -lgocr -ltesseract -lleptonica -ldjvu -lmupdf -lfreetype -ljbig2 -ljpeglib -lopenjpeg -lpng -lzlib
+2. g++ -O3 -ffast-math -m64 -o k2pdfopt k2pdfopt.o -static-libgcc -lwillus -lgocr -ltesseract -lleptonica -ldjvu -lmupdf -lfreetype -ljbig2 -ljpeglib -lopenjpeg -lpng -lzlib -lpthread
