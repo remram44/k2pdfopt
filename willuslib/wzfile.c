@@ -26,13 +26,22 @@
 
 #include "willus.h"
 #include <string.h>
+
+/*
+** This library doesn't have much point existing without ZLIB, but without it
+** all functions default to uncompressed streams.  Not tested.
+*/
+#ifdef HAVE_Z_LIB
 #include <zlib.h>
+#endif
 
 static char *compressed_exts[]={"gz",
                                 "tgz",""};
 static char *uncompressed_exts[]={"",
                                   "tar",""};
+#ifdef HAVE_Z_LIB
 static char wzbuffer[4096];
+#endif
 
 static int archive_extract(char *archfile,char *file_to_extract,char *tempname);
 static int wzfile_status_special(char *archfile,char *filename,char *subarch);
@@ -285,6 +294,7 @@ int wfile_is_binary(char *filename,int maxlen)
 int wfile_is_gzfile(char *filename)
 
     {
+#ifdef HAVE_Z_LIB
     int i,len,el;
 
     len=strlen(filename);
@@ -295,6 +305,7 @@ int wfile_is_gzfile(char *filename)
                      && !stricmp(&filename[len-el],compressed_exts[i]))
             return(i+1);
         }
+#endif
     return(0);
     }
 
@@ -305,6 +316,7 @@ int wfile_is_gzfile(char *filename)
 int wfile_is_special_uncompressed(char *filename)
 
     {
+#ifdef HAVE_Z_LIB
     int i,len,el;
 
     len=strlen(filename);
@@ -317,6 +329,7 @@ int wfile_is_special_uncompressed(char *filename)
                      && !stricmp(&filename[len-el],uncompressed_exts[i]))
             return(i+1);
         }
+#endif
     return(0);
     }
 
@@ -392,7 +405,9 @@ WZFILE *wzopen(char *filename,char *mode)
     WZFILE *wz;
     void *p,*ptr;
     int type;
+#ifdef HAVE_Z_LIB
     static char newname[MAXFILENAMELEN];
+#endif
     char mode2[16];
     int i;
 
@@ -401,6 +416,7 @@ WZFILE *wzopen(char *filename,char *mode)
     for (i=0;mode2[i]!='\0' && mode2[i]!='b';i++);
     if (mode2[i]!='b')
         strcat(mode2,"b");
+#ifdef HAVE_Z_LIB
     if (wfile_is_gzfile(filename))
         {
         p=(void *)gzopen(filename,mode2);
@@ -414,8 +430,10 @@ WZFILE *wzopen(char *filename,char *mode)
         }
     else
         {
+#endif
         p=(void *)fopen(filename,mode);
         type=0;
+#ifdef HAVE_Z_LIB
         if (p==NULL)
             {
             wzfile_convert_to_compressed_name(newname,filename);
@@ -423,6 +441,7 @@ WZFILE *wzopen(char *filename,char *mode)
             type=1;
             }
         }
+#endif
     if (p==NULL)
         return(NULL);
     willus_mem_alloc_warn(&ptr,sizeof(WZFILE),"wzopen",10);
@@ -442,10 +461,12 @@ int wzclose(WZFILE *wz)
         {
         int status;
 
-        if (wz->type==0)
-            status=fclose((FILE *)wz->f);
-        else
+#ifdef HAVE_Z_LIB
+        if (wz->type!=0)
             status=gzclose((gzFile)wz->f);
+        else
+#endif
+            status=fclose((FILE *)wz->f);
         ptr=(double *)wz;
         willus_mem_free(&ptr,"wzclose");
         wz=(WZFILE *)ptr;
@@ -461,24 +482,28 @@ int wzclose(WZFILE *wz)
 char *wzgets(char *buf,int maxlen,WZFILE *wz)
 
     {
-    char *p;
-    int i,j;
-
     if (wz==NULL)
         return(NULL);
-    if (wz->type==0)
-        return(fgets(buf,maxlen,(FILE *)wz->f));
-    p=gzgets((gzFile)wz->f,buf,maxlen);
-    /* Strip \r's from string */
-    for (i=j=0;i<maxlen && buf[i]!='\0';i++)
-        if (buf[i]!='\r')
-            {
-            if (i!=j)
-                buf[j]=buf[i];
-            j++;
-            }
-    buf[j]='\0';
-    return(p);
+#ifdef HAVE_Z_LIB
+    if (wz->type!=0)
+        {
+        char *p;
+        int i,j;
+
+        p=gzgets((gzFile)wz->f,buf,maxlen);
+        /* Strip \r's from string */
+        for (i=j=0;i<maxlen && buf[i]!='\0';i++)
+            if (buf[i]!='\r')
+                {
+                if (i!=j)
+                    buf[j]=buf[i];
+                j++;
+                }
+        buf[j]='\0';
+        return(p);
+        }
+#endif
+    return(fgets(buf,maxlen,(FILE *)wz->f));
     }
 
 
@@ -487,9 +512,11 @@ int wzgetc(WZFILE *wz)
     {
     if (wz==NULL)
         return(EOF);
-    if (wz->type==0)
-        return(fgetc((FILE *)wz->f));
-    return(gzgetc((gzFile)wz->f));
+#ifdef HAVE_Z_LIB
+    if (wz->type!=0)
+        return(gzgetc((gzFile)wz->f));
+#endif
+    return(fgetc((FILE *)wz->f));
     }
 
 
@@ -498,9 +525,11 @@ int wzputc(WZFILE *wz,int c)
     {
     if (wz==NULL)
         return(EOF);
-    if (wz->type==0)
-        return(fputc(c,(FILE *)wz->f));
-    return(gzputc((gzFile)wz->f,c));
+#ifdef HAVE_Z_LIB
+    if (wz->type!=0)
+        return(gzputc((gzFile)wz->f,c));
+#endif
+    return(fputc(c,(FILE *)wz->f));
     }
 
 
@@ -509,9 +538,11 @@ int wzwrite(WZFILE *wz,void *ptr,int nbytes)
     {
     if (wz==NULL)
         return(0);
-    if (wz->type==0)
-        return(fwrite(ptr,1,nbytes,(FILE *)wz->f));
-    return(gzwrite((gzFile)wz->f,ptr,nbytes));
+#ifdef HAVE_Z_LIB
+    if (wz->type!=0)
+        return(gzwrite((gzFile)wz->f,ptr,nbytes));
+#endif
+    return(fwrite(ptr,1,nbytes,(FILE *)wz->f));
     }
 
 
@@ -524,9 +555,11 @@ int wzseek(WZFILE *wz,long position)
     {
     if (wz==NULL)
         return(-1);
-    if (wz->type==0)
-        return(wfile_seek((FILE *)wz->f,position,0));
-    return(gzseek((gzFile)wz->f,position,0));
+#ifdef HAVE_Z_LIB
+    if (wz->type!=0)
+        return(gzseek((gzFile)wz->f,position,0));
+#endif
+    return(wfile_seek((FILE *)wz->f,position,0));
     }
 
 
@@ -540,9 +573,11 @@ int wzseek2(WZFILE *wz,long position,int type)
     {
     if (wz==NULL)
         return(-1);
-    if (wz->type==0)
-        return(wfile_seek((FILE *)wz->f,position,type));
-    return(gzseek((gzFile)wz->f,position,type));
+#ifdef HAVE_Z_LIB
+    if (wz->type!=0)
+        return(gzseek((gzFile)wz->f,position,type));
+#endif
+    return(wfile_seek((FILE *)wz->f,position,type));
     }
 
 
@@ -555,9 +590,11 @@ long wztell(WZFILE *wz)
     {
     if (wz==NULL)
         return(-1L);
-    if (wz->type==0)
-        return(wfile_tell((FILE *)wz->f));
-    return(gztell((gzFile)wz->f));
+#ifdef HAVE_Z_LIB
+    if (wz->type!=0)
+        return(gztell((gzFile)wz->f));
+#endif
+    return(wfile_tell((FILE *)wz->f));
     }
 
 
@@ -566,12 +603,14 @@ void wzrewind(WZFILE *wz)
     {
     if (wz==NULL)
         return;
-    if (wz->type==0)
+#ifdef HAVE_Z_LIB
+    if (wz->type!=0)
         {
-        fseek((FILE *)wz->f,0L,0);
+        gzrewind((gzFile)wz->f);
         return;
         }
-    gzrewind((gzFile)wz->f);
+#endif
+    fseek((FILE *)wz->f,0L,0);
     }
 
 
@@ -580,9 +619,11 @@ int wzread(WZFILE *wz,void *ptr,int nbytes)
     {
     if (wz==NULL)
         return(0);
-    if (wz->type==0)
-        return(fread(ptr,1,nbytes,(FILE *)wz->f));
-    return(gzread((gzFile)wz->f,ptr,nbytes));
+#ifdef HAVE_Z_LIB
+    if (wz->type!=0)
+        return(gzread((gzFile)wz->f,ptr,nbytes));
+#endif
+    return(fread(ptr,1,nbytes,(FILE *)wz->f));
     }
 
 
@@ -665,12 +706,16 @@ int wzbe_write(WZFILE *wz,void *ptr,int elsize,int nobj)
 int wzerror(WZFILE *wz)
 
     {
-    int errnum;
+#ifdef HAVE_Z_LIB
+    if (wz->type!=0)
+        {
+        int errnum;
 
-    if (wz->type==0)
-        return(ferror((FILE *)wz->f));
-    gzerror((gzFile)wz->f,&errnum);
-    return(errnum);
+        gzerror((gzFile)wz->f,&errnum);
+        return(errnum);
+        }
+#endif
+    return(ferror((FILE *)wz->f));
     }
 
 
@@ -680,26 +725,32 @@ int wzprintf(WZFILE *wz,char *fmt,...)
     va_list args;
     int status;
 
-    if (wz->type==0)
-        {    
+#ifdef HAVE_Z_LIB
+    if (wz->type!=0)
+        {
         va_start(args,fmt);
-        status=vfprintf(wz->f,fmt,args);
+        status=vsprintf(wzbuffer,fmt,args);
         va_end(args);
-        return(status);
+        if (status<0)
+            return(status);
+        return(gzwrite((gzFile)wz->f,wzbuffer,strlen(wzbuffer)));
         }
+#endif
     va_start(args,fmt);
-    status=vsprintf(wzbuffer,fmt,args);
+    status=vfprintf(wz->f,fmt,args);
     va_end(args);
-    if (status<0)
-        return(status);
-    return(gzwrite((gzFile)wz->f,wzbuffer,strlen(wzbuffer)));
+    return(status);
     }
 
 
 int wzcompressed(WZFILE *wz)
 
     {
+#ifdef HAVE_Z_LIB
     return(wz->type!=0);
+#else
+    return(0);
+#endif
     }
 
 

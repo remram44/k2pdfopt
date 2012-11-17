@@ -1,7 +1,7 @@
 K2pdfopt build help.
 http://willus.com
 Original: 7 September 2012
-Last updated: 3 November 2012
+Last updated: 15 November 2012 (v1.62)
 
 This "read me" file describes the source code distribution for k2pdfopt.
 
@@ -9,15 +9,20 @@ K2pdfopt Source Files
 ---------------------
 1. k2pdfopt.c (main module)
 
-2. willus.com general-purpose C library (27 C files + 1 header file) in
+2. k2pdfopt C library (21 C files + 1 header file) in k2pdfoptlib subfolder.
+   Compile all C files in this subfolder and build them into libk2pdfopt.a.
+
+3. willus.com general-purpose C library (28 C files + 1 header file) in
    willuslib subfolder.
-   (New in k2pdfopt v1.60: wmupdf.c module)
    Compile all C files in this subfolder and build them into libwillus.a.
 
 
 Third Party Libraries
 ---------------------
-There are also a number of required 3rd-party open-source C/C++ libraries:
+There are also a number of required 3rd-party open-source C/C++ libraries
+for k2pdfopt.  These libraries are not necessarily required when using
+the k2pdfopt library in other applications (e.g. KindlePDFViewer--see
+NOTE 4 below).
 
     REQUIRED
     --------
@@ -65,15 +70,19 @@ Notes
    any of the included files (if they didn't come standard w/the 3rd party
    library), look in my include_mod subfolder.
 
-4. I apologize for the excessive use of global variables in the main program
-   code (and for other less-than-rigorous approaches).  Globals are mostly used
-   for storing command-line options.  This code started as a quick-and-dirty
-   program to do a job for me and at this point it would be a considerable
-   effort to remove all the globals.
+4. Building for KindlePDFViewer:
+   a. In willus.h, search for "THIRD PARTY" and comment out all #define's
+      for third party libs, e.g. HAVE_Z_LIB, etc.
+   b. In k2pdfopt.h, uncomment this:  #define K2PDFOPT_KINDLEPDFVIEWER
+   c. Compile all modules in libwillus and libk2pdfopt.
+   d. Look in the "kindlepdfviewer" subfolder for a couple examples of
+      how to call the k2pdfopt library functions.  The k2view.c program
+      is stand-alone.  If it is compiled without dependencies on third-party
+      libraries, it will be quite small (~300 KiB in windows).
 
 
-Build Steps on Windows
-----------------------
+Build Steps for k2pdfopt on Windows
+-----------------------------------
 My compile steps with gcc (MinGW) are as follows (assuming all the libraries are built
 to libxxx.a files in d:\3rdparty_lib and headers are in d:\3rdparty_include):
 
@@ -85,7 +94,7 @@ to libxxx.a files in d:\3rdparty_lib and headers are in d:\3rdparty_include):
 
     3. gcc -Ofast -m64 -Wall -c -Id:\3rdparty_include k2pdfopt.c
 
-    4. g++ -Ofast -m64 -Wall -o k2pdfopt.exe k2pdfopt.o resfile.o -static-libgcc -static-libstdc++ d:\mingw\x64\lib\crt_noglob.o -Ld:\3rdparty_lib -lwillus -lgocr -ltesseract -lleptonica -ldjvu -lmupdf -lfreetype -ljbig2 -ljpeglib -lopenjpeg -lpng -lzlib -lgdi32
+    4. g++ -Ofast -m64 -Wall -o k2pdfopt.exe k2pdfopt.o resfile.o -static-libgcc -static-libstdc++ d:\mingw\x64\lib\crt_noglob.o -Ld:\3rdparty_lib -lk2pdfopt -lwillus -lgocr -ltesseract -lleptonica -ldjvu -lmupdf -lfreetype -ljbig2 -ljpeglib -lopenjpeg -lpng -lzlib -lgdi32
 
     32-bit
     ------
@@ -95,11 +104,11 @@ to libxxx.a files in d:\3rdparty_lib and headers are in d:\3rdparty_include):
 
     3. gcc -Ofast -m32 -Wall -c -Id:\3rdparty_include k2pdfopt.c
 
-    4. g++ -Ofast -m32 -Wall -o k2pdfopt.exe k2pdfopt.o resfile.o -static-libgcc -static-libstdc++ d:\mingw\i386\lib\crt_noglob.o -Ld:\3rdparty_lib -lwillus -lgocr -ltesseract -lleptonica -ldjvu -lmupdf -lfreetype -ljbig2 -ljpeglib -lopenjpeg -lpng -lzlib -lgdi32 -lwsock32
+    4. g++ -Ofast -m32 -Wall -o k2pdfopt.exe k2pdfopt.o resfile.o -static-libgcc -static-libstdc++ d:\mingw\i386\lib\crt_noglob.o -Ld:\3rdparty_lib -lk2pdfopt -lwillus -lgocr -ltesseract -lleptonica -ldjvu -lmupdf -lfreetype -ljbig2 -ljpeglib -lopenjpeg -lpng -lzlib -lgdi32 -lwsock32
 
 
 Build Steps on Linux and OS/X (64-bit)
 --------------------------------------
 1. gcc -Wall -O3 -ffast-math -m64 -o k2pdfopt.o -c k2pdfopt.c
 
-2. g++ -O3 -ffast-math -m64 -o k2pdfopt k2pdfopt.o -static-libgcc -lwillus -lgocr -ltesseract -lleptonica -ldjvu -lmupdf -lfreetype -ljbig2 -ljpeglib -lopenjpeg -lpng -lzlib -lpthread
+2. g++ -O3 -ffast-math -m64 -o k2pdfopt k2pdfopt.o -static-libgcc -lk2pdfopt -lwillus -lgocr -ltesseract -lleptonica -ldjvu -lmupdf -lfreetype -ljbig2 -ljpeglib -lopenjpeg -lpng -lzlib -lpthread

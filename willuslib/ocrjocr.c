@@ -24,8 +24,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <gocr.h>
 #include "willus.h"
+
+#ifdef HAVE_GOCR_LIB
+#include <gocr.h>
 
 /*
 ** bmp8 must be grayscale
@@ -91,3 +93,4 @@ void jocr_single_word_from_bmp8(char *text,int maxlen,WILLUSBITMAP *bmp8,
     // willus_mem_free((double **)&job->src.p.p,funcname);
     job_free_image(job);
     }
+#endif /* HAVE_GOCR_LIB */

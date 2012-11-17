@@ -20,8 +20,10 @@
 **
 */
 #include <stdio.h>
-#include <djvu.h>
 #include "willus.h"
+
+#ifdef HAVE_DJVU_LIB
+#include <djvu.h>
 
 static void handle(int wait,ddjvu_context_t *ctx);
 
@@ -183,3 +185,4 @@ static void handle(int wait,ddjvu_context_t *ctx)
         }
     ddjvu_message_pop(ctx);
     }
+#endif /* HAVE_DJVU_LIB */

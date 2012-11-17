@@ -38,6 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef HAVE_GHOSTSCRIPT
 /*
 ** DLL handle
 */
@@ -361,3 +362,4 @@ void willusgs_close(void)
 #endif
     willusgs_inited = 0;
     }
+#endif /* HAVE_GHOSTSCRIPT */

@@ -1,5 +1,7 @@
 /*
 ** fontrender.c      Render fonts onto bitmaps from pre-made templates.
+**                   Note that without libpng, fonts won't render--the
+**                   font data is stored in PNG format.
 **
 ** Part of willus.com general purpose C code library.
 **
@@ -397,10 +399,27 @@ render_partial_circle_pts((x+dw*cth-dh*sth)/fontrender_pixels_per_point,(y_from_
                 fflush(out);
             if (w!=rchar[k].w)
                 {
+/*
+** Nothing will be rendered without libpng--fontrender is essentially useless.
+*/
+#ifdef HAVE_PNG_LIB
                 char *ptr;
                 w=rchar[k].w;
                 ptr=(char *)w;
                 bmp_read_png_stream(fontbmp,&ptr[1036],1,NULL);
+#else
+                /* create blank bitmap */
+                fontbmp->width=24;
+                fontbmp->height=32;
+                fontbmp->bpp=8;
+                {
+                int i;
+                for (i=0;i<256;i++)
+                    fontbmp->red[i]=fontbmp->green[i]=fontbmp->blue[i]=i;
+                }
+                bmp_alloc(fontbmp);
+                bmp_fill(fontbmp,255,255,255);
+#endif
                 }
             dx=rchar[k].x;
             dy=rchar[k].y;

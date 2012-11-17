@@ -20,8 +20,10 @@
 **
 */
 #include <stdio.h>
-#include <mupdf.h>
 #include "willus.h"
+
+#ifdef HAVE_MUPDF_LIB
+#include <mupdf.h>
 
 static int bmpmupdf_pixmap_to_bmp(WILLUSBITMAP *bmp,fz_context *ctx,fz_pixmap *pixmap);
 
@@ -197,3 +199,4 @@ static int bmpmupdf_pixmap_to_bmp(WILLUSBITMAP *bmp,fz_context *ctx,fz_pixmap *p
             }
 	return(0);
     }
+#endif /* HAVE_MUPDF_LIB */

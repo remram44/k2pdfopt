@@ -21,8 +21,10 @@
 **
 */
 #include <stdio.h>
-#include <mupdf.h>
 #include "willus.h"
+
+#ifdef HAVE_MUPDF_LIB
+#include <mupdf.h>
 
 static void wpdfbox_determine_original_source_position(WPDFBOX *box);
 static void wpdfbox_unrotate(WPDFBOX *box,double deg);
@@ -954,7 +956,7 @@ static void wmupdf_dict_merge_keyval(fz_context *ctx,pdf_obj *dstdict,pdf_obj *k
         return;
     if (pdf_is_dict(dstval) && pdf_is_dict(value))
         {
-        static char *okay_to_merge[] = {"Resources",""};
+        static char *okay_to_merge[] = {"Resources","XObject",""};
         int i;
 
         for (i=0;okay_to_merge[i][0]!='\0';i++)
@@ -1091,3 +1093,4 @@ static void matrix_xymul(double m[][3],double *x,double *y)
     (*x)=x0;
     (*y)=y0;
     }
+#endif /* HAVE_MUPDF_LIB */

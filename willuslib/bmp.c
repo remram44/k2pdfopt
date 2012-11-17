@@ -27,9 +27,15 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+
+
+#ifdef HAVE_PNG_LIB
 #include <zlib.h>
 #include <png.h>
+#endif
+#ifdef HAVE_JPEG_LIB
 #include <jpeglib.h>
+#endif
 #ifdef HAVE_JASPER_LIB
 #include <jasper.h>
 #endif
@@ -104,9 +110,11 @@ static char *acodes[]={ANSI_RED,ANSI_GREEN,ANSI_BLUE,ANSI_MAGENTA,
                            ANSI_WHITE};
 
 static double bmp_dpi=-1.;
+#ifdef HAVE_JPEG_LIB
 static int bmp_std_huffman_tables=0;
 
 static void my_error_exit(j_common_ptr cinfo);
+#endif
 static int  bmp8_write(WILLUSBITMAP *bmap,char *filename,FILE *out);
 static int  bmp24_write(WILLUSBITMAP *bmap,char *filename,FILE *out);
 static void insert_int32lsbmsb(char *a,int x);
@@ -118,7 +126,9 @@ static void bmp_resample_1(double *tempbmp,WILLUSBITMAP *src,double x1,double y1
 static void resample_1d(double *dst,double *src,double x1,double x2,
                         int n);
 static double resample_single(double *y,double x1,double x2);
+#ifdef HAVE_PNG_LIB
 static void bmp_read_png_from_memory(png_structp png_ptr,void *buf,int nbytes);
+#endif
 static void new_rgb(int *dpc,int *spc,int *dbgc,int *dfgc,int *sbgc,int *sfgc);
 static int jpeg_write_comments(FILE *out,char *buf);
 static int jpeg_read2(FILE *f,int *x);
@@ -181,8 +191,10 @@ int bmp_write(WILLUSBITMAP *bmap,char *filename,FILE *out,int quality)
     get_file_ext(fileext,filename);
     if (!stricmp(fileext,"ico"))
         return(bmp_write_ico(bmap,filename,out));
+#ifdef HAVE_PNG_LIB
     if (!stricmp(fileext,"png"))
         return(bmp_write_png(bmap,filename,out));
+#endif
     if (!stricmp(fileext,"pdf"))
         {
         PDFFILE _pdf,*pdf;
@@ -200,6 +212,7 @@ int bmp_write(WILLUSBITMAP *bmap,char *filename,FILE *out,int quality)
             return(-10);
             }
         }
+#ifdef HAVE_JPEG_LIB
     if (!stricmp(fileext,"jpg") || !stricmp(fileext,"jpeg"))
         {
         if (bmap->bpp!=24)
@@ -210,6 +223,7 @@ int bmp_write(WILLUSBITMAP *bmap,char *filename,FILE *out,int quality)
             }
         return(bmp_write_jpeg(bmap,filename,quality,out));
         }
+#endif
     if (stricmp(fileext,"bmp") && out!=NULL)
         fprintf(out,"Warning:  file %s has no extension.  Treating as BMP file.\n",
                filename);
@@ -470,6 +484,7 @@ static int bmp24_write(WILLUSBITMAP *bmap,char *filename,FILE *out)
     }
 
 
+#ifdef HAVE_PNG_LIB
 int bmp_png_info(char *filename,int *width,int *height,int *bpp,FILE *out)
 
     {
@@ -856,8 +871,10 @@ int bmp_write_png_stream(WILLUSBITMAP *bmp,FILE *f,FILE *out)
     png_destroy_write_struct(&png_ptr,&info_ptr);
     return(0);
     }
+#endif /* HAVE_PNG_LIB */
 
 
+#ifdef HAVE_JPEG_LIB
 struct my_error_mgr
     {
     struct jpeg_error_mgr pub;    /* "public" fields */
@@ -1096,6 +1113,7 @@ int bmp_read_jpeg_stream(WILLUSBITMAP *bmp,void *infile,int size,FILE *out)
     jpeg_destroy_decompress(&cinfo);
     return(0);
     }
+#endif /* HAVE_JPEG_LIB */
 
 
 static void insert_int32lsbmsb(char *a,int x)
@@ -1598,12 +1616,18 @@ int bmp_read(WILLUSBITMAP *bmap,char *filename,FILE *out)
     char    fileext[16];
 
     get_file_ext(fileext,filename);
+#ifdef HAVE_GHOSTSCRIPT
     if (!stricmp(fileext,"ps") || !stricmp(fileext,"eps") || !stricmp(fileext,"pdf"))
         return(willusgs_read_pdf_or_ps_bmp(bmap,filename,willusbmp_pageno,willusbmp_dpi,out));
+#endif
+#ifdef HAVE_PNG_LIB
     if (!stricmp(fileext,"png"))
         return(bmp_read_png(bmap,filename,out));
+#endif
+#ifdef HAVE_JPEG_LIB
     if (!stricmp(fileext,"jpg") || !stricmp(fileext,"jpeg"))
         return(bmp_read_jpeg(bmap,filename,out));
+#endif
     if (stricmp(fileext,"bmp"))
 #ifdef HAVE_JASPER_LIB
         {
@@ -1645,10 +1669,14 @@ int bmp_info(char *filename,int *width,int *height,int *bpp,FILE *out)
     char    fileext[16];
 
     get_file_ext(fileext,filename);
+#ifdef HAVE_PNG_LIB
     if (!stricmp(fileext,"png"))
         return(bmp_png_info(filename,width,height,bpp,out));
+#endif
+#ifdef HAVE_JPEG_LIB
     if (!stricmp(fileext,"jpg") || !stricmp(fileext,"jpeg"))
         return(bmp_jpeg_info(filename,width,height,bpp));
+#endif
     if (stricmp(fileext,"bmp") && out!=NULL)
         fprintf(out,"Warning:  file %s has no extension.  Treating as BMP file.\n",
                filename);
@@ -2713,31 +2741,27 @@ void bmp_overlay(WILLUSBITMAP *dest,WILLUSBITMAP *src,int x0,int y0_from_top,
     }
 
 
-/*
-** Must be 24 bit
-*/
 void bmp_invert(WILLUSBITMAP *bmp)
 
     {
-    unsigned char *sp;
-    int i,j;
+    int i;
 
-    if (bmp->bpp!=24)
+    if (bmp->bpp==24 || bmp_is_grayscale(bmp))
         {
-        printf("bmp_invert:  bitmap must be 24-bit!\n");
-        return;
+        unsigned char *p;
+        int nb;
+        p=bmp_rowptr_from_top(bmp,0);
+        nb=bmp_bytewidth(bmp)*bmp->height;
+        for (i=0;i<nb;i++,p++)
+            (*p) = 255-(*p);
         }
-    for (i=0;i<bmp->height;i++)
-        {
-        sp=bmp_rowptr_from_top(bmp,i);
-        for (j=0;j<bmp->width*3;j++,sp++)
+    else
+        for (i=0;i<256;i++)
             {
-            int r;
-            r=sp[0];
-            r=255-r;
-            sp[0]=r;
+            bmp->red[i]=255-bmp->red[i];
+            bmp->green[i]=255-bmp->green[i];
+            bmp->blue[i]=255-bmp->blue[i];
             }
-        }
     }
              
 
@@ -3865,6 +3889,7 @@ int bmp_jasper_read(WILLUSBITMAP *bmp,char *filename,FILE *out)
 /*
 ** Allocate more bitmap rows.
 ** ratio typically something like 1.5 or 2.0
+** If ratio not enough to increment height, 128 rows get added.
 */
 void bmp_more_rows(WILLUSBITMAP *bmp,double ratio,int pixval)
 
@@ -3874,7 +3899,7 @@ void bmp_more_rows(WILLUSBITMAP *bmp,double ratio,int pixval)
 
     new_height=(int)(bmp->height*ratio+.5);
     if (new_height <= bmp->height)
-        return;
+        new_height = bmp->height + 128;
     bw=bmp_bytewidth(bmp);
     new_bytes=bw*new_height;
     if (new_bytes > bmp->size_allocated)

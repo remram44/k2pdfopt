@@ -1980,6 +1980,7 @@ void vector_nd_free(void **ptr,int *dims,int n)
     p2=(void **)(*ptr);
     for (i=0;i<dims[0];i++)
         vector_nd_free(&p2[i],&dims[1],n-1);
+    willus_mem_free((double **)ptr,funcname);
     }
 
 

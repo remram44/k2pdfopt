@@ -189,6 +189,50 @@ void sincos(double th,double *s,double *c);
 
 
 /*
+** THIRD-PARTY LIBRARY OPTIONS:
+**     HAVE_Z_LIB
+**     HAVE_PNG_LIB
+**     HAVE_JPEG_LIB
+**     HAVE_JASPER_LIB
+**     HAVE_GSL_LIB
+**     HAVE_MUPDF_LIB (includes jbig2dec, openjpeg, freetype)
+**     HAVE_GHOSTSCRIPT (enables usage of ghostscript dll/sys cmd)
+**     HAVE_DJVU_LIB
+**     HAVE_GOCR_LIB
+**     HAVE_LEPTONICA_LIB
+**     HAVE_TESSERACT_LIB
+**
+** COMMENT OUT DEFINE STATEMENTS BELOW AS DESIRED.
+**
+*/
+#ifndef HAVE_Z_LIB
+#define HAVE_Z_LIB
+#endif
+#ifndef HAVE_PNG_LIB
+#define HAVE_PNG_LIB
+#endif
+#ifndef HAVE_JPEG_LIB
+#define HAVE_JPEG_LIB
+#endif
+#ifndef HAVE_MUPDF_LIB
+#define HAVE_MUPDF_LIB
+#endif
+#ifndef HAVE_GHOSTSCRIPT
+#define HAVE_GHOSTSCRIPT
+#endif
+#ifndef HAVE_DJVU_LIB
+#define HAVE_DJVU_LIB
+#endif
+#ifndef HAVE_GOCR_LIB
+#define HAVE_GOCR_LIB
+#endif
+#ifndef HAVE_LEPTONICA_LIB
+#define HAVE_LEPTONICA_LIB
+#endif
+#ifndef HAVE_TESSERACT_LIB
+#define HAVE_TESSERACT_LIB
+#endif
+/*
 ** Defines for presence of Jasper and GSL (Gnu Scientific Library).
 ** Define these if you have these libs.  Default is not to define them.
 **
@@ -199,7 +243,7 @@ void sincos(double th,double *s,double *c);
 ** various spline-interpolation routines.  If calls to these are made
 ** without GSL support, the program will abort with an error message.
 **
-** K2pdfopt does not need Jasper or GSL.
+** (K2pdfopt does not need Jasper or GSL.)
 **
 */
 #ifdef HAVE_JASPER_LIB
@@ -209,6 +253,15 @@ void sincos(double th,double *s,double *c);
 #ifdef HAVE_GSL_LIB
 /* Don't have GSL */
 #undef HAVE_GSL_LIB
+#endif
+/*
+** Consistency check
+*/
+#if (!defined(HAVE_Z_LIB) && defined(HAVE_PNG_LIB))
+#undef HAVE_PNG_LIB
+#endif
+#if (!defined(HAVE_LEPTONICA_LIB) && defined(HAVE_TESSERACT_LIB))
+#undef HAVE_TESSERACT_LIB
 #endif
 
 #include <stdio.h>
@@ -312,7 +365,9 @@ double bmp_get_pdf_dpi(void);
 void bmp_set_pdf_pageno(int pageno);
 int  bmp_get_pdf_pageno(void);
 int  bmp_info(char *filename,int *width,int *height,int *bpp,FILE *out);
+#ifdef HAVE_PNG_LIB
 int  bmp_png_info(char *filename,int *width,int *height,int *bpp,FILE *out);
+#endif
 int  bmp_bmp_info(char *filename,int *width,int *height,int *bpp,FILE *out);
 int  bmp_jpeg_info(char *filename,int *width,int *height,int *bpp);
 int  bmp_promote_to_24(WILLUSBITMAP *bmp);
@@ -327,15 +382,19 @@ void bmp_set_type(WILLUSBITMAP *bmap,int type);
 int  bmp_get_type(WILLUSBITMAP *bmp);
 int  bmp_read_bmp8(WILLUSBITMAP *bmap,char *filename,FILE *out);
 int  bmp_read_bmp24(WILLUSBITMAP *bmap,char *filename,FILE *out);
+#ifdef HAVE_PNG_LIB
 int  bmp_read_png(WILLUSBITMAP *bmp,char *filename,FILE *out);
 int  bmp_read_png_stream(WILLUSBITMAP *bmp,void *io,int size,FILE *out);
 int  bmp_write_png(WILLUSBITMAP *bmp,char *filename,FILE *out);
 int  bmp_write_png_stream(WILLUSBITMAP *bmp,FILE *dest,FILE *out);
+#endif
+#ifdef HAVE_JPEG_LIB
 int  bmp_write_jpeg(WILLUSBITMAP *bmp,char *filename,int quality,FILE *out);
 void bmp_jpeg_set_std_huffman(int status);
 int  bmp_write_jpeg_stream(WILLUSBITMAP *bmp,FILE *dest,int quality,FILE *out);
 int  bmp_read_jpeg(WILLUSBITMAP *bmp,char *filename,FILE *out);
 int  bmp_read_jpeg_stream(WILLUSBITMAP *bmp,void *infile,int size,FILE *out);
+#endif
 void bmp8_palette_info(WILLUSBITMAP *bmap,FILE *out);
 void bmp8_to_grey(WILLUSBITMAP *bmap);
 #define bmp8_to_gray(bmp) bmp8_to_grey(bmp)
@@ -1077,11 +1136,13 @@ void render_partial_circle_pts(double xc,double yc,double radius,
 char  *willuslibversion (void);
 
 /* wgs.c */
+#ifdef HAVE_GHOSTSCRIPT
 int willusgs_read_pdf_or_ps_bmp(WILLUSBITMAP *bmp,char *filename,int pageno,double dpi,FILE *out);
 int willusgs_ps_to_pdf(char *dstfile,char *srcfile,int firstpage,int lastpage,FILE *out);
 int willusgs_init(FILE *out);
 int willusgs_exec(int argc,char *argv[],FILE *out);
 void willusgs_close(void);
+#endif
 
 /* ocr.c */
 typedef struct
@@ -1112,11 +1173,14 @@ void ocrwords_int_scale(OCRWORDS *words,int ndiv);
 void ocrwords_concatenate(OCRWORDS *dst,OCRWORDS *src);
 void ocr_text_proc(char *s,int allow_spaces);
 
+#ifdef HAVE_GOCR_LIB
 /* ocrjocr.c */
 void jocr_single_word_from_bmp8(char *text,int maxlen,WILLUSBITMAP *bmp8,
                                 int x1,int y1,int x2,int y2,int allow_spaces,
                                 int std_proc);
+#endif
 
+#ifdef HAVE_TESSERACT_LIB
 /* ocrtess.c */
 int ocrtess_init(char *datadir,char *lang,int ocr_type,FILE *out);
 void ocrtess_end(void);
@@ -1124,6 +1188,7 @@ void ocrtess_single_word_from_bmp8(char *text,int maxlen,WILLUSBITMAP *bmp8,
                                 int x1,int y1,int x2,int y2,
                                 int ocr_type,int allow_spaces,
                                 int std_proc,FILE *out);
+#endif
 
 /* pdfwrite.c */
 typedef struct
@@ -1153,9 +1218,11 @@ void pdffile_finish(PDFFILE *pdf,char *title,char *author,char *producer,char *c
 int  pdf_numpages(char *filename);
 void ocrwords_box(OCRWORDS *ocrwords,WILLUSBITMAP *bmp);
 
+#ifdef HAVE_MUPDF_LIB
 /* bmpmupdf.c */
 /* Mupdf / bitmap functions */
 int bmpmupdf_pdffile_to_bmp(WILLUSBITMAP *bmp,char *filename,int pageno,double dpi,int bpp);
+#endif /* HAVE_MUPDF_LIB */
 
 /* wmupdf.c */
 /* Mupdf support functions */
@@ -1205,6 +1272,7 @@ typedef struct
     WPDFBOXES boxes;
     } WPDFPAGEINFO;
 
+#ifdef HAVE_MUPDF_LIB
 int  wmupdf_numpages(char *filename);
 void wpdfboxes_init(WPDFBOXES *boxes);
 void wpdfboxes_free(WPDFBOXES *boxes);
@@ -1214,17 +1282,37 @@ void wpdfboxes_delete(WPDFBOXES *boxes,int n);
 void wpdfpageinfo_sort(WPDFPAGEINFO *pageinfo);
 int  wmupdf_info_field(char *infile,char *label,char *buf,int maxlen);
 int  wmupdf_remake_pdf(char *infile,char *outfile,WPDFPAGEINFO *pageinfo,FILE *out);
+#endif /* HAVE_MUPDF_LIB */
 
+#ifdef HAVE_DJVU_LIB
 /* bmpdjvu.c */
 /* djvu supported functions */
 int bmpdjvu_djvufile_to_bmp(WILLUSBITMAP *bmp,char *infile,int pageno,
                             int dpi,int bpp,FILE *out);
 int bmpdjvu_numpages(char *infile);
+#endif /* HAVE_DJVU_LIB */
 
 
 /* gslpolyfit.c */
 void gslpolyfit(double *x,double *y,int n,int degree,double *c);
 #define wpolyfitd gslpolyfit
+/* strbuf.c */
+typedef struct
+    {
+    char *s;
+    int na;
+    } STRBUF;
+void strbuf_init(STRBUF *sbuf);
+void strbuf_cat(STRBUF *sbuf,char *s);
+void strbuf_cat_with_quotes(STRBUF *sbuf,char *s);
+void strbuf_cat_no_spaces(STRBUF *sbuf,char *s);
+void strbuf_cpy(STRBUF *sbuf,char *s);
+void strbuf_clear(STRBUF *sbuf);
+void strbuf_ensure(STRBUF *sbuf,int n);
+void strbuf_free(STRBUF *sbuf);
+void strbuf_sprintf(STRBUF *sbuf,char *fmt,...);
+
+
 
 #ifdef PI
 #undef PI
