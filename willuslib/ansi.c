@@ -51,7 +51,6 @@
 
 static int ansi_on=1;
 static char ansi_buffer[MAXSIZE];
-static char dprintfile[MAXFILENAMELEN];
 
 static void ansi_code(FILE *f,int *args,int nargs,int code);
 static void ansi_parse(FILE *f,char *s);
@@ -87,41 +86,6 @@ int aprintf(char *fmt,...)
     }
 
 
-int dprintf(char *filename,char *fmt,...)
-
-    {
-    va_list args;
-    int     status;
-    FILE   *f;
-
-    if (fmt==NULL || fmt[0]=='\0')
-        {
-        if (filename==NULL || filename[0]=='\0')
-            remove(dprintfile);
-        else
-            {
-            remove(filename);
-            strcpy(dprintfile,filename);
-            }
-        return(0);
-        }
-    if (filename==NULL || filename[0]=='\0')
-        f=fopen(dprintfile,"a");
-    else
-        {
-        f=fopen(filename,"a");
-        strcpy(dprintfile,filename);
-        }
-    if (f!=NULL)
-        {
-        va_start(args,fmt);
-        status=vfprintf(f,fmt,args);
-        va_end(args);
-        fclose(f);
-        return(status);
-        }
-    return(-1);
-    }
 
 static int wlp_to_stdout=1;
 static int wlp_to_stderr=0;

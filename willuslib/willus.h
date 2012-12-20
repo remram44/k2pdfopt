@@ -173,12 +173,6 @@ typedef double  real;
 #endif
 #endif
 
-/* Check whether sincos built-in */
-#if (defined(WILLUS_X863264) && !defined(__TINYC__) && __GNUC__ >= 4 && __GNUC_MINOR__ > 4)
-void sincos(double th,double *s,double *c);
-#else
-#define sincos(th,x,y) { (*(x))=sin(th); (*(y))=cos(th); }
-#endif
 
 #if (defined(__linux) || defined(linux) || defined(__linux__))
 #define LINUX
@@ -294,7 +288,6 @@ void sincos(double th,double *s,double *c);
 
 void   ansi_set      (int on);
 int    aprintf       (char *fmt,...);
-int    dprintf       (char *filename,char *fmt,...);
 void   wlp_save_status    (void);
 void   wlp_restore_status (void);
 void   wlp_set_stdout     (int sout,int serr,char *filename,int close_after,
@@ -600,6 +593,7 @@ int structtm_from_datetime(struct tm *date,char *datetime);
 int structtm_from_date(struct tm *date,char *datestr);
 int structtm_from_time(struct tm *date,char *time);
 char *wstrtok(char *s,char *t);
+int utf8_to_unicode(int *d,char *s,int maxlen);
 
 
 #ifdef WIN32

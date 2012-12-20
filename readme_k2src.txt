@@ -1,7 +1,8 @@
 K2pdfopt build help.
 http://willus.com
 Original: 7 September 2012
-Last updated: 15 November 2012 (v1.62)
+Last updated: 20 December 2012 (v1.63)
+[Note that tesseract_mod/tesscapi.c has been updated for v1.63.]
 
 This "read me" file describes the source code distribution for k2pdfopt.
 
