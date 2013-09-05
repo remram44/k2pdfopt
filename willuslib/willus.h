@@ -1519,6 +1519,7 @@ typedef WILLUSGUICONTROL WILLUSGUIWINDOW;
 
 void willusgui_init(void);
 void willusgui_close(void);
+void willusgui_set_cursor(int type);
 void willusgui_open_file(char *filename);
 WILLUSGUIWINDOW *willusgui_window_find(void *oshandle);
 void willusgui_window_text_render(WILLUSGUIWINDOW *win,WILLUSGUIFONT *font,char *text,int x0,int y0,

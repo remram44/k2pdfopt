@@ -44,13 +44,6 @@ void k2gui_osdep_init(K2GUI *k2gui0) /* ,void *hinst,void *hprevinst) */
 
     {
     k2gui=k2gui0;
-/*
-#ifdef MSWINGUI
-    k2wingui=&_k2wingui;
-    k2gui->osdep = (void *)k2wingui;
-    k2wingui->hinst = (HINSTANCE)hinst;
-#endif
-*/
     }
 
 
@@ -72,13 +65,7 @@ int k2gui_osdep_window_proc_messages(WILLUSGUIWINDOW *win,void *semaphore,WILLUS
                 done=1;
                 /* Change button to "Close" */
                 if (closebutton!=NULL)
-                    {
                     k2gui_cbox_close_buttons();
-                    /*
-                    strcpy(closebutton->name,"Close");
-                    willusgui_control_redraw(closebutton,0);
-                    */
-                    }
                 continue;
                 }
             }
@@ -122,7 +109,7 @@ printf("@k2gui_osdep_main_window_init\n");
     wndclass.cbWndExtra    = 0;
     wndclass.hInstance     = (HINSTANCE)willusgui_instance();
     wndclass.hIcon         = iconr;
-    wndclass.hCursor       = LoadCursor(NULL,IDC_ARROW);
+    wndclass.hCursor       = NULL; /* LoadCursor(NULL,IDC_ARROW); */
     wndclass.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wndclass.lpszMenuName  = NULL;
     wndclass.lpszClassName = appname;
@@ -209,29 +196,6 @@ win->rect.bottom-win->rect.top+1);
     win->handle=NULL;
 #endif
     }
-
-
-/*
-** File dropped onto main window
-*/
-/*
-void k2gui_osdep_file_dropped(void *hdrop)
-            
-    {
-#ifdef MSWINGUI
-    int i,n;
-    n=DragQueryFile((HDROP)hdrop,0xffffffff,NULL,0);
-    for (i=0;i<n;i++)
-        {
-        char buf[512],buf2[512];
-        DragQueryFile((HDROP)hdrop,i,buf,511);
-        while (win_resolve_shortcut(buf,buf2,511))
-            strcpy(buf,buf2);
-        k2gui_add_file(buf);
-        }
-#endif
-    }
-*/
 
 
 /*

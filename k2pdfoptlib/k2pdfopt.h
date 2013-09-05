@@ -39,7 +39,7 @@
 **
 */
 
-/* #define WILLUSDEBUGX 0x2a5 */
+/* #define WILLUSDEBUGX 0x4000 */
 /*
 #define WILLUSDEBUGX 0xfff
 #define WILLUSDEBUG
@@ -839,11 +839,14 @@ typedef struct
     int started;
     WILLUSGUIFONT font;
     int active;
+    int preview_processing;
     WILLUSBITMAP bgbmp;
     K2PDFOPT_CONVERSION *k2conv;
     STRBUF *env;
     /* STRBUF *cmdline; */
     STRBUF  cmdxtra;
+    WILLUSBITMAP pworking; /* Preview bitmap "working" */
+    WILLUSBITMAP pviewbitmap; /* Preview bitmap source */
     WILLUSBITMAP pbitmap; /* Preview bitmap source */
     void *prevthread[8]; /* Preview thread controls */
     } K2GUI;

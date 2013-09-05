@@ -89,6 +89,18 @@ void willusgui_close(void)
     }
 
 
+/*
+** 0 = normal
+** 1 = wait
+*/
+void willusgui_set_cursor(int type)
+
+    {
+#ifdef MSWINGUI
+    SetCursor(LoadCursor(NULL,type==0?IDC_ARROW:IDC_WAIT));
+#endif
+    }
+
 void willusgui_open_file(char *filename)
 
     {

@@ -1,4 +1,4 @@
-char *k2pdfopt_version = "v2.00";
+char *k2pdfopt_version = "v2.01";
 /*
 ** k2version.c  K2pdfopt version number and history.
 **
@@ -17,7 +17,19 @@ char *k2pdfopt_version = "v2.00";
 ** You should have received a copy of the GNU Affero General Public License
 ** along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **
+**
 ** VERSION HISTORY
+**
+** v2.01     4 SEP 2013
+**           BUG FIXES
+**           - Fixed significant memory leak in wmupdf.c (added wtextchars_free call in
+**             wtextchars_text_inside()).  Was causing k2pdfopt to crash on conversions
+**             of large PDF files.
+**           - Better feedback after preview button is pressed.  Also works correctly
+**             when re-sizing the window during a preview.
+**           - Inserted 0.1-second sleep at end of k2gui_preview_start()--seems to
+**             prevent occasional problems with the preview.
+**             
 ** v2.00     2 SEP 2013
 **           MAJOR NEW FEATURES
 **           - Added a GUI for the MS Windows version.  In MS Windows, k2pdfopt now
