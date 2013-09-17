@@ -257,6 +257,18 @@ void willusgui_window_draw_path_filled(WILLUSGUIWINDOW *win,int *x,int *y,int n,
     }
 
 
+/*
+** Number of displayable lines in an edit control
+*/
+int willusgui_control_nlines(WILLUSGUICONTROL *control)
+
+    {
+    if (control->font.size<=0)
+        return(-1);
+    return((control->rect.bottom-control->rect.top+control->font.size-1)/control->font.size);
+    }
+
+
 void willusgui_window_draw_rect_outline(WILLUSGUIWINDOW *win,WILLUSGUIRECT *rect,int rgb)
 
     {

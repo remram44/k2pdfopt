@@ -36,6 +36,7 @@
 ** 0x0800 = Put back "internal_gap" tracking (obsolete)
 ** 0x1000 = find text words
 ** 0x2000 = GUI
+** 0x4000 = Keep console for GUI debugging
 **
 */
 
@@ -54,7 +55,7 @@
 #include <willus.h>
 
 /* Uncomment below if compiling for Kindle PDF Viewer */
-/* #define K2PDFOPT_KINDLEPDFVIEWER */
+/* #define K2PDFOPT_KINDLEPDFVIEWER  */
 
 /*
 ** The HAVE_..._LIB defines should now be carried over from willus.h,
@@ -927,6 +928,7 @@ void k2gui_preview_paint(void);
 int  k2gui_cbox_converting(void);
 int  k2gui_yesno(char *title,char *fmt,...);
 void k2gui_cbox_do_conversion(K2GUI *k2gui0);
+void k2gui_cbox_final_print(void);
 void k2gui_cbox_terminate_conversion(void);
 int  k2gui_cbox_conversion_successful(void);
 

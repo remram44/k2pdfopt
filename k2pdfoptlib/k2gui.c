@@ -916,8 +916,15 @@ printf("settings->src_trim=%d\n",k2settings->src_trim);
                         k2gui_cbox_do_conversion(k2gui);
                         k2gui_cbox_freelist();
                         /* Clear file list if everything converted okay. */
+                        /*
+                        ** v2.02--don't clear the file list anymore in case user
+                        **        wants to try some different cmd-line options for
+                        **        the conversion.
+                        */
+                        /*
                         if (k2gui_cbox_conversion_successful())
                             k2pdfopt_files_clear(&k2gui->k2conv->k2files);
+                        */
                         filebox_populate();
                         flcontrol=k2gui_control_by_name("file list");
                         willusgui_control_close(flcontrol);

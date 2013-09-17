@@ -769,7 +769,8 @@ gotone++;
             nocr=1;
         tmp=&_tmp;
         bmp_init(tmp);
-        bmp_resample(tmp,bmp,(double)0.,(double)0.,(double)bmp->width,(double)bmp->height,w,h);
+        bmp_resample_optimum_performance(tmp,bmp,(double)0.,(double)0.,
+                                          (double)bmp->width,(double)bmp->height,w,h);
         /*
         ** scalew and scaleh can be just different enough to cause problems
         ** if we use one value for both of them.  -- v2.00, 24-Aug-2013
