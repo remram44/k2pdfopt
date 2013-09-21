@@ -703,6 +703,7 @@ void k2pdfopt_conversion_init(K2PDFOPT_CONVERSION *k2conv);
 void k2pdfopt_conversion_close(K2PDFOPT_CONVERSION *k2conv);
 void k2pdfopt_settings_copy(K2PDFOPT_SETTINGS *dst,K2PDFOPT_SETTINGS *src);
 int  k2pdfopt_settings_set_to_device(K2PDFOPT_SETTINGS *k2settings,DEVPROFILE *dp);
+void k2pdfopt_settings_quick_sanity_check(K2PDFOPT_SETTINGS *k2settings);
 void k2pdfopt_settings_sanity_check(K2PDFOPT_SETTINGS *k2settings);
 void k2pdfopt_settings_new_source_document_init(K2PDFOPT_SETTINGS *k2settings);
 void k2pdfopt_settings_restore_output_dpi(K2PDFOPT_SETTINGS *k2settings);

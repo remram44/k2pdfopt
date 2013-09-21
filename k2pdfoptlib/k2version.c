@@ -1,4 +1,4 @@
-char *k2pdfopt_version = "v2.02";
+char *k2pdfopt_version = "v2.03";
 /*
 ** k2version.c  K2pdfopt version number and history.
 **
@@ -18,6 +18,18 @@ char *k2pdfopt_version = "v2.02";
 ** along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **
 ** VERSION HISTORY
+**
+** v2.03     21 SEP 2013
+**           ENHANCEMENTS
+**           - MuPDF library now uses the Sumatra versions of pdf-font.c and
+**             pdf-fontfile.c so that it correctly checks Windows system fonts
+**             for non-embedded fonts in the PDF file.
+**
+**           BUG FIXES
+**           - Native mode is correctly turned off as the default setting.
+**           - Native mode output works correctly from the MS Windows GUI.
+**           - Check boxes made consistent (native/wrap/OCR) with quick
+**             sanity check call.
 **
 ** v2.02     16 SEP 2013
 **           ENHANCEMENTS

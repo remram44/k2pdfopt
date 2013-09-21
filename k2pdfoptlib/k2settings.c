@@ -116,7 +116,7 @@ void k2pdfopt_settings_init(K2PDFOPT_SETTINGS *k2settings)
     k2settings->dst_negative=0;
     k2settings->exit_on_complete=-1;
     k2settings->show_marked_source=0;
-    k2settings->use_crop_boxes=1;
+    k2settings->use_crop_boxes=0;
     k2settings->preserve_indentation=1;
     k2settings->defect_size_pts=0.75;
     k2settings->max_vertical_gap_inches=0.25;
@@ -198,13 +198,7 @@ int k2pdfopt_settings_set_to_device(K2PDFOPT_SETTINGS *k2settings,DEVPROFILE *dp
     }
 
 
-/*
-** Check / adjust k2pdfopt user input settings.
-**
-** This function is called before beginning the conversion of each new document...?
-**
-*/
-void k2pdfopt_settings_sanity_check(K2PDFOPT_SETTINGS *k2settings)
+void k2pdfopt_settings_quick_sanity_check(K2PDFOPT_SETTINGS *k2settings)
 
     {
 /* printf("@k2pdfopt_settings_sanity_check, k2settings=%p.\n",k2settings); */
@@ -234,6 +228,19 @@ void k2pdfopt_settings_sanity_check(K2PDFOPT_SETTINGS *k2settings)
     if (k2settings->dst_ocr)
         k2settings->use_crop_boxes=0;
 #endif
+    }
+
+
+/*
+** Check / adjust k2pdfopt user input settings.
+**
+** This function is called before beginning the conversion of each new document...?
+**
+*/
+void k2pdfopt_settings_sanity_check(K2PDFOPT_SETTINGS *k2settings)
+
+    {
+    k2pdfopt_settings_quick_sanity_check(k2settings);
 
     /*
     ** Apply display resolution
