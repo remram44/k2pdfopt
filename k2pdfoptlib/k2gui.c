@@ -834,7 +834,7 @@ printf("settings->src_trim=%d\n",k2settings->src_trim);
                 if (!strcmp(control->name,"straighten"))
                     k2settings->src_autostraighten = checked ? 4. : -1.;
                 else if (!strcmp(control->name,"break"))
-                    k2settings->dst_break_pages= checked ? 1 : 0;
+                    k2settings->dst_break_pages= checked ? 2 : 1;
                 else if (!strcmp(control->name,"color"))
                     k2settings->dst_color= checked ? 1 : 0;
                 else if (!strcmp(control->name,"landscape"))
@@ -1896,7 +1896,7 @@ printf("dst_userwidth_units = %d\n",k2settings->dst_userwidth_units);
     ** Mode select menu
     */
     {
-    static char *modes[]={"default","copy","fitwidth","2-column",""};
+    static char *modes[]={"default","copy","trim","fitwidth","fitpage","2-column",""};
     int nmodes;
 
     for (nmodes=0;modes[nmodes][0]!='\0';nmodes++);
@@ -2427,7 +2427,7 @@ printf("cmdxtra.s='%s'\n",k2gui->cmdxtra.s);
                 checked=k2settings->src_autostraighten>=0.;
                 break;
             case 1:
-                checked=k2settings->dst_break_pages;
+                checked=(k2settings->dst_break_pages==2);
                 break;
             case 2:
                 checked=k2settings->dst_color;
