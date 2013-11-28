@@ -936,6 +936,7 @@ char *k2gui_short_name(char *filename);
 void k2gui_preview_toggle_size(int increment);
 void k2gui_preview_refresh(void);
 void k2gui_preview_paint(void);
+int  k2gui_previewing(void);
 
 /* k2gui_cbox.c */
 int  k2gui_cbox_converting(void);

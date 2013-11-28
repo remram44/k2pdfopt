@@ -2668,6 +2668,13 @@ static WILLUSGUICONTROL *k2gui_control_by_name(char *name)
     }
 
 
+int k2gui_previewing(void)
+
+    {
+    return(k2gui->preview_processing);
+    }
+
+
 static void k2gui_preview_start(void)
 
     {

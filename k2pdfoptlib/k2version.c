@@ -1,4 +1,4 @@
-char *k2pdfopt_version = "v2.10";
+char *k2pdfopt_version = "v2.11";
 /*
 ** k2version.c  K2pdfopt version number and history.
 **
@@ -18,6 +18,14 @@ char *k2pdfopt_version = "v2.10";
 ** along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **
 ** VERSION HISTORY
+** v2.11     28 NOV 2013
+**           BUG FIXES (MW WINDOWS GUI)
+**           - Several routines in k2gui_cbox.c which are called from k2file.c
+**             during the conversion were not correctly working during a preview
+**             and were resulting in garbage sometimes being sent to the
+**             desktop screen if the preview button was clicked after a file
+**             conversion.  This has been fixed.
+**
 ** v2.10     23 NOV 2013
 **           NEW FEATURES
 **           - The PDF "Outlines" tree (often called "bookmarks" by PDF viewers)
