@@ -904,10 +904,11 @@ static int k2_handle_preview(K2PDFOPT_SETTINGS *k2settings,MASTERINFO *masterinf
 printf("Got preview bitmap:  %d x %d x %d.\n",
 masterinfo->preview_bitmap->width,masterinfo->preview_bitmap->height,masterinfo->preview_bitmap->bpp);
 */
-        if (k2settings->preview_page>0)
-            bmp_write(masterinfo->preview_bitmap,"k2pdfopt_out.png",NULL,100);
         if (k2out->bmp==NULL)
+            {
+            bmp_write(masterinfo->preview_bitmap,"k2pdfopt_out.png",NULL,100);
             bmp_free(masterinfo->preview_bitmap);
+            }
         }
     return(status);
     }

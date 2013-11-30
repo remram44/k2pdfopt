@@ -1,4 +1,4 @@
-char *k2pdfopt_version = "v2.11";
+char *k2pdfopt_version = "v2.12";
 /*
 ** k2version.c  K2pdfopt version number and history.
 **
@@ -18,6 +18,11 @@ char *k2pdfopt_version = "v2.11";
 ** along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **
 ** VERSION HISTORY
+** v2.12     30 NOV 2013
+**           BUG FIXES
+**           - No longer writes k2pdfopt_out.png when previewing in the GUI.
+**           - Removed DLL dependencies from 64-bit Windows compile.
+**
 ** v2.11     28 NOV 2013
 **           BUG FIXES (MW WINDOWS GUI)
 **           - Several routines in k2gui_cbox.c which are called from k2file.c
