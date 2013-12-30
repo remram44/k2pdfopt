@@ -1,7 +1,7 @@
 K2pdfopt build help.
 http://willus.com
 Original: 7 September 2012
-Last updated: 30 November 2013 (v2.12)
+Last updated: 30 December 2013 (v2.13)
 
 This "read me" file describes the source code distribution for k2pdfopt.
 
