@@ -1,4 +1,4 @@
-char *k2pdfopt_version = "v2.13";
+char *k2pdfopt_version = "v2.14";
 /*
 ** k2version.c  K2pdfopt version number and history.
 **
@@ -18,6 +18,15 @@ char *k2pdfopt_version = "v2.13";
 ** along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **
 ** VERSION HISTORY
+** v2.14     31 DEC 2013
+**           - Compiled using dtcompress.c module in willus library which avoids
+**             requiring my custom modification to zlib.  Thank you to Dirk Thierbach
+**             for this.
+**           - willus lib modules use more standard include callouts for MuPDF and
+**             DjVu.
+**           - Added CMakeLists.txt files to source distribution (also from Dirk).
+**           - Correctly re-compiled Win32 build (wasn't done correctly in v2.13).
+**
 ** v2.13     30 DEC 2013
 **           ENHANCEMENTS
 **           - Added kobo mini to device profile:
