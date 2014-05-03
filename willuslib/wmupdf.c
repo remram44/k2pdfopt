@@ -84,6 +84,7 @@ static WPDFOUTLINE *wpdfoutline_convert_from_fitz_outline(fz_outline *fzoutline)
 static void pdf_create_outline(pdf_document *doc,pdf_obj *outline_root,pdf_obj *orref,WPDFOUTLINE *outline);
 static void pdf_create_outline_1(pdf_document *doc,pdf_obj *parent,pdf_obj *parentref,pdf_obj *dict,pdf_obj *dictref,int drefnum,WPDFOUTLINE *outline);
 static pdf_obj *anchor_reference(pdf_document *doc,int pageno);
+static pdf_obj *pdf_new_string_utf8(pdf_document *doc,char *string);
 
 
 int wmupdf_numpages(char *filename)
@@ -2238,23 +2239,10 @@ static void pdf_create_outline_1(pdf_document *doc,pdf_obj *parent,pdf_obj *pare
         {
         pdf_obj *title,*nextdict,*nextdictref,*aref;
         int nextdictrefnum;
-        char *de;
-        static char *funcname="pdf_create_outline_1";
 
-        /* Convert UTF-8 to PDF-encoding */
-        willus_mem_alloc_warn((void **)&de,strlen(outline->title)+2,funcname,10);
-        /*
-        de=malloc(strlen(outline->title)+2);
-        if (de==NULL)
-            de=outline->title;
-        else
-        */
-        wpdf_docenc_from_utf8(de,outline->title,strlen(outline->title)+1);
-        title=pdf_new_string(doc,de,strlen(de));
+        title=pdf_new_string_utf8(doc,outline->title);
         pdf_dict_puts(dict,"Title",title);
         pdf_drop_obj(title);
-        /* if (de!=outline->title) */
-        willus_mem_free((double **)&de,funcname);
         aref=anchor_reference(doc,outline->dstpage);
         pdf_dict_puts(dict,"A",aref);
         pdf_drop_obj(aref);
@@ -2332,6 +2320,35 @@ static pdf_obj *anchor_reference(pdf_document *doc,int pageno)
     pdf_update_object(doc,arefnum,anchor);
     pdf_drop_obj(anchor);
     return(anchorref);
+    }
+
+
+static pdf_obj *pdf_new_string_utf8(pdf_document *doc,char *string)
+
+    {
+    int *utf16;
+    char *utfbuf;
+    int i,j,n;
+    static char *funcname="pdf_new_string_utf8";
+    pdf_obj *pdfobj;
+
+    n=strlen(string)+2;
+    willus_mem_alloc_warn((void **)&utf16,sizeof(int)*n,funcname,10);
+    n=utf8_to_unicode(utf16,string,n-1);
+    willus_mem_alloc_warn((void **)&utfbuf,n*2+3,funcname,10);
+    j=0;
+    utfbuf[j++]=0xfe;
+    utfbuf[j++]=0xff;
+    for (i=0;i<n;i++)
+        {
+        utfbuf[j++]=(utf16[i]>>8)&0xff;
+        utfbuf[j++]=(utf16[i]&0xff);
+        }
+    utfbuf[j]='\0';
+    willus_mem_free((double **)&utf16,funcname);
+    pdfobj=pdf_new_string(doc,utfbuf,j);
+    willus_mem_free((double **)&utfbuf,funcname);
+    return(pdfobj);
     }
     
 #endif /* HAVE_MUPDF_LIB */
