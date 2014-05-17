@@ -1,4 +1,4 @@
-char *k2pdfopt_version = "v2.16";
+char *k2pdfopt_version = "v2.17";
 /*
 ** k2version.c  K2pdfopt version number and history.
 **
@@ -18,6 +18,11 @@ char *k2pdfopt_version = "v2.16";
 ** along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **
 ** VERSION HISTORY
+** v2.17     17 MAY 2014
+**           ENHANCEMENTS
+**           - Compiled with the latest versions of MuPDF (1.4), Turbo JPEG (1.3.1),
+**             libpng (1.6.10), and freetype (2.5.3).
+**
 ** v2.16     03 MAY 2014
 **           BUG FIXES
 **           - Avoid zero-value return from masterinfo_break_point().

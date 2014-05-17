@@ -98,7 +98,11 @@ int wmupdf_numpages(char *filename)
     ctx = fz_new_context(NULL,NULL,FZ_STORE_DEFAULT);
     if (!ctx)
         return(-1);
-    fz_try(ctx) { doc=fz_open_document(ctx,filename); }
+    fz_try(ctx)
+        {
+        fz_register_document_handlers(ctx);
+        doc=fz_open_document(ctx,filename);
+        }
     fz_catch(ctx)
         {
         fz_free_context(ctx);
@@ -370,6 +374,7 @@ int wmupdf_info_field(char *infile,char *label,char *buf,int maxlen)
         return(-1);
     fz_try(ctx)
         {
+        fz_register_document_handlers(ctx);
         xref=pdf_open_document_no_run(ctx,infile);
         if (!xref)
             {
@@ -439,6 +444,7 @@ int wmupdf_remake_pdf(char *infile,char *outfile,WPDFPAGEINFO *pageinfo,int use_
         }
     fz_try(ctx)
         {
+        fz_register_document_handlers(ctx);
         xref=pdf_open_document_no_run(ctx,infile);
         if (!xref)
             {
@@ -1600,77 +1606,86 @@ int wtextchars_fill_from_page_ex(WTEXTCHARS *wtc,char *filename,int pageno,char 
     ctx=fz_new_context(NULL,NULL,FZ_STORE_DEFAULT);
     if (ctx==NULL)
         return(-1);
-    fz_set_aa_level(ctx,8);
-    doc=fz_open_document(ctx,filename);
-    if (doc==NULL)
-        {
-        fz_free_context(ctx);
-        return(-2);
-        }
-    if (fz_needs_password(doc) && !fz_authenticate_password(doc,password))
-        {
-        fz_close_document(doc);
-        fz_free_context(ctx);
-        return(-3);
-        }
-    page=fz_load_page(doc,pageno-1);
-    if (page==NULL)
-        {
-        fz_free_page(doc,page);
-        fz_close_document(doc);
-        fz_free_context(ctx);
-        return(-3);
-        }
     fz_try(ctx)
         {
-        list=fz_new_display_list(ctx);
-        dev=fz_new_list_device(ctx,list);
-        fz_run_page(doc,page,dev,&fz_identity,NULL);
-        }
-    fz_always(ctx)
-        {
-        fz_free_device(dev);
-        dev=NULL;
-        }
-    fz_catch(ctx)
-        {
-        fz_drop_display_list(ctx,list);
-        fz_free_page(doc,page);
-        fz_close_document(doc);
-        fz_free_context(ctx);
-        return(-4);
-        }
-    fz_var(text);
-    fz_bound_page(doc,page,&bounds);
-    wtc->width=fabs(bounds.x1-bounds.x0);
-    wtc->height=fabs(bounds.y1-bounds.y0);
-    textsheet=fz_new_text_sheet(ctx);
-    fz_try(ctx)
-        {
-        text=fz_new_text_page(ctx);
-        dev=fz_new_text_device(ctx,textsheet,text);
-        if (list)
-            fz_run_display_list(list,dev,&fz_identity,&fz_infinite_rect,NULL);
-        else
+        fz_register_document_handlers(ctx);
+        fz_set_aa_level(ctx,8);
+        doc=fz_open_document(ctx,filename);
+        if (doc==NULL)
+            {
+            fz_free_context(ctx);
+            return(-2);
+            }
+        if (fz_needs_password(doc) && !fz_authenticate_password(doc,password))
+            {
+            fz_close_document(doc);
+            fz_free_context(ctx);
+            return(-3);
+            }
+        page=fz_load_page(doc,pageno-1);
+        if (page==NULL)
+            {
+            fz_free_page(doc,page);
+            fz_close_document(doc);
+            fz_free_context(ctx);
+            return(-3);
+            }
+        fz_try(ctx)
+            {
+            list=fz_new_display_list(ctx);
+            dev=fz_new_list_device(ctx,list);
             fz_run_page(doc,page,dev,&fz_identity,NULL);
-        fz_free_device(dev);
-        dev=NULL;
-        wtextchars_add_fz_chars(wtc,ctx,text,boundingbox);
-        }
-    fz_always(ctx)
-        {
-        fz_free_device(dev);
-        dev=NULL;
-        fz_free_text_page(ctx,text);
-        fz_free_text_sheet(ctx,textsheet);
-        fz_drop_display_list(ctx,list);
-        fz_free_page(doc,page);
-        fz_close_document(doc);
+            }
+        fz_always(ctx)
+            {
+            fz_free_device(dev);
+            dev=NULL;
+            }
+        fz_catch(ctx)
+            {
+            fz_drop_display_list(ctx,list);
+            fz_free_page(doc,page);
+            fz_close_document(doc);
+            fz_free_context(ctx);
+            return(-4);
+            }
+        fz_var(text);
+        fz_bound_page(doc,page,&bounds);
+        wtc->width=fabs(bounds.x1-bounds.x0);
+        wtc->height=fabs(bounds.y1-bounds.y0);
+        textsheet=fz_new_text_sheet(ctx);
+        fz_try(ctx)
+            {
+            text=fz_new_text_page(ctx);
+            dev=fz_new_text_device(ctx,textsheet,text);
+            if (list)
+                fz_run_display_list(list,dev,&fz_identity,&fz_infinite_rect,NULL);
+            else
+                fz_run_page(doc,page,dev,&fz_identity,NULL);
+            fz_free_device(dev);
+            dev=NULL;
+            wtextchars_add_fz_chars(wtc,ctx,text,boundingbox);
+            }
+        fz_always(ctx)
+            {
+            fz_free_device(dev);
+            dev=NULL;
+            fz_free_text_page(ctx,text);
+            fz_free_text_sheet(ctx,textsheet);
+            fz_drop_display_list(ctx,list);
+            fz_free_page(doc,page);
+            fz_close_document(doc);
+            }
+        fz_catch(ctx)
+            {
+            fz_free_context(ctx);
+            return(-5);
+            }
         }
     fz_catch(ctx)
         {
         fz_free_context(ctx);
-        return(-5);
+        return(-20);
         }
     fz_free_context(ctx);
     return(0);
@@ -2159,18 +2174,27 @@ WPDFOUTLINE *wpdfoutline_read_from_pdf_file(char *filename)
     ctx = fz_new_context(NULL,NULL,FZ_STORE_DEFAULT);
     if (!ctx)
         return(NULL);
-    fz_set_aa_level(ctx,8);
-    fz_try(ctx) { doc=fz_open_document(ctx,filename); }
-    fz_catch(ctx) 
-        { 
+    fz_try(ctx)
+        {
+        fz_register_document_handlers(ctx);
+        fz_set_aa_level(ctx,8);
+        fz_try(ctx) { doc=fz_open_document(ctx,filename); }
+        fz_catch(ctx) 
+            { 
+            fz_free_context(ctx);
+            return(NULL);
+            }
+        fzoutline=fz_load_outline(doc);
+        wpdfoutline=wpdfoutline_convert_from_fitz_outline(fzoutline);
+        if (fzoutline!=NULL)
+            fz_free_outline(ctx,fzoutline);
+        fz_close_document(doc);
+        }
+    fz_catch(ctx)
+        {
         fz_free_context(ctx);
         return(NULL);
         }
-    fzoutline=fz_load_outline(doc);
-    wpdfoutline=wpdfoutline_convert_from_fitz_outline(fzoutline);
-    if (fzoutline!=NULL)
-        fz_free_outline(ctx,fzoutline);
-    fz_close_document(doc);
     fz_free_context(ctx);
     return(wpdfoutline);
     }

@@ -337,7 +337,6 @@ double array_max(double *a,int n);
 double array_min(double *a,int n);
 void array_load(double *array,int n,char *loadtype);
 void array_sort(double *a,int n);
-void array_flipi(int *x,int n);
 int  array_sliding_window(double *a,int n,int sw);
 double array_findminfitd(double *x,double *y,int n,double dxmax,double maxerr,
                          double *err,int *npf,double *ymin);
@@ -1104,6 +1103,8 @@ int filelist_fill_from_archive_ex(FILELIST *fl,WZFILE *f,int append,int dirstoo,
 void filelist_write_zipstyle_list(FILELIST *fl,FILE *out);
 void filelist_write_7zstyle_list(FILELIST *fl,FILE *out);
 int filelist_add_entry(FILELIST *fl,FLENTRY *entry);
+int filelist_write_to_file(FILELIST *fl,char *filename);
+int filelist_read_from_file(FILELIST *fl,char *filename);
 void filelist_new_entry_name(FILELIST *fl,int index,char *newname);
 void filelist_filter(FILELIST *fl,char *include[],char *exclude[]);
 void filelist_add_path_dirs(FILELIST *fl);
