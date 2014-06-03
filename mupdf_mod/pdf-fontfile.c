@@ -811,7 +811,9 @@ pdf_load_windows_font_by_name(fz_context *ctx, const char *orig_name)
 	if (!found)
 		fz_throw(ctx, FZ_ERROR_GENERIC, "couldn't find system font '%s'", orig_name);
 
+    /*
 	fz_warn(ctx, "loading non-embedded font '%s' from '%s'", orig_name, found->fontpath);
+    */
 
 	font = fz_new_font_from_file(ctx, orig_name, found->fontpath, found->index,
 		strcmp(found->fontface, "DroidSansFallback") != 0);

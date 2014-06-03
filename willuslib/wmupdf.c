@@ -29,6 +29,7 @@
 
 #ifdef HAVE_MUPDF_LIB
 #include <mupdf/pdf.h>
+void pdf_install_load_system_font_funcs(fz_context *ctx);
 
 static void wpdfbox_determine_original_source_position(WPDFBOX *box);
 static void wpdfbox_unrotate(WPDFBOX *box,double deg);
@@ -408,6 +409,27 @@ int wmupdf_info_field(char *infile,char *label,char *buf,int maxlen)
     }
 
 
+void wmupdf_scale_source_boxes(WPDFPAGEINFO *pageinfo,double doc_scale_factor)
+
+    {
+    int i;
+
+    for (i=0;i<pageinfo->boxes.n;i++)
+        {
+        WPDFBOX *box;
+
+        box=&pageinfo->boxes.box[i];
+        box->scale /= doc_scale_factor;
+        box->srcbox.page_width_pts *= doc_scale_factor;
+        box->srcbox.page_height_pts *= doc_scale_factor;
+        box->srcbox.x0_pts *= doc_scale_factor;
+        box->srcbox.y0_pts *= doc_scale_factor;
+        box->srcbox.crop_width_pts *= doc_scale_factor;
+        box->srcbox.crop_height_pts *= doc_scale_factor;
+        }
+    }
+
+
 /*
 ** Reconstruct PDF file per the information in pageinfo.
 ** use_forms==0:  Old-style reconstruction where the pages are not turned into XObject Forms.
@@ -445,6 +467,8 @@ int wmupdf_remake_pdf(char *infile,char *outfile,WPDFPAGEINFO *pageinfo,int use_
     fz_try(ctx)
         {
         fz_register_document_handlers(ctx);
+        /* Sumatra version of MuPDF v1.4 -- use locally installed fonts */
+        pdf_install_load_system_font_funcs(ctx);
         xref=pdf_open_document_no_run(ctx,infile);
         if (!xref)
             {
@@ -1610,6 +1634,8 @@ int wtextchars_fill_from_page_ex(WTEXTCHARS *wtc,char *filename,int pageno,char 
         {
         fz_register_document_handlers(ctx);
         fz_set_aa_level(ctx,8);
+        /* Sumatra version of MuPDF v1.4 -- use locally installed fonts */
+        pdf_install_load_system_font_funcs(ctx);
         doc=fz_open_document(ctx,filename);
         if (doc==NULL)
             {
@@ -2170,6 +2196,7 @@ WPDFOUTLINE *wpdfoutline_read_from_pdf_file(char *filename)
     fz_outline *fzoutline;
     WPDFOUTLINE *wpdfoutline;
 
+    wpdfoutline=NULL;
     doc=NULL;
     ctx = fz_new_context(NULL,NULL,FZ_STORE_DEFAULT);
     if (!ctx)
@@ -2178,6 +2205,8 @@ WPDFOUTLINE *wpdfoutline_read_from_pdf_file(char *filename)
         {
         fz_register_document_handlers(ctx);
         fz_set_aa_level(ctx,8);
+        /* Sumatra version of MuPDF v1.4 -- use locally installed fonts */
+        pdf_install_load_system_font_funcs(ctx);
         fz_try(ctx) { doc=fz_open_document(ctx,filename); }
         fz_catch(ctx) 
             { 

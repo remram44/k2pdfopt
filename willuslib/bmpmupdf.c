@@ -24,6 +24,7 @@
 
 #ifdef HAVE_MUPDF_LIB
 #include <mupdf/pdf.h>
+void pdf_install_load_system_font_funcs(fz_context *ctx);
 
 static int bmpmupdf_pixmap_to_bmp(WILLUSBITMAP *bmp,fz_context *ctx,fz_pixmap *pixmap);
 
@@ -60,6 +61,8 @@ int bmpmupdf_pdffile_to_bmp(WILLUSBITMAP *bmp,char *filename,int pageno,double d
     {
     fz_register_document_handlers(ctx);
     fz_set_aa_level(ctx,8);
+    /* Sumatra version of MuPDF v1.4 -- use locally installed fonts */
+    pdf_install_load_system_font_funcs(ctx);
 //    fz_accelerate();
 //    glyphcache=fz_new_glyph_cache();
     colorspace=(bpp==8 ? fz_device_gray(ctx) : fz_device_rgb(ctx));
@@ -191,6 +194,8 @@ int bmpmupdf_pdffile_width_and_height(char *filename,int pageno,double *width_in
     {
     fz_register_document_handlers(ctx);
     fz_set_aa_level(ctx,8);
+    /* Sumatra version of MuPDF v1.4 -- use locally installed fonts */
+    pdf_install_load_system_font_funcs(ctx);
     fz_try(ctx) { doc=fz_open_document(ctx,filename); }
     fz_catch(ctx) 
         { 

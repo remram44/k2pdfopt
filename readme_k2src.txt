@@ -1,7 +1,7 @@
 K2pdfopt build help.
 http://willus.com
 Original: 7 September 2012
-Last updated: 17 May 2014 (v2.17)
+Last updated: 2 Jun 2014 (v2.17a)
 
 This "read me" file describes the source code distribution for k2pdfopt.
 
@@ -96,7 +96,7 @@ Notes
    to build the project without using these files (I do not use them).
    
 
-Build Steps for k2pdfopt on Windows (gcc 4.8.2)
+Build Steps for k2pdfopt on Windows (gcc 4.8.3)
 -----------------------------------------------
 My compile steps with gcc (MinGW) are as follows (assuming all the libraries are built
 to libxxx.a files in d:\3rdparty_lib and headers are in d:\3rdparty_include):

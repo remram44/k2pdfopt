@@ -1,4 +1,4 @@
-char *k2pdfopt_version = "v2.17";
+char *k2pdfopt_version = "v2.17a";
 /*
 ** k2version.c  K2pdfopt version number and history.
 **
@@ -18,6 +18,11 @@ char *k2pdfopt_version = "v2.17";
 ** along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **
 ** VERSION HISTORY
+** v2.17a    2 JUN 2014
+**           - Fixes MuPDF v1.4 problem where it was not correctly using MS Windows
+**             system fonts (introduced in v2.17).
+**           - Compiled w/gcc 4.8.3.
+**
 ** v2.17     17 MAY 2014
 **           ENHANCEMENTS
 **           - Compiled with the latest versions of MuPDF (1.4), Turbo JPEG (1.3.1),
