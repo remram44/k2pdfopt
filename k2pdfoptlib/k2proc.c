@@ -853,7 +853,16 @@ gotone++;
     if (tall_region && w < wmax && k2settings->dst_fit_to_page!=0)
         {
         if (k2settings->dst_fit_to_page<0)
-            w = wmax;
+            {
+            double r1,r2;
+
+            r1=(double)k2settings->dst_dpi / k2settings->src_dpi;
+            r2=(double)w/wmax;
+            if (r2/r1 < 0.2)  /* v2.18 Max magnification = 5 x nominal, somewhat arbitrary */
+                w = 0.2*r1*wmax;
+            else
+                w = wmax;
+            }
         else
             {
             w = (int)(w * (1.+(double)k2settings->dst_fit_to_page/100.) + 0.5);

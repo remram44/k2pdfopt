@@ -1,4 +1,4 @@
-char *k2pdfopt_version = "v2.17a";
+char *k2pdfopt_version = "v2.18";
 /*
 ** k2version.c  K2pdfopt version number and history.
 **
@@ -18,6 +18,13 @@ char *k2pdfopt_version = "v2.17a";
 ** along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **
 ** VERSION HISTORY
+** v2.18     14 JUN 2014
+**           - Fixed problem when scaling sometimes gets out of control with tall
+**             regions.  Was causing excessively large bitmaps to be allocated
+**             which would sometimes run the system out of memory.  Search for
+**             "2.18" in k2proc.c.
+**             http://www.mobileread.com/forums/showthread.php?p=2846916#post2846916
+**
 ** v2.17a    2 JUN 2014
 **           - Fixes MuPDF v1.4 problem where it was not correctly using MS Windows
 **             system fonts (introduced in v2.17).
