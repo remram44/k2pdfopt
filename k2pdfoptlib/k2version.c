@@ -1,4 +1,4 @@
-char *k2pdfopt_version = "v2.20";
+char *k2pdfopt_version = "v2.21";
 /*
 ** k2version.c  K2pdfopt version number and history.
 **
@@ -18,6 +18,10 @@ char *k2pdfopt_version = "v2.20";
 ** along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **
 ** VERSION HISTORY
+**
+** v2.21 25 JUL 2014
+**           - Compiled with MuPDF v1.5 (a highly recommened, mostly-bug-fix
+**             upgrade recommended by the MuPDF folks).
 **
 ** v2.20 25 JUL 2014
 **           NEW FEATURES
