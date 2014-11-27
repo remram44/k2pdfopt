@@ -55,6 +55,7 @@ static void k2gui_update_controls(void);
 static void k2gui_error_out(char *message);
 static void k2gui_clear_envvars(void);
 static void k2gui_add_files(void);
+static void k2gui_add_folder(void);
 static void k2gui_save_settings_to_file(void);
 static void k2gui_restore_settings_from_file(void);
 static int  k2gui_determine_fontsize(void);
@@ -77,7 +78,7 @@ static void next_bmp_line(char *d,char *s,int *index,double mpw,int maxpix);
 
 
 int k2gui_main(K2PDFOPT_CONVERSION  *k2conv0,void *hInstance,void *hPrevInstance,
-               STRBUF *env,STRBUF *cmdline)
+               STRBUF *env,STRBUF *cmdline,int ascii)
 
     {
     int status;
@@ -290,10 +291,10 @@ static void k2gui_set_button_defaults(void)
 
     for (i=0;defbuttons[i][0]!='\0';i++)
         {
-        char envname[32],buf[256];
+        char envname[32],buf[512];
 
         sprintf(envname,"K2PDFOPT_CUSTOM%d",i+1);
-        if (wsys_get_envvar_ex(envname,buf,255) < 0)
+        if (wsys_get_envvar_ex(envname,buf,511) < 0)
             wsys_set_envvar(envname,defbuttons[i],0);
         }
     }
@@ -641,7 +642,7 @@ static void k2gui_main_window_init(int normal_size)
 static void k2gui_window_menus_init(WILLUSGUIWINDOW *win)
 
     {
-    static char *menus[] = {"_File","&Add Source File...","&Save Settings...",
+    static char *menus[] = {"_File","&Add Source File...","Add &Folder...","&Save Settings...",
                                     "&Restore Settings...","E&xit",
                             "_Help","&Website help page...","&Command-line Options...",
                                     "&About k2pdfopt...",
@@ -909,7 +910,7 @@ printf("settings->src_trim=%d\n",k2settings->src_trim);
                     char *buf;
                     int i,j;
                     willus_mem_alloc_warn((void **)&buf,1024,funcname,10);
-                    willusgui_control_gettext(control,buf,1023);
+                    willusgui_control_get_text(control,buf,1023);
                     /* v2.13 new check */
                     if (!stricmp(buf,"(all)") || !stricmp(buf,"all"))
                         buf[0]='\0';
@@ -959,7 +960,12 @@ printf("settings->src_trim=%d\n",k2settings->src_trim);
                 else if (!strcmp(control->name,"break"))
                     k2settings->dst_break_pages= checked ? 2 : 1;
                 else if (!strcmp(control->name,"color"))
+                    {
                     k2settings->dst_color= checked ? 1 : 0;
+                    if (k2settings->use_crop_boxes)
+                        k2gui_alertbox(0,"Cannot turn off color output",
+                                   "Color output is always on for native PDF output.");
+                    }
                 else if (!strcmp(control->name,"landscape"))
                     k2settings->dst_landscape = checked ? 1 : 0;
                 else if (!strcmp(control->name,"native"))
@@ -1027,9 +1033,11 @@ printf("settings->src_trim=%d\n",k2settings->src_trim);
                     k2gui_get_settings(preset,k2settings,&k2gui->cmdxtra);
                     k2gui_update_controls();
                     }
+                else if (in_string(control->name,"add folder")>=0)
+                    k2gui_add_folder();
                 else if (in_string(control->name,"add file")>=0)
                     k2gui_add_files();
-                else if (in_string(control->name,"remove file")>=0)
+                else if (in_string(control->name,"remove item")>=0)
                     {
                     int maxsel;
 
@@ -1351,13 +1359,16 @@ printf("K2PDFOPT <-- '%s'\n",buf);
                 case 700:  /* Add source file */
                     k2gui_add_files();
                     break;
-                case 701:
-                    k2gui_save_settings_to_file();
+                case 701:  /* Add folder */
+                    k2gui_add_folder();
                     break;
                 case 702:
-                    k2gui_restore_settings_from_file();
+                    k2gui_save_settings_to_file();
                     break;
                 case 703:
+                    k2gui_restore_settings_from_file();
+                    break;
+                case 704:
                     k2gui_quit();
                     break;
                 case 710:
@@ -1450,6 +1461,8 @@ printf("K2PDFOPT <-- '%s'\n",buf);
         case WILLUSGUIACTION_DROPFILES:
             {
             char **ptr;
+            /* int ca; */
+
             ptr=willusgui_get_dropped_files(message->ptr[0]);
             if (ptr!=NULL)
                 {
@@ -1457,6 +1470,12 @@ printf("K2PDFOPT <-- '%s'\n",buf);
                 for (i=0;ptr[i]!=NULL;i++)
                     k2gui_add_file(ptr[i]);
                 willusgui_release_dropped_files(ptr);
+                /*
+                if (ca)
+                    k2gui_alertbox(0,"Non-ASCII characters!",
+                                   "Some file names had non-ASCII characters.\n\n"
+                                   "These file names were not added.");
+                */
                 }
             break;
             }
@@ -1778,7 +1797,8 @@ printf("Calling wincomdlg...\n");
 */
     size=16384;
     willus_mem_alloc_warn((void **)&filename,size,funcname,10);
-    status=willusgui_file_select_dialog(filename,size-1,allowed_files,"Select source file","pdf",0);
+    status=willusgui_file_select_dialog(filename,size-1,allowed_files,"Select source file",
+                                        "pdf",0);
 /* printf("status=%d\n",status); */
     if (status)
         {
@@ -1801,6 +1821,36 @@ printf("Calling wincomdlg...\n");
             }
         }
     willus_mem_free((double **)&filename,funcname);
+    }
+
+
+static void k2gui_add_folder(void)
+
+    {
+    char foldername[MAXFILENAMELEN];
+    int status;
+
+#ifdef MSWINGUI
+    short fnamew[MAXFILENAMELEN];
+    status=winshell_get_foldernamew(fnamew,"Select a folder");
+    if (!status)
+        return;
+    utf16_to_utf8(foldername,fnamew,MAXFILENAMELEN-1);
+    /*
+    if (!wide_is_legal_ascii_filename(fnamew))
+        {
+        k2gui_alertbox(0,"Non-ASCII characters!",
+                   "Cannot select a folder name with non-ASCII characters!\n\n"
+                   "Please re-choose a folder.");
+        continue;
+        }
+    wide_to_char(foldername,fnamew);
+    */
+#else
+    status=0;
+#endif
+    if (status)
+        k2gui_add_file(foldername);
     }
 
 
@@ -1944,10 +1994,10 @@ printf("@k2gui_add_children(already_drawn=%d)\n",already_drawn);
     /* Buttons by file list */
     x0 = k2gui->control[k2gui->ncontrols-1].rect.right;
     y0 = k2gui->control[k2gui->ncontrols-1].rect.top - linesize;
-    for (x1=x0,j=0,i=1;i>=0;i--,j++,x1-=(w+fs))
+    for (x1=x0,j=0,i=2;i>=0;i--,j++,x1-=(w+fs))
         {
         double xl;
-        static char *button_label[2]={"&ADD FILE","&REMOVE FILE"};
+        static char *button_label[3]={"&ADD FILE","ADD FOLDER","&REMOVE ITEM"};
         WILLUSGUIRECT trect;
 
         xl = 1.00;
@@ -3069,6 +3119,9 @@ int k2gui_previewing(void)
 static void k2gui_preview_start(void)
 
     {
+#if (WILLUSDEBUGX & 1)
+printf("@k2gui_preview_start...\n");
+#endif
     if (!k2gui_preview_done())
         {
         k2gui_preview_terminate();
@@ -3110,6 +3163,9 @@ static void k2gui_preview_start(void)
 #if (defined(WIN32) || defined(WIN64))
 win_sleep(100);
 #endif
+#if (WILLUSDEBUGX & 1)
+printf("Exiting k2gui_preview_start.\n");
+#endif
     }
 
 
@@ -3124,6 +3180,9 @@ static void k2gui_preview_make_bitmap(char *data)
     char *buf;
     static char *funcname="k2gui_preview_make_bitmap";
 
+#if (WILLUSDEBUGX & 1)
+printf("@k2gui_preview_make_bitmap...\n");
+#endif
     if (k2gui->k2conv->k2files.n<1)
         {
         k2gui_preview_cleanup(1);
@@ -3188,6 +3247,9 @@ printf("Preview bitmap file name = '%s'\n",buf);
     willus_mem_free((double **)&buf,funcname);
     willus_mem_free((double **)&k2conv,funcname);
     k2gui_preview_cleanup(k2gui->pbitmap.width<0 ? 5 : (k2gui->pbitmap.width==0 ? 4 : 0));
+#if (WILLUSDEBUGX & 1)
+printf("Exiting k2gui_preview_make_bitmap.\n");
+#endif
     }
 
 

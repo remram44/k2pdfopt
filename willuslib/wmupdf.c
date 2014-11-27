@@ -1225,7 +1225,7 @@ static int stream_deflate(pdf_document *xref,fz_context *ctx,int pageref,int pag
     **         instead use compression options for fz_write_document.
     */
     wfile_abstmpnam(tempfile);
-    f=fopen(tempfile,"wb");
+    f=wfile_fopen_utf8(tempfile,"wb");
     if (f==NULL)
         aprintf("%s",errmsg);
     else
@@ -1238,12 +1238,12 @@ static int stream_deflate(pdf_document *xref,fz_context *ctx,int pageref,int pag
     nw=wfile_size(tempfile);
     fz_resize_buffer(ctx,strbuf,nw+1);
     fz_buffer_storage(ctx,strbuf,&p);
-    f=fopen(tempfile,"rb");
+    f=wfile_fopen_utf8(tempfile,"rb");
     if (f==NULL || fread(p,1,nw,f)<nw)
         aprintf("%s",errmsg);
     if (f!=NULL)
         fclose(f);
-    remove(tempfile);
+    wfile_remove_utf8(tempfile);
     p[nw]='\n';
     strbuf->len=nw+1;
     pdf_update_stream(xref,pageref,strbuf);

@@ -286,6 +286,11 @@ typedef double  real;
 #include <stdarg.h>
 
 #define MAXFILENAMELEN 512
+/*
+** My somewhat arbitrary limits
+*/
+#define MAXUTF8PATHLEN  4096
+#define MAXUTF16PATHLEN 4096
 
 /* ansi.c */
 #ifndef __ANSI_H__
@@ -633,9 +638,21 @@ int structtm_from_datetime(struct tm *date,char *datetime);
 int structtm_from_date(struct tm *date,char *datestr);
 int structtm_from_time(struct tm *date,char *time);
 char *wstrtok(char *s,char *t);
+int wide_is_ascii(short *s);
+int utf8_is_ascii(char *s);
+int wide_is_legal_ascii_filename(short *s);
+int wide_strlen(short *s);
+void wide_strcpy(short *d,short *s);
+char  *wide_to_char(char *d,short *s);
+short *char_to_wide(short *d,char *s);
 int utf8_to_unicode(int *d,char *s,int maxlen);
 int utf8_length(int *s,int n);
 char *unicode_to_utf8(char *d,int *s,int n);
+int utf8_to_utf16_alloc(void **d,char *s);
+int utf16_to_utf8_alloc(void **d,short *s);
+int utf8_to_utf16(short *d,char *s,int maxlen);
+int utf16_to_utf8(char *d,short *s,int maxlen);
+int hexcolor(char *s);
 
 
 #ifdef WIN32
@@ -799,6 +816,9 @@ int wfile_find_file(char *fullname,char *basename,char *folderlist[],char *drive
                     int checkpath,int cwd,int exedir,char *envdir);
 int wfile_smartfind(char *fullname,char *basename,char *folder,int recursive);
 void wfile_remove_file_plus_parent_dir(char *tempfile);
+FILE *wfile_fopen_utf8(char *filename,char *mode);
+int wfile_remove_utf8(char *filename);
+int wfile_rename_utf8(char *filename1,char *filename2);
 
 /* wzfile.c */
 typedef struct
@@ -861,6 +881,8 @@ int process_launch_ex(char *command,char *cmdlineopts,int inherits,
                       int detached,char *pwd,int flags,int *pnum);
 int detail_process(char *exename,char *cmdlineopts,int inherits,
                    int swflags,int dwflags,int cflags,char *pwd);
+int win_createprocess_utf8(char *exename,char *cmdline,int inherits,int cflags,
+                           char *pwd,void *si,void *pi);
 int process_done(int *exitcode);
 int process_done_ex(int procnum,int *exitcode);
 int win_terminate_process(int procnum);
@@ -932,11 +954,19 @@ int win_set_path(char *path,int syspath);
 int win_registry_search(char *data,int maxlen,char *basename,char *keyroot,int recursive);
 int win_get_user_and_domain(char *szUser,int maxlen,char *szDomain,int maxlen2);
 int win_has_own_window(void);
+int win_symlink(char *linkname,char *target,int maxlen,int *linksize);
+int win_textout(void *hdc,int x,int y,char *s);
+int win_textout_utf8(void *hdc,int x,int y,char *s);
+int win_gettextextentpoint_utf8(void *hdc,char *s,long *dx,long *dy);
+int win_close_handle(void *handle);
+void *win_shared_handle_utf8(char *filename);
 #endif
 
 /* winshell.c */
 #ifdef WIN32
-int win_resolve_shortcut(char *shortcut,char *target,int maxlen);
+int win_resolve_shortcut(void *shortcut,void *target,int maxlen,int wide);
+int winshell_get_foldername(char *foldername,char *title);
+int winshell_get_foldernamew(short *foldername,char *title);
 #endif
 
 /* winmbox.c */
@@ -989,6 +1019,8 @@ void win_icons_from_exe(void **iconr,void **smalliconr);
 #ifdef WIN32
 int wincomdlg_get_filename(char *filename,int maxlen,char *filter,char *title,char *defext,
                            int multiselect,int must_exist,int for_writing);
+int wincomdlg_get_filenamew(short *filename,int maxlen,char *filter,char *title,char *defext,
+                            int multiselect,int must_exist,int for_writing);
 #endif
 
 /* wsys.c */
@@ -1095,6 +1127,7 @@ int filelist_fill_from_disk_1(FILELIST *fl,char *filespec,
 int filelist_create_zipfile(FILELIST *fl,char *zipfile,FILE *out);
 void filelist_date_recursively(FILELIST *fl);
 void filelist_zero_seconds(FILELIST *fl);
+void filelist_round_seconds(FILELIST *fl);
 void filelist_adjust_archive_datestamps_for_dst(FILELIST *fl,char *zipfile);
 int filelist_write_tar_list(FILELIST *fl,char *filename);
 int filelist_fill_from_zip(FILELIST *fl,char *zipfile,char *wildspec);
@@ -1120,6 +1153,7 @@ int filelist_use_file(char *fullname,char *include_only[],char *exclude[]);
 int filelist_dir_excluded(char *dirname,char *include_only[],char *exclude[]);
 int filelist_dir_name_match(char *pattern,char *dirname);
 void filelist_remove_files_larger_than(FILELIST *fl,double bytes);
+void filelist_reslash(FILELIST *fl);
 
 /* linux.c */
 int linux_which(char *exactname,char *exename);
@@ -1657,7 +1691,6 @@ int  willusgui_font_is_calibri(void);
 */
 void willusgui_font_init(WILLUSGUIFONT *font);
 void willusgui_start_browser(char *link);
-int  willusgui_control_gettext(WILLUSGUICONTROL *control,char *buf,int maxlen);
 int  willusgui_control_get_checked(WILLUSGUICONTROL *control);
 void willusgui_control_set_checked(WILLUSGUICONTROL *control,int checked);
 int  willusgui_control_dropdownlist_get_selected_item(WILLUSGUICONTROL *control,char *buf);
@@ -1675,6 +1708,8 @@ void *willusgui_control_handle_with_focus(void);
 void willusgui_window_set_redraw(WILLUSGUIWINDOW *window,int status);
 int  willusgui_file_select_dialog(char *buf,int maxlen,char *allowedfiles,
                                    char *prompt,char *defext,int for_writing);
+int willusgui_file_select_dialogw(short *buf,int maxlen,char *allowedfiles,
+                               char *prompt,char *defext,int for_writing);
 void willusgui_background_bitmap_blit(WILLUSGUIWINDOW *win,WILLUSBITMAP *bmp);
 void *willusgui_semaphore_create(char *name);
 void willusgui_semaphore_release(void *semaphore);

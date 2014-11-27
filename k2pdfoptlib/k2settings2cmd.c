@@ -440,6 +440,8 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
     double_check(cmdline,nongui,"-comax",&src->column_offset_max,dst->column_offset_max);
     integer_check(cmdline,NULL,"-col",&src->max_columns,dst->max_columns);
     string_check(cmdline,NULL,"-p",src->pagelist,dst->pagelist);
+    string_check(cmdline,nongui,"-colorfg",src->dst_fgcolor,dst->dst_fgcolor);
+    string_check(cmdline,nongui,"-colorbg",src->dst_bgcolor,dst->dst_bgcolor);
     string_check(cmdline,nongui,"-bpl",src->bpl,dst->bpl);
     string_check(cmdline,nongui,"-toclist",src->toclist,dst->toclist);
     string_check(cmdline,nongui,"-tocsave",src->tocsavefile,dst->tocsavefile);

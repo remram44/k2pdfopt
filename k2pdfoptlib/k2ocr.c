@@ -175,7 +175,9 @@ printf("Call #1. k2ocr_ocrwords_fill_in\n");
         ** If using built-in source-file OCR layer, don't need to scan bitmap
         ** for text rows.
         */
+#if (WILLUSDEBUGX & 32)
 printf("\nwrectmaps->n=%d, dst_ocr='%c'\n",region->wrectmaps->n,k2settings->dst_ocr);
+#endif
         if (k2settings->dst_ocr!='m' || region->wrectmaps->n!=1)
             bmpregion_find_textrows(&pageregions->pageregion[i].bmpregion,k2settings,0,1);
         pageregions->pageregion[i].bmpregion.wrectmaps = region->wrectmaps;
@@ -211,7 +213,7 @@ k2printf("@ocrwords_fill_in...\n");
 #endif
 /*
 {
-char filename[256];
+char filename[MAXFILENAMELEN];
 count++;
 sprintf(filename,"out%03d.png",count);
 bmp_write(src,filename,stdout,100);
@@ -280,7 +282,7 @@ printf("dst_ocr='%c', ocrtessstatus=%d\n",k2settings->dst_ocr,k2ocr_tess_status)
 {
 static int counter=1;
 int i;
-char filename[256];
+char filename[MAXFILENAMELEN];
 WILLUSBITMAP *bmp,_bmp;
 bmp=&_bmp;
 bmp_init(bmp);
@@ -316,7 +318,7 @@ fflush(stdout);
                                           textwords->textrow[j].c2,
                                           textwords->textrow[j].r2,3,0,1,NULL);
 #ifdef HAVE_GOCR_LIB
-            else if (k2settings->dst_ocr=='g')
+            else if (k2settings->dst_ocr=='g' || k2settings->dst_ocr=='t')
 #endif
 #endif
 #ifdef HAVE_GOCR_LIB
@@ -338,7 +340,7 @@ printf("..");
 fflush(stdout);
 if (wordbuf[0]!='\0')
 {
-char filename[256];
+char filename[MAXFILENAMELEN];
 FILE *f;
 sprintf(filename,"word%04d.txt",counter);
 f=fopen(filename,"wb");
@@ -535,7 +537,7 @@ fprintf(f,"//nc\n");
 #endif
 
     /* Map word PDF positions (in source file) to destination bitmap pixels */
-    /* I'm not sure this will work entirely correctly with left-to-right text */
+    /* I'm not sure this will work entirely correctly with right-to-left text */
 #if (WILLUSDEBUGX & 0x10000)
 printf("words->n=%d\n",words->n);
 #endif
@@ -549,7 +551,7 @@ printf("words->n=%d\n",words->n);
             int n,dn;
 
             /*
-            ** Make copy of since the function call below can modify the value inside "word"
+            ** Make copy since the function call below can modify the value inside "word"
             */
             word=&_word;
             ocrword_copy(word,&words->word[i]); /* Allocates new memory */
@@ -615,6 +617,13 @@ printf("ALL DONE.\n");
 ** Determine pixel locations of OCR word on source bitmap region.
 ** Return 1 if any part of word is within region, 0 if not.
 **
+** If returns 1, then:
+**
+**     wrectmaps->wrectmap[(*index)] is the region containing the word
+**
+**     (*i2) gets the index of the "last" letter of the word which is still within
+**        the wrectmaps->wrectmap[(*index)].
+**
 ** WARNING:  Contents of "word" may be modified.
 **
 */
@@ -645,6 +654,9 @@ printf("wrectmaps->n = %d\n",wrectmaps->n);
 
 /*
 ** WARNING:  Contents of "word" may be modified.
+**
+** If 1 is returned, (*index2) gets the index to the "last" letter of the word that 
+** is still within the wrectmap.
 */
 static int wrectmap_srcword_inside(WRECTMAP *wrectmap,OCRWORD *word,BMPREGION *region,int *index2)
 

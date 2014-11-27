@@ -48,6 +48,9 @@ void k2pdfopt_proc_wildarg(K2PDFOPT_SETTINGS *k2settings,char *arg,int process,
     {
     int i;
 
+#if (WILLUSDEBUGX & 1)
+printf("@k2pdfopt_proc_wildarg(%s)\n",arg);
+#endif
     /* Init width to -1 */
     if (k2settings->preview_page!=0 && k2out->bmp!=NULL)
         k2out->bmp->width = -1;
@@ -69,8 +72,13 @@ void k2pdfopt_proc_wildarg(K2PDFOPT_SETTINGS *k2settings,char *arg,int process,
                 {
                 char buf[512];
                 sprintf(buf,"File or folder %s cannot be opened.",arg);
-                k2gui_cbox_increment_error_count();
-                k2gui_cbox_set_pages_completed(0,buf);
+                if (k2settings->preview_page>0)
+                    k2gui_alertbox(0,"File not found",buf);
+                else
+                    {
+                    k2gui_cbox_increment_error_count();
+                    k2gui_cbox_set_pages_completed(0,buf);
+                    }
                 }
 #endif
             return;
@@ -100,11 +108,15 @@ static void k2pdfopt_proc_arg(K2PDFOPT_SETTINGS *k2settings,char *arg,int proces
                               K2PDFOPT_OUTPUT *k2out)
 
     {
-    char filename[256];
+    char filename[MAXFILENAMELEN];
     int i;
     double rot;
     int autorot;
 
+#if (WILLUSDEBUGX & 1)
+printf("@k2pdfopt_proc_arg(%s)\n",arg);
+printf("wfile_status(%s) = %d\n",arg,wfile_status(arg));
+#endif
     strcpy(filename,arg);
     if (wfile_status(filename)==0)
         {
@@ -118,7 +130,10 @@ static void k2pdfopt_proc_arg(K2PDFOPT_SETTINGS *k2settings,char *arg,int proces
             char buf[512];
             k2gui_cbox_increment_error_count();
             sprintf(buf,"File %s cannot be opened.",filename);
-            k2gui_cbox_set_pages_completed(0,buf);
+            if (k2settings->preview_page>0)
+                k2gui_alertbox(0,"File not found",buf);
+            else
+                k2gui_cbox_set_pages_completed(0,buf);
             }
 #endif
         return;
@@ -134,11 +149,19 @@ static void k2pdfopt_proc_arg(K2PDFOPT_SETTINGS *k2settings,char *arg,int proces
         {
         static char *eolist[]={""};
         static char *pdflist[]={"*.pdf","*.djvu","*.djv","*.ps","*.eps",""};
+        static char *bmplist[]={"*.png","*.jpg",""};
         FILELIST *fl,_fl;
+        FILELIST *fl2,_fl2;
+        int nbmp;
 
         fl=&_fl;
         filelist_init(fl);
         filelist_fill_from_disk(fl,filename,pdflist,eolist,0,0);
+        fl2=&_fl2;
+        filelist_init(fl2);
+        filelist_fill_from_disk(fl2,filename,bmplist,eolist,0,0);
+        nbmp=fl2->n;
+        filelist_free(fl2);
         if (fl->n>0)
             {
             for (i=0;i<fl->n;i++)
@@ -171,6 +194,8 @@ static void k2pdfopt_proc_arg(K2PDFOPT_SETTINGS *k2settings,char *arg,int proces
                 }
             }
         filelist_free(fl);
+        if (nbmp==0)
+            return;
         }
     if (autorot)
         {
@@ -225,8 +250,8 @@ static double k2pdfopt_proc_one(K2PDFOPT_SETTINGS *k2settings0,char *filename,do
     static K2PDFOPT_SETTINGS _k2settings,*k2settings;
     static MASTERINFO _masterinfo,*masterinfo;
     static PDFFILE _mpdf,*mpdf;
-    char dstfile[256];
-    char markedfile[256];
+    char dstfile[MAXFILENAMELEN];
+    char markedfile[MAXFILENAMELEN];
     char rotstr[128];
     WILLUSBITMAP _src,*src;
     WILLUSBITMAP _srcgrey,*srcgrey;
@@ -250,6 +275,9 @@ static double k2pdfopt_proc_one(K2PDFOPT_SETTINGS *k2settings0,char *filename,do
 extern void willus_mem_debug_update(char *);
 */
 
+#if (WILLUSDEBUGX & 1)
+printf("@k2pdfopt_proc_one(%s)\n",filename);
+#endif
 /*
 printf("@k2pdfopt_proc_one(filename='%s', rot_deg=%g, preview_bitmap=%p)\n",filename,rot_deg,k2out->bmp);
 */
@@ -298,7 +326,7 @@ printf("@k2pdfopt_proc_one(filename='%s', rot_deg=%g, preview_bitmap=%p)\n",file
     filelist_init(fl);
     if (folder)
         {
-        char basename[256];
+        char basename[MAXFILENAMELEN];
         static char *iolist[]={"*.png","*.jpg",""};
         static char *eolist[]={""};
 
@@ -418,22 +446,38 @@ printf("@k2pdfopt_proc_one(filename='%s', rot_deg=%g, preview_bitmap=%p)\n",file
             k2out->status=4;
             return(0.);
             }
-        if (pdffile_init(&masterinfo->outfile,dstfile,1)==NULL)
+        {
+        int can_write;
+        if (!k2settings->use_crop_boxes)
+            can_write = (pdffile_init(&masterinfo->outfile,dstfile,1)!=NULL);
+        else
             {
-            k2printf(TTEXT_WARN "\n\aCannot open PDF file %s for output!" TTEXT_NORMAL "\n\n",dstfile);
-#ifdef HAVE_K2GUI
-            if (k2gui_active())
+            FILE *f1;
+            f1 = wfile_fopen_utf8(dstfile,"w");
+            can_write = (f1!=NULL);
+            if (f1!=NULL)
                 {
-                k2gui_okay("Failed to open output file",
-                           "Cannot open PDF file %s for output!\n"
-                           "Maybe another application has it open already?\n"
-                           "Conversion failed!",dstfile);
-                k2out->status=4;
-                return(0.);
+                fclose(f1);
+                wfile_remove_utf8(dstfile);
                 }
+            if (!can_write)
+                {
+                k2printf(TTEXT_WARN "\n\aCannot open PDF file %s for output!" TTEXT_NORMAL "\n\n",dstfile);
+#ifdef HAVE_K2GUI
+                if (k2gui_active())
+                    {
+                    k2gui_okay("Failed to open output file",
+                               "Cannot open PDF file %s for output!\n"
+                               "Maybe another application has it open already?\n"
+                               "Conversion failed!",dstfile);
+                    k2out->status=4;
+                    return(0.);
+                    }
 #endif
-            k2sys_exit(k2settings,30);
+                k2sys_exit(k2settings,30);
+                }
             }
+        }
         k2out->outname=NULL;
         /* Return output file name in k2out for GUI */
         willus_mem_alloc((double **)&k2out->outname,(long)(strlen(dstfile)+1),funcname);
@@ -585,7 +629,7 @@ printf("@k2pdfopt_proc_one(filename='%s', rot_deg=%g, preview_bitmap=%p)\n",file
     bormean=1.0;
     for (i=0;1;i+=pagestep)
         {
-        char bmpfile[256];
+        char bmpfile[MAXFILENAMELEN];
         int pageno;
 /*
 sprintf(bmpfile,"i=%d",i);

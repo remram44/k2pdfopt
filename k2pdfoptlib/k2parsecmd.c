@@ -54,7 +54,8 @@ static int next_is_integer(CMDLINEINPUT *cl,int setvals,int quiet,int *good,int 
                         if (!next_is_integer(cl,setvals==1,quiet,&good,&readnext,&k2settings->y)) \
                               break; \
                         continue; }
-#define PLUS_MINUS_BITOPTION(x,y,orval,plusval,sv) if (!stricmp(cl->cmdarg,x) || !stricmp(cl->cmdarg,x "-")) \
+/* Fixed to recognize + option, v2.22 */
+#define PLUS_MINUS_BITOPTION(x,y,orval,plusval,sv) if (!stricmp(cl->cmdarg,x) || !stricmp(cl->cmdarg,x "-") || !stricmp(cl->cmdarg,x "+")) \
             { \
             if (setvals==sv) \
                 { \
@@ -1185,6 +1186,8 @@ printf("units=%d\n",k2settings->srccropmargins.units[0]);
                 readnext=0;
             continue;
             }
+        NEEDS_STRING("-colorbg",dst_bgcolor,11);
+        NEEDS_STRING("-colorfg",dst_fgcolor,11);
         NEEDS_STRING("-toclist",toclist,2047);
         NEEDS_STRING("-tocsave",tocsavefile,MAXFILENAMELEN-1);
         NEEDS_STRING("-bpl",bpl,2047);

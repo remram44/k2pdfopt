@@ -40,6 +40,17 @@ LRESULT CALLBACK k2mswingui_process_messages(HWND hwnd,UINT iMsg,WPARAM wParam,L
 #endif
 
 
+short *k2gui_osdep_wide_cmdline(void)
+
+    {
+#ifdef MSWINGUI
+    return((short *)GetCommandLineW());
+#else
+    return(NULL);
+#endif
+    }
+
+
 void k2gui_osdep_init(K2GUI *k2gui0) /* ,void *hinst,void *hprevinst) */
 
     {

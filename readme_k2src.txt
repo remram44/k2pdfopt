@@ -1,7 +1,7 @@
 K2pdfopt build help.
 http://willus.com
 Original: 7 September 2012
-Last updated: 25 Jul 2014 (v2.21)
+Last updated: 26 Nov 2014 (v2.30)
 
 This "read me" file describes the source code distribution for k2pdfopt.
 
@@ -44,7 +44,7 @@ NOTE 4 below).
     TO INCLUDE MuPDF LIBRARY (search for HAVE_MUPDF in k2pdfopt.c)
     --------------------------------------------------------------
     4.  JBIG2Dec 0.11 (jbig2dec.sourceforge.net)
-    5.  OpenJPEG 2.0.0 (www.openjpeg.org)
+    5.  OpenJPEG 2.1.0 (www.openjpeg.org)
     6.  FreeType 2.5.3 (freetype.sourceforge.net/index2.html)
     7.  Mupdf 1.5 (mupdf.com) -- SEE NOTE 1.
 
@@ -96,7 +96,7 @@ Notes
    to build the project without using these files (I do not use them).
    
 
-Build Steps for k2pdfopt on Windows (gcc 4.8.3)
+Build Steps for k2pdfopt on Windows (gcc 4.9.2)
 -----------------------------------------------
 My compile steps with gcc (MinGW) are as follows (assuming all the libraries are built
 to libxxx.a files in d:\3rdparty_lib and headers are in d:\3rdparty_include):

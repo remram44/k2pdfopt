@@ -659,7 +659,7 @@ void k2gui_cbox_set_files_completed(int nfiles,char *message)
 void k2gui_cbox_set_pages_completed(int n,char *message)
 
     {
-    char buf[256];
+    char buf[MAXFILENAMELEN+80]; /* More room, v2.22 */
     int color;
     double progress;
 

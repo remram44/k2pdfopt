@@ -417,14 +417,14 @@ WZFILE *wzopen(char *filename,char *mode)
         if (p==NULL)
             {
             wzfile_convert_to_uncompressed_name(newname,filename);
-            p=(void *)fopen(newname,modestd);
+            p=(void *)wfile_fopen_utf8(newname,modestd);
             type=0;
             }
         }
     else
         {
 #endif
-        p=(void *)fopen(filename,modestd);
+        p=(void *)wfile_fopen_utf8(filename,modestd);
         type=0;
 #ifdef HAVE_Z_LIB
         if (p==NULL)
