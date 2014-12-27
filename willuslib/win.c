@@ -22,7 +22,7 @@
 
 #include "willus.h"
 
-#ifdef WIN32
+#ifdef HAVE_WIN32_API
 
 #include <windows.h>
 #include <stdio.h>
@@ -2484,4 +2484,4 @@ void *win_shared_handle_utf8(char *filename)
 
 
 
-#endif /* WIN32 */
+#endif /* HAVE_WIN32_API */

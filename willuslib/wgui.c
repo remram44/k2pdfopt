@@ -29,7 +29,7 @@
 #include <ctype.h>
 #include <time.h>
 
-#if (!defined(MSWINGUI) && (defined(WIN32) || defined(WIN64)))
+#if (!defined(MSWINGUI) && defined(HAVE_WIN32_API))
 #define MSWINGUI
 #endif
 

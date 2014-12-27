@@ -22,7 +22,7 @@
 
 #include "willus.h"
 
-#if (defined(WIN32) || defined(WIN64))
+#ifdef HAVE_WIN32_API
 
 #include <windows.h>
 #include <stdio.h>
@@ -988,6 +988,7 @@ static void add_gray(int *r0,int *g0,int *b0,int delta)
 
 /*
 ** Assumes button was created WITHOUT WS_BORDER flag!
+** Does not work correctly w/o PNG library support.
 */
 void winmbox_checkbox_button_draw(void *hdc0,void *rect0,int state,void *hfont0,
                                   char *text,int textcolorrgb,int checked,
@@ -1037,6 +1038,7 @@ void winmbox_checkbox_button_draw(void *hdc0,void *rect0,int state,void *hfont0,
     dx=cbw*3/2;
     n8=cbw*4/3;
 
+#if (defined(HAVE_PNG_LIB))
     /* Get checkmark bitmap */
     if (checked && n8!=x8)
         {
@@ -1156,6 +1158,7 @@ void winmbox_checkbox_button_draw(void *hdc0,void *rect0,int state,void *hfont0,
             }
         bmp_free(bmp);
         }
+#endif
 
     /* Get background bitmap */
     if (bgbmp!=NULL)
@@ -1506,7 +1509,10 @@ void winmbox_button_draw(void *hdc0,void *rect0,int state,int basecolorrgb,
         DeleteObject(brush[i]);
     }
    
- 
+
+/*
+** Does not work entirely correctly without PNG lib.
+*/ 
 static int special_button_text(HDC hdc,char *text,RECT *rect,HBRUSH brush,HPEN pen,int simple,
                                int r0,int g0,int b0)
 
@@ -1602,6 +1608,7 @@ static int special_button_text(HDC hdc,char *text,RECT *rect,HBRUSH brush,HPEN p
                 nbmpdata=n_fitpage;
                 bmpdata=xfitpage;
                 }
+#if (defined(HAVE_PNG_LIB))
             if (!bmp_read_png_stream(bmp,(void *)bmpdata,nbmpdata,NULL))
                 {
                 WILLUSBITMAP *bmpsmall,_bmpsmall;
@@ -1633,6 +1640,7 @@ static int special_button_text(HDC hdc,char *text,RECT *rect,HBRUSH brush,HPEN p
                 bmp_free(bmpsmall);
                 bmp_free(bmp);
                 }
+#endif
             }
         }
     if (ik>=0 && ik<=5)
@@ -1909,4 +1917,4 @@ static HFONT winmbox_get_font(double fsize)
     return(hf);
     }
 
-#endif /* WIN32/64 */
+#endif /* HAVE_WIN32_API */

@@ -180,6 +180,11 @@ void k2pdfopt_settings_init(K2PDFOPT_SETTINGS *k2settings)
     k2settings->dst_bgcolor[0]='\0';
     k2settings->dst_fgtype=0;
     k2settings->dst_bgtype=0;
+
+    /* v2.31 */
+#ifdef HAVE_GHOSTSCRIPT
+    k2settings->ppgs=0;
+#endif
     }
 
 

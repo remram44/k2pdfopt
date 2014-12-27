@@ -360,7 +360,7 @@ char *wfile_getenv(char *envvar)
 int wfile_findfirst(const char *spec,wfile *wptr)
 
     {
-#if (defined(WIN32))
+#if (defined(HAVE_WIN32_API))
     if (wsys_win32_api())
         {
         WIN32_FIND_DATAW *fd;
@@ -420,7 +420,7 @@ int wfile_findfirst(const char *spec,wfile *wptr)
 int wfile_findnext(wfile *wptr)
 
     {
-#if (defined(WIN32))
+#if (defined(HAVE_WIN32_API))
     if (wsys_win32_api())
         {
         WIN32_FIND_DATAW *fd;
@@ -508,7 +508,7 @@ void wfile_findclose(wfile *wptr)
 int wfile_date(const char *filename,struct tm *filedate)
 
     {
-#if (defined(WIN32))
+#if (defined(HAVE_WIN32_API))
     void *handle;
 //    OFSTRUCT    buf;
     FILETIME    ctime,mtime,atime;
@@ -709,7 +709,7 @@ void wfile_date_decrement_hour(struct tm *date)
 void wfile_set_mod_date(char *filename,struct tm *date)
 
     {
-#ifdef WIN32
+#ifdef HAVE_WIN32_API
     win_set_mod_filetime(filename,date);
 #else
     char cmdbuf[MAXFILENAMELEN];
@@ -1354,7 +1354,7 @@ int wfile_strong_remove(char *filename)
 
     /* First try removing the file */
     status=wfile_remove_utf8(filename);
-#ifdef WIN32
+#ifdef HAVE_WIN32_API
 #define PROBLEM_ATTRIBUTE (FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_SYSTEM)
     /* No more Mr. Nice Guy */
     if (status)
@@ -1391,7 +1391,7 @@ int wfile_strong_rmdir(char *dirname)
     int     status;
 
     status=rmdir(dirname);
-#ifndef WIN32
+#ifndef HAVE_WIN32_API
     return(status);
 #else
     if (status)

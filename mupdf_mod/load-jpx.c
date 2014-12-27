@@ -43,7 +43,7 @@ static OPJ_SIZE_T fz_opj_stream_read(void * p_buffer, OPJ_SIZE_T p_nb_bytes, voi
 	if (len < 0)
 		len = 0;
 	if (len == 0)
-		return (OPJ_SIZE_T)-1;  /* End of file! */
+		return (OPJ_SIZE_T)-1; /* End of file! */
 	if ((OPJ_SIZE_T)len > p_nb_bytes)
 		len = p_nb_bytes;
 	memcpy(p_buffer, sb->data + sb->pos, len);
@@ -105,6 +105,7 @@ fz_load_jpx(fz_context *ctx, unsigned char *data, int size, fz_colorspace *defcs
 	opj_set_error_handler(codec, fz_opj_error_callback, ctx);
 	if (!opj_setup_decoder(codec, &params))
 	{
+		opj_destroy_codec(codec);
 		fz_throw(ctx, FZ_ERROR_GENERIC, "j2k decode failed");
 	}
 
@@ -116,6 +117,7 @@ fz_load_jpx(fz_context *ctx, unsigned char *data, int size, fz_colorspace *defcs
 	opj_stream_set_read_function(stream, fz_opj_stream_read);
 	opj_stream_set_skip_function(stream, fz_opj_stream_skip);
 	opj_stream_set_seek_function(stream, fz_opj_stream_seek);
+    /* willus mod for OpenJPEG v2.1.0 -- add NULL argument */
 	opj_stream_set_user_data(stream, &sb, NULL);
 	/* Set the length to avoid an assert */
 	opj_stream_set_user_data_length(stream, size);

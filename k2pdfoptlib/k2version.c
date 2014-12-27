@@ -1,4 +1,4 @@
-char *k2pdfopt_version = "v2.30";
+char *k2pdfopt_version = "v2.31";
 /*
 ** k2version.c  K2pdfopt version number and history.
 **
@@ -19,6 +19,29 @@ char *k2pdfopt_version = "v2.30";
 **
 **
 ** VERSION HISTORY
+**
+** v2.31 27 DEC 2014
+**           NEW FEATURES
+**           - Added -ppgs option to post process output with ghostscript pdfwrite
+**             device.  This can improve text selection when there are overlapping
+**             cropped regions.  Recommended in 7 Dec 2014 e-mail.
+**           - In MS Windows GUI, added context-sensitive help.  If you right-click
+**             most controls in the main window, you will get a dialog box explaining
+**             what that control does.
+**           NEW DEVICES
+**           - Added separate Kindle Paperwhite 2 resolution:  710x960.
+**             From 12 Dec 2014 e-mail.
+**           - Added kindle voyage.
+**           BUG FIXES
+**           - Erase vertical lines correctly works from MS Windows GUI again.
+**           OTHER
+**           - Compiled with MuPDF v1.6 library.
+**           - Separated out functions in wmupdf.c that do not depend on MuPDF.
+**             Those are now in wpdf.c.  This helps the KOReader build.
+**             https://github.com/koreader/koreader-base/pull/290 (2 Dec 2014)
+**             Also e-mail on 7 Dec 2014.
+**           - No longer assumes that WIN32 = GUI.  To compile so as not to use
+**             the WIN32 API, define NO_WIN32_API from the compile command line.
 **
 ** v2.30 26 NOV 2014
 **           NEW FEATURES

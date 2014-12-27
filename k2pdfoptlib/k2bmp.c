@@ -65,7 +65,7 @@ return(status);
             k2settings->usegs=1;
             }
 #endif
-#ifdef HAVE_GHOSTSCRIPT_LIB
+#ifdef HAVE_GHOSTSCRIPT
         if (willusgs_init(stdout) < 0)
             {
             k2sys_enter_to_exit(k2settings);

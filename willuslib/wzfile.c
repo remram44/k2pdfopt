@@ -396,14 +396,19 @@ WZFILE *wzopen(char *filename,char *mode)
 #endif
     char mode2[16];
     char modestd[16];
-    int i,j,compress;
+    int i,j;
+#ifdef HAVE_Z_LIB
+    int compress;
 
     compress=0;
+#endif
     for (i=j=0;i<15 && mode[i]!='\0';i++)
         if (mode[i]!='z')
             modestd[j++]=mode[i];
+#ifdef HAVE_Z_LIB
         else
             compress=1;
+#endif
     modestd[j]='\0';
     strcpy(mode2,modestd);
     for (i=0;mode2[i]!='\0' && mode2[i]!='b';i++);

@@ -575,6 +575,19 @@ static char *k2pdfopt_options=
 "                  this is only used with left justification turned on (-j 0).\n"
 */
 "-png              (Default) Use PNG compression in PDF file.  See also -jpeg.\n"
+#ifdef HAVE_GHOSTSCRIPT
+"-ppgs[-]          Post process [do not post process] with ghostscript.  This\n"
+"                  will take the final PDF output and process it using\n"
+"                  ghostscript's pdfwrite device (assuming ghostscript is\n"
+"                  available).  A benefit to doing this is that all \"invisible\"\n"
+"                  and/or overlapping text regions (outside cropping areas) get\n"
+"                  completely removed, so that text selection capability is\n"
+"                  improved.  The actual ghostscript command used is:\n"
+"                  gs -dSAFER -dBATCH -q -dNOPAUSE -sDEVICE=pdfwrite\n"
+"                     -dPDFSETTINGS=/prepress -sOutputFile=<outfile>\n"
+"                     <srcfile>\n"
+"                  The default is not to post process with ghostscript.\n"
+#endif
 "-r[-]             Right-to-left [left-to-right] page scans.  Default is\n"
 "                  left to right.\n"
 #ifdef HAVE_K2GUI

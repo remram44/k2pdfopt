@@ -36,6 +36,9 @@ static int    overwrite_fail(char *outname,double overwrite_minsize_mb);
 static int toclist_valid(char *s,FILE *out);
 static WPDFOUTLINE *wpdfoutline_from_pagelist(char *pagelist,int maxpages);
 static int tocwrites=0;
+#ifdef HAVE_GHOSTSCRIPT
+static void   gs_postprocess(char *filename);
+#endif
 
 
 /*
@@ -502,7 +505,7 @@ printf("@k2pdfopt_proc_one(filename='%s', rot_deg=%g, preview_bitmap=%p)\n",file
         if (src_type==SRC_TYPE_PDF)
             {
             np=wmupdf_numpages(mupdffilename);
-#if (defined(WIN32) || defined(WIN64))
+#ifdef HAVE_WIN32_API
             if (np<0)
                 {
                 int ns;
@@ -893,7 +896,7 @@ wpdfboxes_echo(&masterinfo->pageinfo.boxes,stdout);
 #endif
 #ifdef HAVE_MUPDF_LIB
         /* v2.20 bug fix -- need to compensate for document_scale_factor if its not 1.0 */
-        wmupdf_scale_source_boxes(&masterinfo->pageinfo,1./k2settings->document_scale_factor);
+        wpdfpageinfo_scale_source_boxes(&masterinfo->pageinfo,1./k2settings->document_scale_factor);
         wmupdf_remake_pdf(mupdffilename,dstfile,&masterinfo->pageinfo,1,masterinfo->outline,stdout);
 #endif
         }
@@ -917,6 +920,10 @@ wpdfboxes_echo(&masterinfo->pageinfo.boxes,stdout);
         k2printf(" (%d words)",masterinfo->wordcount);
     k2printf(" written to " TTEXT_MAGENTA "%s" TTEXT_NORMAL " (%.1f MB).\n\n",
             dstfile,size/1024./1024.);
+#ifdef HAVE_GHOSTSCRIPT
+    if (k2settings->ppgs)
+        gs_postprocess(dstfile);
+#endif
     if (k2settings->show_marked_source)
         {
         size=wfile_size(markedfile);
@@ -1214,3 +1221,60 @@ static WPDFOUTLINE *wpdfoutline_from_pagelist(char *pagelist,int maxpages)
         }
     return(outline0);
     }
+
+
+#ifdef HAVE_GHOSTSCRIPT
+static void gs_postprocess(char *filename)
+
+    {
+    char tempname[MAXFILENAMELEN];
+    int status;
+    double size;
+
+    if ((status=willusgs_init(stdout))<0)
+        {
+        static int warn=0;
+        if (warn==0)
+            {
+            k2printf("\a");
+            warn=1;
+            }
+        k2printf("\n" TTEXT_WARN "** Error %d initializing Ghostscript.  Post-process step aborted. **"
+                 TTEXT_NORMAL "\n\n",status);
+        return;
+        }
+    wfile_abstmpnam(tempname);
+    k2printf("Post processing " TTEXT_MAGENTA "%s" TTEXT_NORMAL " with Ghostscript...\n",
+              filename);
+    status=willusgs_ps_to_pdf(tempname,filename,-1,-1,NULL);
+    if (status<0)
+        {
+        static int warn=0;
+        if (warn==0)
+            {
+            k2printf("\a");
+            warn=1;
+            }
+        k2printf("\n" TTEXT_WARN "** Error %d running Ghostscript.  Post-process step aborted. **"
+                 TTEXT_NORMAL "\n\n",status);
+        remove(tempname);
+        return;
+        }
+    status=wfile_copy_file(filename,tempname,0);
+    if (status==0)
+        {
+        static int warn=0;
+        if (warn==0)
+            {
+            k2printf("\a");
+            warn=1;
+            }
+        k2printf("\n" TTEXT_WARN "** Error copying temp file %s to %s.  Post-process error. **"
+                 TTEXT_NORMAL "\n\n",tempname,filename);
+        return;
+        }
+    remove(tempname);
+    size=wfile_size(filename);
+    k2printf(TTEXT_BOLD "    ... %d bytes" TTEXT_NORMAL " written to " TTEXT_MAGENTA "%s" TTEXT_NORMAL " (%.1f MB).\n",(int)size,filename,size/1024./1024.);
+    }
+#endif

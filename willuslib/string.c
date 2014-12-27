@@ -160,10 +160,38 @@ int mem_get_line_cf(char *buf,int maxlen,char *cptr,long *cindex,long csize)
 /*
 ** Return first index where pattern occurs in buffer.  Return -1
 ** if pattern does not occur in buffer.  Match is NOT case sensitive.
+**
+** 4 Dec 2014:  Made this much faster.  Significantly improves load
+**              time on Excel spreadsheets.
 */
 int in_string(char *buffer,char *pattern)
 
     {
+    int c,lp;
+    char *b,*p;
+
+    c=tolower(pattern[0]);
+    /* Quickly scan for first letter--if not found, return negative result */
+    for (b=buffer;(*b)!='\0' && tolower(*b)!=c;b++);
+    if ((*b)=='\0')
+        return(-1);
+    lp=strlen(pattern)-1;
+    if (lp<=0)
+        return((int)(b-buffer));
+    p=&pattern[1];
+    while (1)
+        {
+        b++;
+        if (!strnicmp(b,p,lp))
+            return((int)((b-1)-buffer));
+        for (;(*b)!='\0' && tolower(*b)!=c;b++);
+        if ((*b)=='\0')
+            break;
+        }
+    return(-1);
+/*
+** Pre 4 Dec 2014 version:
+**
     int     i,lp,lb;
 
     lp=strlen(pattern);
@@ -174,6 +202,7 @@ int in_string(char *buffer,char *pattern)
         if (!strnicmp(&buffer[i],pattern,lp))
             return(i);
     return(-1);
+*/
     }
 
 

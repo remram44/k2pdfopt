@@ -101,7 +101,7 @@
 #endif
 
 /* Compile w/Windows GUI? */
-#if (defined(WIN32) || defined(WIN64))
+#if (defined(HAVE_WIN32_API) && !defined(K2PDFOPT_KINDLEPDFVIEWER))
 #define HAVE_K2GUI
 #endif
 
@@ -356,6 +356,10 @@ typedef struct
     ** Flag for setting device size--see k2pdfoptsettings_set_margins_and_devsize().
     */
     int devsize_set; /* 0 = device size not set yet */
+    /* v2.31 */
+#ifdef HAVE_GHOSTSCRIPT
+    int ppgs;    /* 1 = post process with ghostscript */
+#endif
     } K2PDFOPT_SETTINGS;
 
 
@@ -921,8 +925,7 @@ void k2pdfopt_files_add_file(K2PDFOPT_FILES *k2files,char *filename);
 void k2pdfopt_files_remove_file(K2PDFOPT_FILES *k2files,char *filename);
 
 #ifdef HAVE_K2GUI
-
-#if ((defined(WIN32) || defined(WIN64)))
+#ifdef HAVE_WIN32_API
 #ifndef MSWINGUI
 #define MSWINGUI
 #endif

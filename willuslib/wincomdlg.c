@@ -23,7 +23,7 @@
 
 #include "willus.h"
 
-#ifdef WIN32
+#ifdef HAVE_WIN32_API
 
 #include <windows.h>
 #include <stdio.h>
@@ -142,4 +142,4 @@ int wincomdlg_get_filenamew(short *filename,int maxlen,char *filter,char *title,
     willus_mem_free((double **)&wfilter,funcname);
     return(status);
     }
-#endif /* WIN32 */
+#endif /* HAVE_WIN32_API */

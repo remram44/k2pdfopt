@@ -22,7 +22,7 @@
 
 #include "willus.h"
 
-#ifdef WIN32
+#ifdef HAVE_WIN32_API
 #include <windows.h>
 #include <shlobj.h>
 /* #include <process.h> */
@@ -174,4 +174,4 @@ int winshell_get_foldernamew(short *foldername,char *title)
     return(0);
     }
 
-#endif /* WIN32 */
+#endif /* HAVE_WIN32_API */

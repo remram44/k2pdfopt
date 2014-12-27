@@ -332,7 +332,7 @@ printf("k2conv->k2settings=%p\n",&k2conv->k2settings);
 ** Test for Franco Vivona (Ittiandro).  Put in delay to see if it helps the
 ** conversion not crash.
 */
-#if (defined(WIN32) || defined(WIN64))
+#ifdef HAVE_WIN32_API
 win_sleep(500);
 #endif
 

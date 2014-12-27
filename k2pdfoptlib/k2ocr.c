@@ -30,6 +30,9 @@ static void k2ocr_ocrwords_fill_in(MASTERINFO *masterinfo,OCRWORDS *words,BMPREG
                                    K2PDFOPT_SETTINGS *k2settings);
 static void ocrword_fillin_mupdf_info(OCRWORD *word,BMPREGION *region);
 #endif
+
+/* Functions to support extracting text from PDF using MuPDF lib */
+#ifdef HAVE_MUPDF_LIB
 static void k2ocr_ocrwords_get_from_ocrlayer(MASTERINFO *masterinfo,OCRWORDS *words,
                                              BMPREGION *region,K2PDFOPT_SETTINGS *k2settings);
 static int ocrword_map_to_bitmap(OCRWORD *word,MASTERINFO *masterinfo,BMPREGION *region,
@@ -38,6 +41,7 @@ static int wrectmap_srcword_inside(WRECTMAP *wrectmap,OCRWORD *word,BMPREGION *r
 static void wtextchars_group_by_words(WTEXTCHARS *wtcs,OCRWORDS *words,
                                       K2PDFOPT_SETTINGS *k2settings);
 static void wtextchars_add_one_row(WTEXTCHARS *wtcs,int i0,int i1,OCRWORDS *words);
+#endif
 
 
 void k2ocr_init(K2PDFOPT_SETTINGS *k2settings)
@@ -226,11 +230,13 @@ bmp_write(src,filename,stdout,100);
 #if (WILLUSDEBUGX & 32)
 k2printf("    %d row%s of text, dst_ocr='%c'\n",region->textrows.n,region->textrows.n==1?"":"s",k2settings->dst_ocr);
 #endif
+#if (defined(HAVE_MUPDF_LIB))
     if (k2settings->dst_ocr=='m')
         {
         k2ocr_ocrwords_get_from_ocrlayer(masterinfo,words,region,k2settings);
         return;
         }
+#endif
     /* Go text row by text row */
     for (i=0;i<region->textrows.n;i++)
         {
@@ -460,6 +466,7 @@ printf("Word: (%5.1f,%5.1f) = %5.1f x %5.1f (page %2d)\n",word->x0,word->y0,word
 ** In a contiguous rectangular region that is mapped to the PDF source file,
 ** find rows of text assuming a single column of text.
 */
+#if (defined(HAVE_MUPDF_LIB))
 static void k2ocr_ocrwords_get_from_ocrlayer(MASTERINFO *masterinfo,OCRWORDS *dwords,
                                              BMPREGION *region,K2PDFOPT_SETTINGS *k2settings)
 
@@ -910,3 +917,4 @@ static void wtextchars_add_one_row(WTEXTCHARS *wtcs,int i0,int i1,OCRWORDS *word
     willus_dmem_free(41,(double **)&word.text,funcname);
     willus_dmem_free(40,(double **)&u16str,funcname);
     }
+#endif /* HAVE_MUPDF_LIB */

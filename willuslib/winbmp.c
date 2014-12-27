@@ -22,7 +22,7 @@
 
 #include "willus.h"
 
-#ifdef WIN32
+#ifdef HAVE_WIN32_API
 
 #include <windows.h>
 /* #include <process.h> */
@@ -801,4 +801,4 @@ static HBITMAP bmp_to_from_winbmp(WILLUSBITMAP *bmp,HBITMAP hBitmap_src)
 
 
 #endif
-/* WIN32 */
+/* HAVE_WIN32_API */
