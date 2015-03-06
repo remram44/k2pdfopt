@@ -43,13 +43,18 @@
 ** 0x40000 = notes debug
 ** 0x80000 = settings2cmd
 ** 0x100000 = memory debug
+** 0x200000 = OCR layer bbox
 **
 ** 0x80000000 = Fake Mupdf
 **
 */
 
 /*
-#define WILLUSDEBUGX 0x4000
+#define WILLUSDEBUGX 0x410f
+*/
+/*
+#define WILLUSDEBUGX 0x400f
+#define WILLUSDEBUG
 #define WILLUSDEBUGX 0x100000
 #define WILLUSDEBUGX 32
 #define WILLUSDEBUGX 0xfff
@@ -276,6 +281,7 @@ typedef struct
     int dst_color;
     int dst_bpc;
     int dst_landscape;
+    char dst_landscape_pages[1024];
     char dst_opname_format[128];
     int src_autostraighten;
     /*
@@ -285,6 +291,7 @@ typedef struct
     double dst_marleft;
     double dst_marright;
     */
+    int autocrop;
     K2CROPBOX dstmargins;
     K2CROPBOX dstmargins_org;
     int pad_left;
@@ -566,6 +573,10 @@ typedef struct
     WRECTMAPS rectmaps;   /* KOReader add to hold WRECTMAPs of the output bitmap */
 #endif
     WPDFPAGEINFO pageinfo;  /* Holds crop boxes for native PDF output */
+    /* v2.32:  Maintained by masterinfo_new_source_page_init() */
+    int landscape;
+    int landscape_next;
+    int nextpage;
     int srcpages;         /* Total pages in source file */
     int rows;             /* Rows stored within the bmp structure */
     int published_pages;  /* Count of published pages */
@@ -652,6 +663,7 @@ void k2pdfopt_proc_wildarg(K2PDFOPT_SETTINGS *k2settings,char *arg,int process,
                            K2PDFOPT_OUTPUT *k2out);
 void wpdfboxes_echo(WPDFBOXES *boxes,FILE *out);
 void overwrite_set(int status);
+void k2file_get_overlay_bitmap(WILLUSBITMAP *bmp,double *dpi,char *filename,char *pagelist);
 
 /* k2sys.c */
 void k2sys_init(void);
@@ -796,6 +808,7 @@ double line_spacing_from_font_size(double lcheight,double h5050,double capheight
 /* k2settings.c */
 void k2pdfopt_settings_init(K2PDFOPT_SETTINGS *k2settings);
 K2NOTES *page_has_notes_margin(K2PDFOPT_SETTINGS *k2settings,MASTERINFO *masterinfo);
+int  k2pdfopt_settings_landscape(K2PDFOPT_SETTINGS *k2settings,int pageno,int maxpages);
 void k2pdfopt_conversion_init(K2PDFOPT_CONVERSION *k2conv);
 void k2pdfopt_conversion_close(K2PDFOPT_CONVERSION *k2conv);
 void k2pdfopt_settings_copy(K2PDFOPT_SETTINGS *dst,K2PDFOPT_SETTINGS *src);
@@ -843,7 +856,7 @@ void masterinfo_flush(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings);
 int  masterinfo_new_source_page_init(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings,
                          WILLUSBITMAP *src,WILLUSBITMAP *srcgrey,WILLUSBITMAP *marked,
                          BMPREGION *region,double rot_deg,double *bormean,
-                         char *rotstr,int pageno,FILE *out);
+                         char *rotstr,int pageno,int nextpage,FILE *out);
 void masterinfo_add_bitmap(MASTERINFO *masterinfo,WILLUSBITMAP *src,
                     K2PDFOPT_SETTINGS *k2settings,int npageboxes,
                     int justification_flags,int whitethresh,int nocr,int dpi,
@@ -860,8 +873,8 @@ int masterinfo_get_next_output_page(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2
 int masterinfo_should_flush(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings);
 void get_dest_margins(int *margins_pixels,K2PDFOPT_SETTINGS *k2settings,double dpi,
                       int width_pixels,int height_pixels);
-void masterinfo_get_margins(double *margins_inches,K2CROPBOX *cbox,MASTERINFO *masterinfo,
-                            BMPREGION *region);
+void masterinfo_get_margins(K2PDFOPT_SETTINGS *k2setings,double *margins_inches,
+                            K2CROPBOX *cbox,MASTERINFO *masterinfo,BMPREGION *region);
 void masterinfo_convert_to_source_pixels(MASTERINFO *masterinfo,LINE2D *userrect,int *units,
                                         POINT2D *pagedims_inches,double dpi,LINE2D *trimrect_in);
 
@@ -900,6 +913,8 @@ void   bmp_adjust_contrast(WILLUSBITMAP *src,WILLUSBITMAP *srcgrey,
                            K2PDFOPT_SETTINGS *k2settings,int *white);
 void   bmp_paint_white(WILLUSBITMAP *bmpgray,WILLUSBITMAP *bmp,int white_thresh);
 void   bmp_change_colors(WILLUSBITMAP *bmp,char *fgcolor,int fgtype,char *bgcolor,int bgtype);
+void   bmp8_merge(WILLUSBITMAP *dst,WILLUSBITMAP *src,int count);
+int    bmp_autocrop2(WILLUSBITMAP *bmp0,int *cx);
 
 /* k2mem.c */
 void willus_dmem_alloc_warn(int index,void **ptr,int size,char *funcname,int exitcode);
@@ -962,6 +977,9 @@ typedef struct
     WILLUSBITMAP pviewbitmap; /* Preview bitmap source */
     WILLUSBITMAP pbitmap; /* Preview bitmap source */
     void *prevthread[8]; /* Preview thread controls */
+    int sel_index; /* If text is selected in a control, this is the index */
+    int sel_start; /* Starting letter */
+    int sel_end;   /* Ending letter */
     } K2GUI;
 
 /*
@@ -994,6 +1012,9 @@ typedef struct
     char filename[256];
     char *filelist; /* Double '\0' terminated string */
     int filelist_na;
+    double dpi;
+    double margins[4];
+    WILLUSBITMAP bmp;
     } K2CONVBOX;
 
 /* k2gui.c */
@@ -1064,13 +1085,38 @@ void k2gui_cbox_draw_defbutton_border(int status);
 void k2gui_cbox_close_buttons(void);
 void k2gui_cbox_destroy(void);
 
+/* k2gui_overlay.c */
+int  k2gui_overlay_converting(void);
+int  k2gui_overlay_get_crop_margins(K2GUI *k2gui0,char *filename,char *pagelist,double *margins);
+void k2gui_overlay_final_print(void);
+void k2gui_overlay_terminate_conversion(void);
+int  k2gui_overlay_conversion_successful(void);
+void k2gui_overlay_store_margins(WILLUSGUICONTROL *control);
+void k2gui_overlay_apply_margins(WILLUSGUICONTROL *control);
+void  k2gui_overlay_error(char *filename,int pagenum,int statuscode);
+void  k2gui_overlay_open_bitmap(WILLUSBITMAP *bmp);
+void  k2gui_overlay_freelist(void);
+
+void k2gui_overlay_set_pages_completed(int n,char *message);
+void k2gui_overlay_set_num_pages(int npages);
+void k2gui_overlay_set_filename(char *name);
+void k2gui_overlay_set_error_count(int ecount);
+void k2gui_overlay_increment_error_count(void);
+int  k2gui_overlay_vprintf(FILE *f,char *fmt,va_list args);
+void k2gui_overlay_draw_defbutton_border(int status);
+void k2gui_overlay_close_buttons(void);
+void k2gui_overlay_destroy(void);
+
 /* k2gui_osdep.c */
 short *k2gui_osdep_wide_cmdline(void);
 void k2gui_osdep_init(K2GUI *k2gui0);
-int  k2gui_osdep_window_proc_messages(WILLUSGUIWINDOW *win,void *semaphore,WILLUSGUICONTROL *closebutton);
+int  k2gui_osdep_window_proc_messages(WILLUSGUIWINDOW *win,void *semaphore,int procid,
+                                      WILLUSGUICONTROL *closebutton);
 void k2gui_osdep_main_window_init(WILLUSGUIWINDOW *win,int normal_size);
 void k2gui_osdep_cbox_init(K2CONVBOX *k2cb0,WILLUSGUIWINDOW *win,WILLUSGUIWINDOW *parent,
                            void *hinst,int rgbcolor);
+void k2gui_osdep_overlay_init(K2CONVBOX *k2ol0,WILLUSGUIWINDOW *win,WILLUSGUIWINDOW *parent,
+                              void *hinst,int rgbcolor);
 void k2gui_osdep_mainwin_init_after_create(WILLUSGUIWINDOW *win);
 void k2gui_osdep_main_repaint(int changing);
 

@@ -1,7 +1,7 @@
 /*
 ** devprofile.c    Handle device profiles.
 **
-** Copyright (C) 2013  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -20,8 +20,10 @@
 
 #include "k2pdfopt.h"
 
-
-static DEVPROFILE devprof[10] =
+/*
+** v2.32:  Added new device dims from screen shots on mobileread.com
+*/
+static DEVPROFILE devprof[13] =
     {
     {"Kindle 1-5","k2",560,735,167,0,1,{0,0,3,4}},
     {"Kindle DX","dx",800,1180,167,0,1,{0,0,0,0}},
@@ -29,13 +31,22 @@ static DEVPROFILE devprof[10] =
     {"Kindle Paperwhite","kpw",658,889,212,0,1,{0,0,3,4}},
     /* v2.31:  Added PW2 based on user feedback and Voyage */
     /* Voyage = 1072 x 1448--guessed at viewable PDF resolution */
-    {"Kindle Paperwhite 2","kp2",710,960,212,0,1,{0,0,3,4}},
-    {"Kindle Voyage","kv",996,1332,300,0,1,{0,0,3,4}},
+    /* PW2 dims from Doitsu's screen shots = 718 x 964 */
+    /* http://www.mobileread.com/forums/showthread.php?p=3013298#post3013298 */
+    {"Kindle Paperwhite 2","kp2",718,965,212,0,1,{0,0,3,4}},
+    /* Voyage dims = 1016 x 1364 */
+    /* http://www.mobileread.com/forums/showthread.php?p=3012815#post3012815 */
+    /* http://www.mobileread.com/forums/showthread.php?p=3018484#post3018484 */
+    {"Kindle Voyage","kv",1016,1364,300,0,1,{0,0,3,4}},
     {"Nook Simple Touch","nookst",552,725,167,0,1,{0,0,0,0}},
+    /* Kobo:  http://www.mobileread.com/forums/showthread.php?p=3012925#post3012925 */
     {"Kobo Touch","kbt",600,730,167,0,1,{0,0,3,4}},
     {"Kobo Glo","kbg",758,942,213,0,1,{0,0,3,4}},
     /* v2.13:  Added Kobo mini */
-    {"Kobo Mini","kbm",600,729,200,0,1,{0,0,3,4}},
+    {"Kobo Mini","kbm",600,730,200,0,1,{0,0,3,4}},
+    {"Kobo Aura","kba",758,932,211,0,1,{0,0,3,4}},
+    {"Kobo Aura HD","kbhd",1080,1320,250,0,1,{0,0,3,4}},
+    {"Kobo H2O","kbh2o",1080,1310,265,0,1,{0,0,3,4}},
     {"","",0,0,167,0,1,{0,0,0,0}}
     };
 

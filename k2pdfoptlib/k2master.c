@@ -1,7 +1,7 @@
 /*
 ** k2master.c    Functions to handle the main (master) k2pdfopt output bitmap.
 **
-** Copyright (C) 2014  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -30,7 +30,7 @@ static void masterinfo_add_cropbox(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2s
                                    WILLUSBITMAP *bmp1,double bmpdpi,int rows);
 #endif
 static void bmp_pad_and_mark(WILLUSBITMAP *dst,WILLUSBITMAP *src,K2PDFOPT_SETTINGS *k2settings,
-                             int ltotheight,double bmpdpi,void *ocrwords);
+                             int ltotheight,double bmpdpi,void *ocrwords,int landscape);
 static void bmp_fully_justify(WILLUSBITMAP *jbmp,WILLUSBITMAP *src,
                               K2PDFOPT_SETTINGS *k2settings,int jbmpwidth,
                               int whitethresh,int just,int dpi,WRECTMAPS *wrectmaps);
@@ -59,6 +59,9 @@ void masterinfo_init(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings)
     masterinfo->preview_captured=0;
     masterinfo->published_pages=0;
     masterinfo->srcpages = -1;
+    masterinfo->nextpage = -1;
+    masterinfo->landscape = -1;
+    masterinfo->landscape_next = -1;
     masterinfo->wordcount=0;
     masterinfo->debugfolder[0]='\0';
     bmp_init(&masterinfo->bmp);
@@ -137,13 +140,30 @@ void masterinfo_flush(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings)
 int masterinfo_new_source_page_init(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings,
                          WILLUSBITMAP *src,WILLUSBITMAP *srcgrey,WILLUSBITMAP *marked,
                          BMPREGION *region,double rot_deg,double *bormean,
-                         char *rotstr,int pageno,FILE *out)
+                         char *rotstr,int pageno,int nextpage,FILE *out)
 
     {
     int white;
 
+#if (WILLUSDEBUGX & 1)
+printf("@masterinfo_new_source_page(pageno=%d,nextpage=%d,maxpages=%d)\n",pageno,nextpage,masterinfo->srcpages);
+#endif
     white=k2settings->src_whitethresh;
+    if (pageno==masterinfo->nextpage && masterinfo->landscape_next!=-1)
+        masterinfo->landscape = masterinfo->landscape_next;
+    else
+        masterinfo->landscape = k2pdfopt_settings_landscape(k2settings,pageno,masterinfo->srcpages);
+#if (WILLUSDEBUGX & 1)
+printf("masterinfo->landscape=%d\n",masterinfo->landscape);
+#endif
+    if (nextpage>=0)
+        masterinfo->landscape_next = k2pdfopt_settings_landscape(k2settings,nextpage,masterinfo->srcpages);
+    else
+        masterinfo->landscape_next = -1;
+    masterinfo->nextpage=nextpage;
     masterinfo->pageinfo.srcpage = pageno;
+    /* v2.32 */
+    
     /* v2.20:  rotation now used to find text in OCR layer, so always assign srcpage_rot_deg. */
     masterinfo->pageinfo.srcpage_rot_deg=0.;
     masterinfo->pageinfo.srcpage_fine_rot_deg = 0.;
@@ -1107,11 +1127,11 @@ exit(10);
         }
 
     /* Pad and mark bmp1 -> bmp */
-    bmp_pad_and_mark(bmp,bmp1,k2settings,ltotheight,ldpi,ocrwords);
+    bmp_pad_and_mark(bmp,bmp1,k2settings,ltotheight,ldpi,ocrwords,masterinfo->landscape);
     bmp_free(bmp1);
 
     /* Adjust for landscape output if necessary */
-    if (k2settings->dst_landscape)
+    if (masterinfo->landscape)
         {
 #ifdef HAVE_OCR_LIB
         /* Rotate OCR'd words list */
@@ -1196,6 +1216,7 @@ exit(10);
 
 
 /*
+** Should only be called once per source page.
 ** Return 0 if master bitmap should not be flushed.
 **        NZ if it should be flushed.
 ** Based on user settings for page breaks.
@@ -1205,6 +1226,9 @@ exit(10);
 int masterinfo_should_flush(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings)
 
     {
+    if (k2settings->dst_landscape_pages[0]!='\0' 
+           && masterinfo->landscape != masterinfo->landscape_next)
+        return(1);
     if (k2settings_gap_override(k2settings))
         return(0);
     if (k2settings->dst_break_pages==0)
@@ -1212,10 +1236,10 @@ int masterinfo_should_flush(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings
     if (k2settings->dst_break_pages>1)
         return(1);
     /* Check list of pages where user has requested a page break */
-    if (k2settings->bpl[0]!='\0' && pagelist_includes_page(k2settings->bpl,masterinfo->pageinfo.srcpage+1,masterinfo->srcpages))
+    if (k2settings->bpl[0]!='\0' && pagelist_includes_page(k2settings->bpl,masterinfo->nextpage,masterinfo->srcpages))
         return(1);
     /* Check outline / bookmarks if available */
-    return(wpdfoutline_includes_srcpage(masterinfo->outline,masterinfo->pageinfo.srcpage+1,1)>0 ? 1 : 0);
+    return(wpdfoutline_includes_srcpage(masterinfo->outline,masterinfo->nextpage,1)>0 ? 1 : 0);
     }
 
 
@@ -1322,7 +1346,7 @@ k2printf("    Adding box %d (dstpageno=%d).\n",i,dstpageno);
         xd=w1+box->x1;
         yd=height-(box->y1+box->usery+r0);
         // sr=(int)((box->srcrot_deg+765.)/90.);
-        if (k2settings->dst_landscape)
+        if (masterinfo->landscape)
             {
             yd=xd;
             xd=box->y1+box->usery+r0;
@@ -1366,7 +1390,7 @@ k2printf("    Adding box %d (dstpageno=%d).\n",i,dstpageno);
 **
 */
 static void bmp_pad_and_mark(WILLUSBITMAP *dst,WILLUSBITMAP *src,K2PDFOPT_SETTINGS *k2settings,
-                             int ltotheight,double bmpdpi,void *ocrwords)
+                             int ltotheight,double bmpdpi,void *ocrwords,int landscape)
 
     {
     int i,r,r0,bw,bytespp,pl,pr,pt,pb;
@@ -1387,7 +1411,7 @@ dstmar_pixels[2],
 dstmar_pixels[3]);
 */
     r0=dstmar_pixels[1];
-    if (k2settings->dst_landscape)
+    if (landscape)
         {
         pl=k2settings->pad_bottom;
         pr=k2settings->pad_top;
@@ -2051,8 +2075,8 @@ void get_dest_margins(int *margins_pixels,K2PDFOPT_SETTINGS *k2settings,
 ** Get source margins
 ** Needs region->bmp, bmp8, dpi, and c1,r1,c2,r2 set.
 */
-void masterinfo_get_margins(double *margins_inches,K2CROPBOX *cbox,MASTERINFO *masterinfo,
-                            BMPREGION *region)
+void masterinfo_get_margins(K2PDFOPT_SETTINGS *k2settings,double *margins_inches,
+                            K2CROPBOX *cbox,MASTERINFO *masterinfo,BMPREGION *region)
 
     {
     LINE2D userrect;
@@ -2073,6 +2097,15 @@ cbox->units[1],
 cbox->units[2],
 cbox->units[3]);
 #endif
+    /* Autocrop page */
+    if (k2settings->autocrop)
+        {
+        int cx[4];
+        bmp_autocrop2(region->bmp8,cx);
+        for (i=0;i<4;i++)
+            margins_inches[i]=(double)cx[i]/region->dpi;
+        return;
+        }
     userrect.p[0].x=cbox->box[0];
     userrect.p[0].y=cbox->box[1];
     userrect.p[1].x=cbox->box[2];
@@ -2214,7 +2247,11 @@ static int ocrlayer_bounding_box_inches(MASTERINFO *masterinfo,LINE2D *rect)
     static int pageno=-1;
     static char pdffile[512];
 
+#if (WILLUSDEBUGX & 0x200000)
 printf("@ocrlayer_bounding_box_inches...masterinfo=%p\n",masterinfo);
+if (wtcs!=NULL)
+printf("    wtcs->n = %d\n",wtcs->n);
+#endif
     if (masterinfo==NULL)
         return(0);
     if (wtcs==NULL)
@@ -2225,12 +2262,17 @@ printf("@ocrlayer_bounding_box_inches...masterinfo=%p\n",masterinfo);
         }
     if (pageno!=masterinfo->pageinfo.srcpage || strcmp(pdffile,masterinfo->srcfilename))
         {
+        wtextchars_clear(wtcs); /* v2.32 bug fix--clear out any previous words */
         wtextchars_fill_from_page_ex(wtcs,masterinfo->srcfilename,masterinfo->pageinfo.srcpage,"",1);
         wtextchars_rotate_clockwise(wtcs,360-(int)masterinfo->pageinfo.srcpage_rot_deg);
         pageno=masterinfo->pageinfo.srcpage;
         strncpy(pdffile,masterinfo->srcfilename,511);
         pdffile[511]='\0';
         }
+#if (WILLUSDEBUGX & 0x200000)
+if (wtcs!=NULL)
+printf("    wtcs->n after fill_from_page = %d\n",wtcs->n);
+#endif
     if (wtcs->n>0)
         {
         WTEXTCHAR *tc;
@@ -2240,7 +2282,9 @@ printf("@ocrlayer_bounding_box_inches...masterinfo=%p\n",masterinfo);
         rect->p[0].y=tc->y1/72.;
         rect->p[1].x=tc->x2/72.;
         rect->p[1].y=tc->y2/72.;
+#if (WILLUSDEBUGX & 0x200000)
 printf("    Inches:  (%g,%g) - (%g,%g)\n",tc->x1/72.,tc->y1/72.,tc->x2/72.,tc->y2/72.);
+#endif
         return(1);
         }
 #endif

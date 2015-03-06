@@ -8,7 +8,7 @@
 **               downloads for MS Windows, Mac OSX, and Linux. The MS Windows
 **               version has an integrated GUI. K2pdfopt is open source.
 **
-** Copyright (C) 2014  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -27,6 +27,49 @@
 ** VERSION HISTORY
 **
 **     See k2version.c.
+**
+**
+** SOURCE CODE FLOW (BRIEF)
+**
+** Conversion process:
+**     k2pdfopt_proc_wildarg()  (k2file.c)   Convert wildcard arg, e.g. *.pdf
+**             |
+**             V
+**     k2pdfopt_proc_arg()      (k2file.c)   Handle arg if it is a folder
+**             |
+**             V
+**     k2pdfopt_proc_one()      (k2file.c)   Process a single PDF/DJVU file.
+**             |                             (Embarrassingly long function.)
+**             V
+**     bmpregion_source_page_add()  (k2proc.c)  Processes a source page of the file.
+**                                              This adds rectangular regions
+**                                              (BMPREGION structure) to the
+**                                              PAGEREGIONS structure.
+**
+**     Some other key functions:
+**
+**     bmpregion_vertically_break() (k2proc.c) looks for "text rows" in each region,
+**         segmenting it into consecutive "rows."
+**
+**     bmpregion_add_textrow() (k2proc.c) is called by bmpregion_vertically_break()
+**         to accumulate the BMPEREGIONs row by row.
+**
+**     bmpregion_add() (k2proc.c) processes a "row" or rectangular region of the
+**         source page.  It is fairly well commented.
+**
+**     bmpregion_analyze_justification_and_line_spacing() (k2proc.c) analyzes the
+**         "rows" and attempts to determine things like if they are regular, uniform
+**         rows of text, how the text is justified, what the line spacing and font
+**         size is, and if any lines are indented or terminate a section.
+**
+**     bmpregion_one_row_wrap_and_add() (k2proc.c) parses through one row and looks
+**         for words.  It parses out each word to wrapbmp_add().
+**
+**     wrapbmp_add() (wrapbmp.c) adds a graphical word (as a rectangular bitmap region)
+**         to the WRAPBMP structure, which stores up a row of text until it is too
+**         wide for the destination file and the flushes that row of text to the
+**         destination file.
+**     
 **
 */
 

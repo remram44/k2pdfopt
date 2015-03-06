@@ -1,7 +1,7 @@
 /*
 ** k2settings.c     Handles k2pdfopt settings (K2PDFOPT_SETTINGS structure)
 **
-** Copyright (C) 2014  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -87,6 +87,7 @@ void k2pdfopt_settings_init(K2PDFOPT_SETTINGS *k2settings)
     k2settings->dst_sharpen=1;
     k2settings->dst_bpc=4;
     k2settings->dst_landscape=0;
+    k2settings->dst_landscape_pages[0]='\0'; /* v2.32 */
     strcpy(k2settings->dst_opname_format,"%s_k2opt");
     k2settings->src_autostraighten=0;
     k2settings->dstmargins.pagelist[0]='\0';
@@ -185,6 +186,10 @@ void k2pdfopt_settings_init(K2PDFOPT_SETTINGS *k2settings)
 #ifdef HAVE_GHOSTSCRIPT
     k2settings->ppgs=0;
 #endif
+
+    /* v2.32 */
+    /* dst_landscape_pages (above) */
+    k2settings->autocrop=0;
     }
 
 
@@ -206,6 +211,31 @@ K2NOTES *page_has_notes_margin(K2PDFOPT_SETTINGS *k2settings,MASTERINFO *masteri
     return(NULL);
     }
 
+
+/*
+** Should the current source page be turned to landscape mode?
+*/
+int k2pdfopt_settings_landscape(K2PDFOPT_SETTINGS *k2settings,int pageno,int maxpages)
+
+    {
+    int retval;
+
+#if (WILLUSDEBUGX & 1)
+printf("@k2pdfopt_settings_landscape(%d,%d)\n",pageno,maxpages);
+printf("    dst_landscape=%d, pages='%s'\n",k2settings->dst_landscape,k2settings->dst_landscape_pages);
+#endif
+    if (k2settings->dst_landscape_pages[0]=='\0')
+        retval=1;
+    else
+        retval=pagelist_includes_page(k2settings->dst_landscape_pages,pageno,maxpages);
+    if (!k2settings->dst_landscape)
+        retval = !retval;
+#if (WILLUSDEBUGX & 1)
+printf("    retval=%d\n",retval);
+#endif
+    return(retval);
+    }
+    
 
 void k2pdfopt_conversion_init(K2PDFOPT_CONVERSION *k2conv)
 
@@ -420,7 +450,7 @@ void k2pdfopt_settings_set_margins_and_devsize(K2PDFOPT_SETTINGS *k2settings,
                                        BMPREGION *region,MASTERINFO *masterinfo,int trimmed)
 
     {
-    int new_width,new_height,zeroarea;
+    int new_width,new_height,zeroarea,pageno,maxpages;
     WPDFPAGEINFO *pageinfo;
     LINE2D trimrect_inches;
     POINT2D pagedims_inches;
@@ -511,7 +541,9 @@ printf("    userrect (out) = %g,%g - %g,%g\n",userrect.p[0].x,userrect.p[0].y,us
     new_height=devsize_pixels(k2settings->dst_userheight,k2settings->dst_userheight_units,
                               sheight_in,theight_in,k2settings->dst_dpi,0);
     */
-    if (k2settings->dst_landscape)
+    pageno = masterinfo==NULL ? 1 : masterinfo->pageinfo.srcpage;
+    maxpages = masterinfo==NULL ? 10 : masterinfo->srcpages;
+    if (k2pdfopt_settings_landscape(k2settings,pageno,maxpages))
         int_swap(new_width,new_height)
     if (k2settings->devsize_set==1 || (k2settings->devsize_set>1 && (new_width!=k2settings->dst_width || new_height!=k2settings->dst_height)))
         {
@@ -539,7 +571,7 @@ printf("    userrect (out) = %g,%g - %g,%g\n",userrect.p[0].x,userrect.p[0].y,us
             {
             pageinfo->width_pts = 72. * k2settings->dst_width / k2settings->dst_dpi;
             pageinfo->height_pts = 72. * k2settings->dst_height / k2settings->dst_dpi;
-            if (k2settings->dst_landscape)
+            if (k2pdfopt_settings_landscape(k2settings,pageno,maxpages))
                 double_swap(pageinfo->width_pts,pageinfo->height_pts)
             }
         }

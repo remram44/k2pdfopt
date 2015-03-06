@@ -1,7 +1,7 @@
 /*
 ** k2sys.c     K2pdfopt system functions
 **
-** Copyright (C) 2014  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -121,14 +121,18 @@ int k2printf(char *fmt,...)
     va_list args;
     int     status;
 
+    status=0;
     va_start(args,fmt);
 #ifdef HAVE_K2GUI
-    if (k2gui_active() && k2gui_cbox_converting())
+    if (k2gui_active())
         {
 #if (WILLUSDEBUGX & 0x4000)
         status=avprintf(stdout,fmt,args);
 #endif          
-        status=k2gui_cbox_vprintf(stdout,fmt,args);
+        if (k2gui_cbox_converting())
+            status=k2gui_cbox_vprintf(stdout,fmt,args);
+        else if (k2gui_overlay_converting())
+            status=k2gui_overlay_vprintf(stdout,fmt,args);
         }
     else
 #endif

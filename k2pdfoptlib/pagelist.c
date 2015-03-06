@@ -1,7 +1,7 @@
 /*
 ** pagelist.c    Functions to parse comma-delimited page-list string.
 **
-** Copyright (C) 2013  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -52,6 +52,11 @@ int pagelist_includes_page(char *pagelist,int pageno,int maxpages)
     if (maxpages < 0)
         maxpages = 99999;
     n=pagelist_count(pagelist,maxpages);
+/*
+#ifdef WILLUSDEBUGX
+printf("pagelist_count('%s',%d) = %d\n",pagelist,maxpages,pagelist_count(pagelist,maxpages));
+#endif
+*/
     for (i=0;i<n;i++)
         if (pagelist_page_by_index(pagelist,i,maxpages)==pageno)
              return(1);
@@ -59,6 +64,9 @@ int pagelist_includes_page(char *pagelist,int pageno,int maxpages)
     }
 
 
+/*
+** Return the page number of the zero-based index'th page in the page list.
+*/
 int pagelist_page_by_index(char *pagelist,int index,int maxpages)
 
     {
@@ -95,14 +103,22 @@ int pagelist_count(char *pagelist,int maxpages)
 
     {
     int n1,n2,i,count,flags;
-
-// printf("@pagelist_count('%s',%d)\n",pagelist,maxpages);
+/*
+#ifdef WILLUSDEBUGX
+printf("@pagelist_count('%s',%d)\n",pagelist,maxpages);
+#endif
+*/
     if (pagelist[0]=='\0')
         return(maxpages);
     count=0;
     i=0;
     while (pagelist_next_pages(pagelist,maxpages,&i,&n1,&n2,&flags))
         {
+/*
+#ifdef WILLUSDEBUGX
+printf("   count=%d, i=%d, n1=%d, n2=%d\n",count,i,n1,n2);
+#endif
+*/
         if (n1<=0 && n2<=0)
             continue;
         if (n1>n2)
@@ -112,6 +128,11 @@ int pagelist_count(char *pagelist,int maxpages)
             n1=n2;
             n2=t;
             }
+/*
+#ifdef WILLUSDEBUGX
+printf("   maxpages=%d, n1=%d, n2=%d\n",maxpages,n1,n2);
+#endif
+*/
         if ((maxpages>0 && n1>maxpages) || n2<1)
             continue;
         if (n1<1)
@@ -228,7 +249,16 @@ static int pagelist_next_pages(char *pagelist,int maxpages,int *index,
                 i++;
             }
         if (buf[0]=='\0')
+            {
             (*n2)=maxpages;
+            /*
+            ** If the user specifies a starting number that is beyond the max with an open
+            ** hyphen, set (*n2) to that number also--otherwise it will count backwards.
+            ** (v2.32 bug fix)
+            */
+            if ((*n2)<(*n1))
+                (*n2)=(*n1);
+            }
         else
             (*n2)=atoi(buf);
         }

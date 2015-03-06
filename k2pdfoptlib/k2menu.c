@@ -1,7 +1,7 @@
 /*
 ** k2menu.c      Interactive user menu for k2pdfopt.c.
 **
-** Copyright (C) 2014  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -521,11 +521,15 @@ int k2pdfopt_menu(K2PDFOPT_CONVERSION *k2conv,STRBUF *env,STRBUF *cmdline,STRBUF
             }
         else if (!stricmp(buf,"l"))
             {
-            status=userinput_string("Landscape mode",ansyesno,k2settings->dst_landscape?"y":"n");
+            int s1;
+            s1=userinput_string("Landscape mode",ansyesno,k2settings->dst_landscape?"y":"n");
+            if (s1<0)
+                return(s1);
+            status=userinput_any_string("Applied over what page range (def=all)",k2settings->dst_landscape_pages,1023,"");
             if (status<0)
                 return(status);
-            k2settings->dst_landscape=!status;
-            strbuf_sprintf(usermenu,"-ls%s",k2settings->dst_landscape?"":"-");
+            k2settings->dst_landscape=!s1;
+            strbuf_sprintf(usermenu,"-ls%s%s",k2settings->dst_landscape?"":"-",k2settings->dst_landscape_pages);
             }
 #ifdef HAVE_MUPDF_LIB
         else if (!stricmp(buf,"n"))

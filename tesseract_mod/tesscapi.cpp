@@ -57,7 +57,8 @@ static tesseract::TessBaseAPI api;
 ** ocr_type=2:  OEM_CUBE_ONLY
 ** ocr_type=3:  OEM_TESSERACT_CUBE_COMBINED
 */
-int tess_capi_init(char *datapath,char *language,int ocr_type,FILE *out)
+int tess_capi_init(char *datapath,char *language,int ocr_type,FILE *out,
+                   char *initstr,int maxlen)
 
     {
     int status;
@@ -123,15 +124,31 @@ int tess_capi_init(char *datapath,char *language,int ocr_type,FILE *out)
     // but that doesn't work.
     if (api.GetPageSegMode() == tesseract::PSM_SINGLE_BLOCK)
         api.SetPageSegMode(pagesegmode);
+
+    /*
+    ** Initialization message
+    */
+    {
+    char istr[256];
+
+    sprintf(istr,"Tesseract Open Source OCR Engine v%s ",tesseract::TessBaseAPI::Version());
+    if (ocr_type==0 || ocr_type==3)
+        sprintf(&istr[strlen(istr)],"[CUBE+] (lang=");
+    else if (ocr_type==2)
+        sprintf(&istr[strlen(istr)],"[CUBE] (lang=");
+    strncpy(&istr[strlen(istr)],language,253-strlen(istr));
+    istr[253]='\0';
+    strcat(istr,")");
     if (out!=NULL)
+        fprintf(out,"%s\n",istr);
+    if (initstr!=NULL)
         {
-        fprintf(out,"Tesseract Open Source OCR Engine v%s ",tesseract::TessBaseAPI::Version());
-        if (ocr_type==0 || ocr_type==3)
-            fprintf(out,"[CUBE+] ");
-        else if (ocr_type==2)
-            fprintf(out,"[CUBE] ");
-        fprintf(out,"(lang=%s)\n",language);
+        strncpy(initstr,istr,maxlen-1);
+        initstr[maxlen-1]='\0';
         }
+    }
+
+
     /* Turn off CUBE debugging output */
     api.SetVariable("cube_debug_level","0");
 #if (WILLUSDEBUG & 1)

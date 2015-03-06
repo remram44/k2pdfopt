@@ -4,7 +4,7 @@
 **             columns, rows of text, and individual words, and laying out the
 **             output pages.
 **
-** Copyright (C) 2014  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -336,6 +336,9 @@ static void pageregions_from_cropboxes(PAGEREGIONS *pageregions,BMPREGION *regio
     {
     int i;
 
+#ifdef WILLUSDEBUGX
+printf("@pageregions_from_cropboxes:  n boxes=%d\n",k2settings->cropboxes.n);
+#endif
     for (i=0;i<k2settings->cropboxes.n;i++)
         {
         K2CROPBOX *cropbox;
@@ -349,6 +352,11 @@ static void pageregions_from_cropboxes(PAGEREGIONS *pageregions,BMPREGION *regio
         bmpregion_init(srcregion);
         bmpregion_copy(srcregion,region,0);
         cropbox=&k2settings->cropboxes.cropbox[i];
+#ifdef WILLUSDEBUGX
+printf("    cropbox[%d].pagelist='%s'\n",i,cropbox->pagelist);
+printf("    srcpage = %d of %d\n",masterinfo->pageinfo.srcpage,masterinfo->srcpages);
+printf("    pagelist includes=%d\n",pagelist_includes_page(cropbox->pagelist,masterinfo->pageinfo.srcpage,masterinfo->srcpages));
+#endif
 /*
 {
 int status;
@@ -526,10 +534,19 @@ static void pageregions_find_next_level(PAGEREGIONS *pageregions_sorted,BMPREGIO
         if (row_black_count[r0]==0)
             cgr++;
         }
-    if (k2settings->verbose)
-        k2printf("%d clear rows.\n",cgr);
     if (k2settings->debug)
+        k2printf("AA\n");
+    if (k2settings->verbose)
+        {
+        k2printf("BB\n");
+        k2printf("%d clear rows.\n",cgr);
+        }
+    if (k2settings->debug)
+        {
+        k2printf("Calculating row histogram.\n");
         bmpregion_row_histogram(srcregion);
+        k2printf("Done calculating row histogram.\n");
+        }
 
     /* Unsorted array */
     pageregions=&_pageregions;
@@ -1751,16 +1768,22 @@ k2printf("    notes row count=%d\n",notesrows->n);
         notesrows=NULL;
     /* Should there be a check for zero text rows here? */
     /* Don't think it breaks anything to let it go.  -- 6-11-12 */
+#if (WILLUSDEBUGX & 1)
+printf("Checking region centering...\n");
+#endif
 #if (WILLUSDEBUGX & 102)
 // textrows_echo(&region->textrows,"rows");
 #endif
     region_is_centered=bmpregion_is_centered(region,k2settings,0,n-1);
     if (notes)
-        notes_are_centered=bmpregion_is_centered(notes,k2settings,0,notesrows->n-1);
+        if (notesrows->n>0)
+            notes_are_centered=bmpregion_is_centered(notes,k2settings,0,notesrows->n-1);
+        else
+            notes_are_centered=0;
     else
         notes_are_centered=0;
 #if (WILLUSDEBUGX & 2)
-// textrows_echo(&region->textrows,"rows");
+textrows_echo(&region->textrows,"rows");
 #endif
 
     /* Mark notes region */
@@ -1769,6 +1792,9 @@ k2printf("    notes row count=%d\n",notesrows->n);
         mark_source_page(k2settings,masterinfo,notes,4,0xf);
     */
     /* Mark main region with red, numbered box */
+#if (WILLUSDEBUGX & 1)
+printf("Marking source page...\n");
+#endif
     mark_source_page(k2settings,masterinfo,region,1,0xf);
     if (k2settings->debug)
         {
@@ -1779,14 +1805,15 @@ k2printf("    notes row count=%d\n",notesrows->n);
             k2printf("@bmpregion_vertically_break (allow break) (%d,%d) - (%d,%d) (scale=%g)\n",
                 region->c1,region->r1,region->c2,region->r2,added_region.force_scale);
         }
+#if (WILLUSDEBUGX & 1)
+printf("Tagging blank rows and columns...\n");
+#endif
     /*
     ** Tag blank rows and columns
     */
+    notesgap = -1.;
     if (k2settings->vertical_break_threshold<0. || n < 6)
-        {
         biggap = -1.;
-        notesgap = -1.;
-        }
     else
         {
         int gap_median;
@@ -1802,7 +1829,7 @@ k2printf("    median=%d\n",gap_median);
 #endif
         biggap = gap_median*k2settings->vertical_break_threshold;
         textrows_sort_by_row_position(textrows);
-        if (notes)
+        if (notes && notesrows->n>0) /* v2.32 bug fix--check that n>0 */
             {
             int maxgap;
 
@@ -1840,7 +1867,8 @@ k2printf("    biggap=%d\n",biggap);
             {
             double margins_inches[4];
 
-            masterinfo_get_margins(margins_inches,&k2settings->srccropmargins,masterinfo,region);
+            masterinfo_get_margins(k2settings,margins_inches,&k2settings->srccropmargins,
+                                   masterinfo,region);
             gap_in = (double)region->r1/k2settings->src_dpi - margins_inches[1];
             if (last_source_page>=0)
                 gap_in += (double)(last_page_height-last_region_r2)/k2settings->src_dpi

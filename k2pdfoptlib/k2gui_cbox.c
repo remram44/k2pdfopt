@@ -2,7 +2,7 @@
 ** k2gui_cbox.c   K2pdfopt WILLUSGUI for the conversion dialog box.
 **                (Non-OS-specific calls.)
 **
-** Copyright (C) 2014  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -259,7 +259,7 @@ static int k2gui_cbox_create_dialog_window(K2PDFOPT_CONVERSION *k2conv,STRBUF *e
     static void *data[4];
     static char *blabel[]={"Abort","",""};
 
-#if (WILLUSDEBUG & 0x2000)
+#if (WILLUSDEBUGX & 0x2000)
 printf("@k2gui_cbox_create_dialog_window...\n");
 #endif
     if (k2gui_cbox->converting)
@@ -428,7 +428,7 @@ static void k2gui_cbox_start_conversion(void *data)
         k2out.outname=NULL;
         k2out.bmp=NULL;
         k2pdfopt_proc_wildarg(&k2c->k2settings,k2conv->k2files.file[i],1,&k2out);
-#if (WILLUSDEBUG & 0x2000)
+#if (WILLUSDEBUGX & 0x2000)
 printf("\n\nDone conversion...\n\n");
 #endif
         str0_addstring(&k2gui_cbox->filelist,&k2gui_cbox->filelist_na,k2out.outname);
@@ -487,7 +487,7 @@ void k2gui_cbox_open_folders(void)
 static int k2gui_cbox_nfiles(void)
 
     {
-#if (WILLUSDEBUG & 0x2000)
+#if (WILLUSDEBUGX & 0x2000)
 printf("nfiles=%d\n",str0_n(k2gui_cbox->filelist));
 #endif
     return(str0_n(k2gui_cbox->filelist));
@@ -517,7 +517,7 @@ static int k2gui_cbox_nfolders(void)
         if (j==i)
             nc++;
         }
-#if (WILLUSDEBUG & 0x2000)
+#if (WILLUSDEBUGX & 0x2000)
 printf("nfolders=%d\n",nc);
 #endif
     return(nc);
@@ -598,7 +598,7 @@ static int k2gui_cbox_wait_for_conversion_dialog_box_messages(void)
     {
     int done;
 
-    done=k2gui_osdep_window_proc_messages(&k2gui_cbox->mainwin,k2gui_cbox->semaphore,
+    done=k2gui_osdep_window_proc_messages(&k2gui_cbox->mainwin,k2gui_cbox->semaphore,1,
                                           &k2gui_cbox->control[1]);
     k2gui_cbox->converting=0;
     /* If conversion aborted, terminate thread and cleanup */
@@ -635,7 +635,7 @@ void k2gui_cbox_set_files_completed(int nfiles,char *message)
         strncpy(buf,message,255);
         buf[255]='\0';
         }
-    color=0xd0ffd0;
+    color=0x40ff40;
     if (k2gui_cbox->error_count>0)
         {
         if (message==NULL)
@@ -643,7 +643,7 @@ void k2gui_cbox_set_files_completed(int nfiles,char *message)
                     k2gui_cbox->error_count==1?"as":"ere",
                     k2gui_cbox->error_count,
                     k2gui_cbox->error_count==1?"":"s");
-        color=0xd0d0ff;
+        color=0x8080ff;
         }
     else if (nfiles==k2gui_cbox->num_files && message==NULL)
         {
@@ -715,7 +715,7 @@ void k2gui_cbox_set_error_count(int ecount)
     if (k2gui_cbox!=NULL)
         {
         k2gui_cbox->error_count=ecount;
-#if (WILLUSDEBUG & 0x2000)
+#if (WILLUSDEBUGX & 0x2000)
 printf("\n error count set to %d\n\n",k2gui_cbox->error_count);
 #endif
         }
@@ -728,7 +728,7 @@ void k2gui_cbox_increment_error_count(void)
     if (k2gui_cbox!=NULL && k2gui_cbox->converting)
         {
         k2gui_cbox->error_count++;
-#if (WILLUSDEBUG & 0x2000)
+#if (WILLUSDEBUGX & 0x2000)
 printf("\n error count incremented to %d\n\n",k2gui_cbox->error_count);
 #endif
         }
@@ -831,7 +831,7 @@ static void k2gui_cbox_update_progress_bar(int index,double progress,int color,c
      drect.bottom++;
      willusgui_window_draw_rect_outline(&k2gui_cbox->mainwin,&drect,0);
      willusgui_window_text_render(&k2gui_cbox->mainwin,&k2gui_cbox->bf,label,
-                                    (int)(x1+w/2),(int)(y1+h*.2),0,-1,1);
+                                    (int)(x1+w/2),(int)(y1+h*.2),0,-1,1,NULL);
      }
      
 

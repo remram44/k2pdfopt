@@ -1,7 +1,7 @@
 /*
 ** k2usage.c    K2pdfopt usage text and handling functions.
 **
-** Copyright (C) 2014  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -53,6 +53,11 @@ static char *k2pdfopt_options=
 /*
 "-arlim <ar>       Set aspect ratio limit to avoid wrapping.\n"
 */
+"-ac[-]            Auto crop.  For books or papers that have dark edges due\n"
+"                  to copying artifacts, this option will attempt to\n"
+"                  automatically crop out those dark regions so that k2pdfopt\n"
+"                  can correctly process the source file.  See also -m.\n"
+"                  Default value is off (-ac-).\n"
 "-as[-] [<maxdeg>] Attempt to automatically straighten tilted source pages.\n"
 "                  Will rotate up to +/-<maxdegrees> degrees if a value is\n"
 "                  specified, otherwise defaults to 4 degrees max.  Use -1 to\n"
@@ -124,7 +129,16 @@ static char *k2pdfopt_options=
 "                      -cbox1,2-5,13,15  ... applies the cropbox on pages 1,2,3,\n"
 "                                            4,5,13, and 15.\n"
 "                  Be sure not to put a space between -cbox and the page list.\n"
-"                  The default is no crop boxes (-cbox-).\n"
+"                  The default is no crop boxes (-cbox-).  See also -m, -ac.\n"
+"                  USAGE NOTE:  Once you specify -cbox at least one time, only\n"
+"                  the crop boxes you specify (and any associated page ranges)\n"
+"                  are processed/converted by k2pdfopt.  No other pages or\n"
+"                  regions are processed.  So if you want to specify a special\n"
+"                  cropbox for the first page, for example, but then have all\n"
+"                  remaining pages treated entirely, you must specify this:\n"
+"                      -cbox1 ...   -cbox2- 0,0\n"
+"                  The -cbox2- 0,0 will set the cropbox for pages 2 and beyond\n"
+"                  to the full page size.\n"
 "-col <maxcol>     Set max number of columns.  <maxcol> can be 1, 2, or 4.\n"
 "                  Default is -col 2.  -col 1 disables column searching.\n"
 "-colorbg <hexcolor>  Map the color white (background color) to <hexcolor>,\n"
@@ -320,14 +334,18 @@ static char *k2pdfopt_options=
 "-l <lang>         See -ocrlang.\n"
 "-lang <lang>      See -ocrlang.\n"
 #endif
-"-ls[-]            Set output to be in landscape [portrait] mode.  The\n"
-"                  default is portrait.\n"
-"-m[b|l|r|t] <val>[<units>][,<val>[units][,...]]  Set global crop margins for\n"
-"                  every page.  You can also use the more powerful -cbox option\n"
-"                  to do this same thing.  The default units are inches.\n"
-"                  For available units and their descriptions, see -h.\n"
-"                  If more than one value is given (comma-delimited with no\n"
-"                  spaces in between), the order is left, top, right, bottom.\n"
+"-ls[-][pagelist]  Set output to be in landscape [portrait] mode.  The default\n"
+"                  is -ls- (portrait).  If an optional pagelist is specified,\n"
+"                  only those pages are affected--any other pages are done\n"
+"                  oppositely.  E.g. -ls1,3,5-10 would make source pages 1, 3\n"
+"                  and 5 through 10 landscape.\n"
+"-m[l|t|r|b] <val>[<units>][,<val>[units][,...]]  Set global crop margins for\n"
+"                  every page.  If more than one value is given (comma-delimited\n"
+"                  with no spaces in between), the order is left, top, right,\n"
+"                  bottom, e.g. -m <left>,<top>,<right>,<bottom>.  You can also\n"
+"                  use the more powerful -cbox option to do this same thing.\n"
+"                  The default units are inches.  For available units and their\n"
+"                  descriptions, see -h.\n"
 "                  Examples:\n"
 "                      -m 0.5cm\n"
 "                         Sets all margins to 0.5 cm.\n"
@@ -349,6 +367,7 @@ static char *k2pdfopt_options=
 "                  The default crop margins are 0 inches.\n"
 "                  [NOTE: The default was 0.25 inches for all margins before\n"
 "                         v1.65.]\n"
+"                  See also -cbox and -ac to autocrop scanning artifacts.\n"
 "-mc[-]            Mark [don't mark] corners of the output bitmaps with a\n"
 "                  small dot to prevent the reading device from re-scaling.\n"
 "                  Default = mark.\n"

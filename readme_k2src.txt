@@ -1,7 +1,7 @@
 K2pdfopt build help.
 http://willus.com
 Original: 7 September 2012
-Last updated: 27 Dec 2014 (v2.31)
+Last updated: 6 Mar 2015 (v2.32)
 
 This "read me" file describes the source code distribution for k2pdfopt.
 
@@ -13,7 +13,7 @@ K2pdfopt Source Files
 ---------------------
 1. k2pdfopt.c (main module)
 
-2. k2pdfopt C library (27 C files + 1 header file) in k2pdfoptlib subfolder.
+2. k2pdfopt C library (28 C files + 1 header file) in k2pdfoptlib subfolder.
    Compile all C files in this subfolder and build them into libk2pdfopt.a.
    Near the top of k2pdfopt.h are #defines which control third-party
    library dependencies (HAVE_XXX_LIB) and whether or not the MS Windows
@@ -38,7 +38,7 @@ NOTE 4 below).
     --------
     1.  Z-lib 1.2.8 (zlib.net)
         (A custom mod of zlib is no longer required as of k2pdfopt v2.14.)
-    2.  libpng 1.6.10 (www.libpng.org)
+    2.  libpng 1.6.12 (www.libpng.org)
     3.  Turbo JPEG lib 1.3.1 (sourceforge.net/projects/libjpeg-turbo/)
 
     TO INCLUDE MuPDF LIBRARY (search for HAVE_MUPDF in k2pdfopt.c)
@@ -80,7 +80,7 @@ Notes
    any of the included files (if they didn't come standard w/the 3rd party
    library), look in my include_mod subfolder.
 
-4. Building for KindlePDFViewer:
+4. Building for KOReader or KindlePDFViewer:
    a. In willus.h, search for "THIRD PARTY" and comment out all #define's
       for third party libs, e.g. HAVE_Z_LIB, etc.
    b. In k2pdfopt.h, uncomment this:  #define K2PDFOPT_KINDLEPDFVIEWER
@@ -89,6 +89,8 @@ Notes
       how to call the k2pdfopt library functions.  The k2view.c program
       is stand-alone.  If it is compiled without dependencies on third-party
       libraries, it will be quite small (~300 KiB in windows).
+   e. If you are compiling with MINGW but don't have the Win32 API,
+      use the predefined macro:  NO_WIN32_API (-DNO_WIN32_API).
 
 5. I have included CMakeLists.txt files for the k2pdfopt and willus libraries
    from Dirk Thierbach to help with Linux builds.  He also contributed the

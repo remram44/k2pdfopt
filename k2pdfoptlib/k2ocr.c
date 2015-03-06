@@ -1,7 +1,7 @@
 /*
 ** k2ocr.c       k2pdfopt OCR functions
 **
-** Copyright (C) 2014  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -82,14 +82,16 @@ void k2ocr_init(K2PDFOPT_SETTINGS *k2settings)
         /* v2.15 fix--specific variable for Tesseract init status */
         if (!k2ocr_tess_inited)
             {
+            char initstr[256];
+
             k2printf(TTEXT_BOLD);
             k2ocr_tess_status=ocrtess_init(NULL,
-                              k2settings->dst_ocr_lang[0]=='\0'?NULL:k2settings->dst_ocr_lang,stdout);
+                              k2settings->dst_ocr_lang[0]=='\0'?NULL:k2settings->dst_ocr_lang,
+                              NULL,initstr,255);
+            k2printf("%s\n",initstr);
             k2printf(TTEXT_NORMAL);
             if (k2ocr_tess_status)
                 k2printf(TTEXT_WARN "Could not find Tesseract data" TTEXT_NORMAL " (env var TESSDATA_PREFIX = %s).\nUsing GOCR v0.49.\n\n",getenv("TESSDATA_PREFIX")==NULL?"(not assigned)":getenv("TESSDATA_PREFIX"));
-            else
-                k2printf("\n");
             k2ocr_tess_inited=1;
             }
 #ifdef HAVE_GOCR_LIB

@@ -3,7 +3,7 @@
 **
 ** Part of willus.com general purpose C code library.
 **
-** Copyright (C) 2014  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -183,6 +183,10 @@ typedef double  real;
 #endif
 #endif
 
+/*
+** As of 2013 and gcc 4.7.x, x87_line_math is turned off entirely.
+** My x87 in-line routines are no faster than gcc on modern Intel CPUs.
+*/
 
 #if (defined(__linux) || defined(linux) || defined(__linux__))
 #define LINUX
@@ -1356,7 +1360,7 @@ void jocr_single_word_from_bmp8(char *text,int maxlen,WILLUSBITMAP *bmp8,
 
 #ifdef HAVE_TESSERACT_LIB
 /* ocrtess.c */
-int ocrtess_init(char *datadir,char *lang,FILE *out);
+int ocrtess_init(char *datadir,char *lang,FILE *out,char *initstr,int maxlen);
 void ocrtess_end(void);
 void ocrtess_single_word_from_bmp8(char *text,int maxlen,WILLUSBITMAP *bmp8,
                                 int x1,int y1,int x2,int y2,
@@ -1578,6 +1582,7 @@ void strbuf_dsprintf_no_space(STRBUF *sbuf,STRBUF *sbuf2,char *fmt,...);
 #define WILLUSGUICONTROL_TYPE_UPDOWN2      6
 #define WILLUSGUICONTROL_TYPE_CHECKBOX     7
 #define WILLUSGUICONTROL_TYPE_SCROLLABLEBITMAP 8
+#define WILLUSGUICONTROL_TYPE_BITMAP       9
 
 #define WILLUSGUIACTION_DRAW_CONTROL     1
 #define WILLUSGUIACTION_INIT             2
@@ -1606,6 +1611,7 @@ void strbuf_dsprintf_no_space(STRBUF *sbuf,STRBUF *sbuf2,char *fmt,...);
 #define WILLUSGUIACTION_DROPFILES        25
 #define WILLUSGUIACTION_CREATE           26
 #define WILLUSGUIACTION_CONTEXTMENU      27
+#define WILLUSGUIACTION_RBUTTONDOWN      28
 
 #define WILLUSGUICONTROL_ATTRIB_INACTIVE    0x0001
 #define WILLUSGUICONTROL_ATTRIB_READONLY    0x0002
@@ -1613,6 +1619,7 @@ void strbuf_dsprintf_no_space(STRBUF *sbuf,STRBUF *sbuf2,char *fmt,...);
 #define WILLUSGUICONTROL_ATTRIB_SCROLLBARS  0x0008
 #define WILLUSGUICONTROL_ATTRIB_MULTISELECT 0x0010
 #define WILLUSGUICONTROL_ATTRIB_CHECKED     0x0020
+#define WILLUSGUICONTROL_ATTRIB_NOKEYS      0x0040
 
 typedef struct
     {
@@ -1641,13 +1648,21 @@ typedef struct _willusguicontrol
     int flags;
     void *subhandle[4]; /* Handles to related controls */
     struct _willusguicontrol *parent;
-    char label[32];      /* Drawn with or next to control */
+    char label[48];      /* Drawn with or next to control */
     int labeljust;       /* label justification */
     int labelx,labely;   /* x,y position of label */
     /* Scrollable bitmap controls */
     int sbitmap_size;    /* Scrollable bitmap toggle */
     WILLUSBITMAP *obmp;     /* Original size bitmap */
     WILLUSBITMAP bmp;       /* Sized bitmap for display in Window */
+    /* Bitmap rectangle controls */
+    int timer_id;
+    int rdcount; /* rectangle draw count */
+    double dpi,dpi_rendered;
+    WILLUSGUIRECT rectmarked;
+    WILLUSGUIRECT rectanchor;
+    WILLUSGUIRECT crosshair;
+    WILLUSGUIRECT anchor;
     } WILLUSGUICONTROL;
 
 typedef struct
@@ -1666,13 +1681,17 @@ void willusgui_set_cursor(int type);
 void willusgui_open_file(char *filename);
 WILLUSGUIWINDOW *willusgui_window_find(void *oshandle);
 void willusgui_window_text_render(WILLUSGUIWINDOW *win,WILLUSGUIFONT *font,char *text,int x0,int y0,
-                                   int fgcolor,int bgcolor,int justification);
+                                   int fgcolor,int bgcolor,int justification,WILLUSGUIRECT *rect);
 void willusgui_window_text_extents(WILLUSGUIWINDOW *win,WILLUSGUIFONT *font,char *string,WILLUSGUIRECT *rect);
 void willusgui_window_draw_line(WILLUSGUIWINDOW *win,int x0,int y0,int x1,int y1,
                                                  int pixwidth,int rgbcolor);
 void willusgui_window_draw_rect_filled(WILLUSGUIWINDOW *win,WILLUSGUIRECT *rect,int rgb);
 void willusgui_window_draw_path_filled(WILLUSGUIWINDOW *win,int *x,int *y,int n,int rgb);
 int  willusgui_control_nlines(WILLUSGUICONTROL *control);
+void willusgui_window_draw_crosshair(WILLUSGUIWINDOW *win,int x,int y,int rgb);
+int  willusguirect_cursor_type(WILLUSGUIRECT *rect,WILLUSGUIRECT *winrect,int x,int y);
+void willusguirect_bound(WILLUSGUIRECT *rect,WILLUSGUIRECT *brect);
+void willusguirect_sort(WILLUSGUIRECT *rect);
 void willusgui_window_draw_rect_outline(WILLUSGUIWINDOW *win,WILLUSGUIRECT *rect,int rgb);
 void willusgui_set_instance(void *instanceptr);
 void *willusgui_instance(void);
@@ -1685,6 +1704,7 @@ void willusgui_control_get_text(WILLUSGUICONTROL *control,char *text,int maxlen)
 int  willusgui_control_get_textlen(WILLUSGUICONTROL *control);
 void willusgui_control_scroll_to_bottom(WILLUSGUICONTROL *control);
 int  willusgui_window_get_rect(WILLUSGUIWINDOW *win,WILLUSGUIRECT *guirect);
+int  willusgui_window_set_pos(WILLUSGUIWINDOW *win,WILLUSGUIRECT *guirect);
 int  willusgui_window_get_useable_rect(WILLUSGUIWINDOW *win,WILLUSGUIRECT *guirect);
 void willusgui_window_accept_draggable_files(WILLUSGUIWINDOW *win);
 void willusgui_window_timer_init(WILLUSGUIWINDOW *win,int ms);
@@ -1697,7 +1717,7 @@ void willusgui_send_quit_message(void);
 void willusgui_control_init(WILLUSGUICONTROL *control);
 int  willusgui_control_close(WILLUSGUICONTROL *control);
 int  willusgui_control_close_ex(WILLUSGUICONTROL *control,int caller);
-void willusgui_control_draw_label(WILLUSGUICONTROL *control);
+void willusgui_control_draw_label(WILLUSGUICONTROL *control,WILLUSGUIRECT *rect);
 void willusgui_control_redraw(WILLUSGUICONTROL *control,int children_too);
 void willusgui_font_release(WILLUSGUIFONT *font);
 void willusgui_font_get(WILLUSGUIFONT *font);
@@ -1718,6 +1738,8 @@ int  willusgui_control_listbox_get_item_text(WILLUSGUICONTROL *control,int index
 char **willusgui_get_dropped_files(void *dropptr);
 void willusgui_release_dropped_files(char **ptr);
 void willusgui_window_set_focus(WILLUSGUIWINDOW *win);
+int willusgui_control_text_selected(WILLUSGUICONTROL *control,int *start,int *end);
+void willusgui_control_text_select(WILLUSGUICONTROL *control,int start,int end);
 void willusgui_control_text_select_all(WILLUSGUICONTROL *control);
 void *willusgui_control_handle_with_focus(void);
 void willusgui_window_set_redraw(WILLUSGUIWINDOW *window,int status);

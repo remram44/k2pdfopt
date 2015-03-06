@@ -2,7 +2,7 @@
 ** k2settings2cmd.c    Convert changes in settings structure to equivalent
 **                     command-line arguments.
 **
-** Copyright (C) 2014  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -307,7 +307,6 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
     minus_check(cmdline,nongui,"-sp",&src->echo_source_page_count,dst->echo_source_page_count);
     minus_inverse(cmdline,NULL,"-r",&src->src_left_to_right,dst->src_left_to_right);
     minus_check(cmdline,nongui,"-hy",&src->hyphen_detect,dst->hyphen_detect);
-    minus_check(cmdline,NULL,"-ls",&src->dst_landscape,dst->dst_landscape);
 #ifdef HAVE_GHOSTSCRIPT
     minus_check(cmdline,NULL,"-ppgs",&src->ppgs,dst->ppgs);
 #endif
@@ -362,6 +361,7 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
     minus_check(cmdline,nongui,"-fc",&src->fit_columns,dst->fit_columns);
     minus_check(cmdline,nongui,"-d",&src->dst_dither,dst->dst_dither);
     minus_check(cmdline,NULL,"-c",&src->dst_color,dst->dst_color);
+    minus_check(cmdline,NULL,"-ac",&src->autocrop,dst->autocrop);
     minus_check(cmdline,nongui,"-v",&src->verbose,dst->verbose);
     if (src->jpeg_quality != dst->jpeg_quality)
         {
@@ -437,6 +437,14 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
         else 
             strbuf_dsprintf(cmdline,nongui,"-rt %d",dst->src_rot);
         src->src_rot=dst->src_rot;
+        }
+    /* -ls */
+    if (src->dst_landscape != dst->dst_landscape || stricmp(src->dst_landscape_pages,dst->dst_landscape_pages))
+        {
+        strbuf_dsprintf(cmdline,nongui,"-ls%s%s",dst->dst_landscape?"":"-",
+                                                 dst->dst_landscape_pages);
+        src->dst_landscape = dst->dst_landscape;
+        strcpy(src->dst_landscape_pages,dst->dst_landscape_pages);
         }
     double_check(cmdline,nongui,"-crgh",&src->column_row_gap_height_in,dst->column_row_gap_height_in);
     double_check(cmdline,nongui,"-cgr",&src->column_gap_range,dst->column_gap_range);
@@ -627,7 +635,7 @@ static void cropbox_check(STRBUF *cmdline,STRBUF *nongui,char *opt,K2CROPBOX *sr
 
         strbuf_dsprintf(cmdline,nongui,"%s",opt);
         for (i=0;i<4;i++)
-            strbuf_dsprintf_no_space(cmdline,nongui,"%s%g%s",i==0?" ":",",dst->box[i],
+            strbuf_dsprintf_no_space(cmdline,nongui,"%s%.4g%s",i==0?" ":",",dst->box[i],
                                     unit_string(dst->units[i]));
         (*src)=(*dst);
         }
@@ -669,7 +677,7 @@ static void cropboxes_check(STRBUF *cmdline,STRBUF *nongui,K2CROPBOXES *src,K2CR
             int c;
             strbuf_dsprintf(cmdline,nongui,"-cbox%s",dst->cropbox[i].pagelist);
             for (c=0;c<4;c++)
-                strbuf_dsprintf_no_space(cmdline,nongui,"%s%g%s",c==0?" ":",",
+                strbuf_dsprintf_no_space(cmdline,nongui,"%s%.4g%s",c==0?" ":",",
                                          dst->cropbox[i].box[c],
                                          unit_string(dst->cropbox[i].units[c]));
             src->cropbox[i]=dst->cropbox[i];

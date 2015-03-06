@@ -2,7 +2,7 @@
 ** k2file.c      K2pdfopt file handling and main file processing
 **               function (k2pdfopt_proc_one()).
 **
-** Copyright (C) 2014  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -36,6 +36,8 @@ static int    overwrite_fail(char *outname,double overwrite_minsize_mb);
 static int toclist_valid(char *s,FILE *out);
 static WPDFOUTLINE *wpdfoutline_from_pagelist(char *pagelist,int maxpages);
 static int tocwrites=0;
+static int get_source_type(char *filename);
+static int file_numpages(char *filename,char *mupdffilename,int src_type,int *usegs);
 #ifdef HAVE_GHOSTSCRIPT
 static void   gs_postprocess(char *filename);
 #endif
@@ -271,9 +273,6 @@ static double k2pdfopt_proc_one(K2PDFOPT_SETTINGS *k2settings0,char *filename,do
     static char *funcname="k2pdfopt_proc_one";
     static char *readerr=TTEXT_WARN "\a\n ** ERROR reading page %d from " TTEXT_BOLD2 "%s" TTEXT_WARN ".\n\n" TTEXT_NORMAL;
     static char *readlimit=TTEXT_WARN "\a\n ** (No more read errors will be echoed for file %s.)\n\n" TTEXT_NORMAL;
-#ifdef HAVE_MUPDF_LIB
-    static char *mupdferr_trygs=TTEXT_WARN "\a\n ** ERROR reading from " TTEXT_BOLD2 "%s" TTEXT_WARN "using MuPDF.  Trying Ghostscript...\n\n" TTEXT_NORMAL;
-#endif
 /*
 extern void willus_mem_debug_update(char *);
 */
@@ -357,23 +356,7 @@ printf("@k2pdfopt_proc_one(filename='%s', rot_deg=%g, preview_bitmap=%p)\n",file
     bmp_init(srcgrey);
     bmp_init(marked);
     pw=0;
-    /*
-    ** Determine source type
-    */
-    if (folder)
-        src_type = SRC_TYPE_BITMAPFOLDER;
-    else if (!stricmp(wfile_ext(filename),"pdf"))
-        src_type = SRC_TYPE_PDF;
-    else if (!stricmp(wfile_ext(filename),"djvu"))
-        src_type = SRC_TYPE_DJVU;
-    else if (!stricmp(wfile_ext(filename),"djv"))
-        src_type = SRC_TYPE_DJVU;
-    else if (!stricmp(wfile_ext(filename),"ps"))
-        src_type = SRC_TYPE_PS;
-    else if (!stricmp(wfile_ext(filename),"eps"))
-        src_type = SRC_TYPE_PS;
-    else
-        src_type = SRC_TYPE_OTHER;
+    src_type = get_source_type(filename);
 #ifndef HAVE_DJVU_LIB
     if (src_type==SRC_TYPE_DJVU)
         {
@@ -500,22 +483,10 @@ printf("@k2pdfopt_proc_one(filename='%s', rot_deg=%g, preview_bitmap=%p)\n",file
         }
     if (src_type==SRC_TYPE_PDF || src_type==SRC_TYPE_DJVU)
         {
-        wsys_set_decimal_period(1);
+        np=file_numpages(filename,mupdffilename,src_type,&k2settings->usegs);
 #ifdef HAVE_MUPDF_LIB
         if (src_type==SRC_TYPE_PDF)
             {
-            np=wmupdf_numpages(mupdffilename);
-#ifdef HAVE_WIN32_API
-            if (np<0)
-                {
-                int ns;
-                ns=wsys_filename_8dot3(mupdffilename,filename,MAXFILENAMELEN-1);
-                if (ns>0 && stricmp(filename,mupdffilename))
-                    np=wmupdf_numpages(mupdffilename);
-                else
-                    strcpy(mupdffilename,filename);
-                }
-#endif
             /* Get bookmarks / outline from PDF file */
             if (!or_detect && k2settings->use_toc!=0 && !toclist_valid(k2settings->toclist,NULL))
                 {
@@ -543,26 +514,6 @@ printf("@k2pdfopt_proc_one(filename='%s', rot_deg=%g, preview_bitmap=%p)\n",file
                     }
                 }
             }
-        else
-#endif
-#ifdef HAVE_DJVU_LIB
-        if (src_type==SRC_TYPE_DJVU)
-            np=bmpdjvu_numpages(filename);
-        else
-#endif
-            np=-1;
-        wsys_set_decimal_period(1);
-#ifdef HAVE_MUPDF_LIB
-        if (np==-1 && (k2settings->usegs<=0) && src_type==SRC_TYPE_PDF)
-            {
-            k2printf(mupdferr_trygs,filename);
-            if (k2settings->usegs==0)
-                k2settings->usegs=1;
-            }
-#endif
-#ifdef HAVE_Z_LIB
-        if (np<=0 && src_type==SRC_TYPE_PDF)
-            np=pdf_numpages(filename);
 #endif
         }
     else if (src_type==SRC_TYPE_BITMAPFOLDER)
@@ -633,7 +584,7 @@ printf("@k2pdfopt_proc_one(filename='%s', rot_deg=%g, preview_bitmap=%p)\n",file
     for (i=0;1;i+=pagestep)
         {
         char bmpfile[MAXFILENAMELEN];
-        int pageno;
+        int pageno,nextpage;
 /*
 sprintf(bmpfile,"i=%d",i);
 willus_mem_debug_update(bmpfile);
@@ -642,8 +593,13 @@ willus_mem_debug_update(bmpfile);
         if (pagecount>0 && i+1>pagecount)
             break;
         pageno = pagelist_page_by_index(k2settings->pagelist,i,np);
+        nextpage = (i+2>pagecount) ? -1 : pagelist_page_by_index(k2settings->pagelist,i+1,np);
+        /* Removed in v2.32 */
+        /* This always returned non-zero */
+        /*
         if (!pagelist_page_by_index(k2settings->pagelist,pageno,np))
             continue;
+        */
         if (folder)
             {
             if (pageno-1>=fl->n)
@@ -732,25 +688,32 @@ willus_mem_debug_update(bmpfile);
         /* Got Good Page Render */
         bmpregion_init(&region);
         if (masterinfo_new_source_page_init(masterinfo,k2settings,src,srcgrey,marked,
-                                 &region,rot_deg,&bormean,rotstr,pageno,stdout)==0)
+                                 &region,rot_deg,&bormean,rotstr,pageno,nextpage,stdout)==0)
             {
             /* v2.15 -- memory leak fix */
             bmpregion_free(&region);
             pages_done++;
             continue;
             }
-        k2printf("\n" TTEXT_HEADER "SOURCE PAGE %d",pageno);
+        if (!preview)
+            k2printf("\n" TTEXT_HEADER "SOURCE PAGE %d",pageno);
         if (pagecount>0)
             {
-            if (k2settings->pagelist[0]!='\0')
-                k2printf(" (%d of %d)",pages_done+1,pagecount);
-            else
-                k2printf(" of %d",pagecount);
+            if (!preview)
+                {
+                if (k2settings->pagelist[0]!='\0')
+                    k2printf(" (%d of %d)",pages_done+1,pagecount);
+                else
+                    k2printf(" of %d",pagecount);
+                }
             }
-        k2printf(TTEXT_NORMAL 
+        if (!preview)
+            {
+            k2printf(TTEXT_NORMAL 
                 " (%.1f x %.1f in) ... %s",(double)srcgrey->width/k2settings->src_dpi,
                   (double)srcgrey->height/k2settings->src_dpi,rotstr);
-        fflush(stdout);
+            fflush(stdout);
+            }
 
         /* Parse the source bitmap for viewable regions */
         bmpregion_source_page_add(&region,k2settings,masterinfo,1,pages_done++);
@@ -789,7 +752,12 @@ willus_mem_debug_update(bmpfile);
             }
         if (k2settings->show_marked_source && !preview)
             publish_marked_page(mpdf,k2settings->dst_color ? marked : src,k2settings->src_dpi);
-        k2printf("%d new pages saved.\n",masterinfo->published_pages-pw);
+        if (!preview)
+            {
+            int np;
+            np=masterinfo->published_pages-pw;
+            k2printf("%d new page%s saved.\n",np,np==1?"":"s");
+            }
         pw=masterinfo->published_pages;
         }
 /*
@@ -1220,6 +1188,140 @@ static WPDFOUTLINE *wpdfoutline_from_pagelist(char *pagelist,int maxpages)
         outline=outline->next;
         }
     return(outline0);
+    }
+
+
+static int get_source_type(char *filename)
+
+    {
+    /*
+    ** Determine source type
+    */
+    if (wfile_status(filename)==2)
+        return(SRC_TYPE_BITMAPFOLDER);
+    else if (!stricmp(wfile_ext(filename),"pdf"))
+        return(SRC_TYPE_PDF);
+    else if (!stricmp(wfile_ext(filename),"djvu"))
+        return(SRC_TYPE_DJVU);
+    else if (!stricmp(wfile_ext(filename),"djv"))
+        return(SRC_TYPE_DJVU);
+    else if (!stricmp(wfile_ext(filename),"ps"))
+        return(SRC_TYPE_PS);
+    else if (!stricmp(wfile_ext(filename),"eps"))
+        return(SRC_TYPE_PS);
+    else
+        return(SRC_TYPE_OTHER);
+    }
+
+
+static int file_numpages(char *filename,char *mupdffilename,int src_type,int *usegs)
+
+    {
+    int np;
+
+    wsys_set_decimal_period(1);
+#ifdef HAVE_MUPDF_LIB
+    if (src_type==SRC_TYPE_PDF)
+        {
+        np=wmupdf_numpages(mupdffilename);
+#ifdef HAVE_WIN32_API
+        if (np<0)
+            {
+            int ns;
+            ns=wsys_filename_8dot3(mupdffilename,filename,MAXFILENAMELEN-1);
+            if (ns>0 && stricmp(filename,mupdffilename))
+                np=wmupdf_numpages(mupdffilename);
+            else
+                strcpy(mupdffilename,filename);
+            }
+#endif
+        }
+    else
+#endif
+#ifdef HAVE_DJVU_LIB
+    if (src_type==SRC_TYPE_DJVU)
+        np=bmpdjvu_numpages(filename);
+    else
+#endif
+        np=-1;
+    wsys_set_decimal_period(1);
+#ifdef HAVE_MUPDF_LIB
+    if (usegs!=NULL && src_type==SRC_TYPE_PDF && np==-1 && ((*usegs)<=0))
+        {
+        static char *mupdferr_trygs=TTEXT_WARN "\a\n ** ERROR reading from " TTEXT_BOLD2 "%s" TTEXT_WARN "using MuPDF.  Trying Ghostscript...\n\n" TTEXT_NORMAL;
+
+        k2printf(mupdferr_trygs,filename);
+        if ((*usegs)==0)
+            (*usegs)=1;
+        }
+#endif
+#ifdef HAVE_Z_LIB
+    if (np<=0 && src_type==SRC_TYPE_PDF)
+        np=pdf_numpages(filename);
+#endif
+    return(np);
+    }
+
+
+void k2file_get_overlay_bitmap(WILLUSBITMAP *bmp,double *dpi,char *filename,char *pagelist)
+
+    {
+    int i,c,c2,src_type,np;
+    char mupdffilename[MAXFILENAMELEN];
+    static K2PDFOPT_SETTINGS _k2settings;
+    K2PDFOPT_SETTINGS *k2settings;
+    WILLUSBITMAP *tmp,_tmp;
+
+    (*dpi)=100.;
+    src_type = get_source_type(filename);
+    if (src_type!=SRC_TYPE_PDF && src_type!=SRC_TYPE_DJVU)
+        return;
+    strncpy(mupdffilename,filename,MAXFILENAMELEN-1);
+    mupdffilename[MAXFILENAMELEN-1]='\0';
+    k2settings=&_k2settings;
+    k2pdfopt_settings_init(k2settings);
+    k2settings->document_scale_factor=1.0;
+    k2settings->usegs=-1;
+    np=file_numpages(filename,mupdffilename,src_type,&k2settings->usegs);
+    for (c=0,i=1;i<=np;i++)
+        if (pagelist_includes_page(pagelist,i,np))
+            c++;
+#ifdef HAVE_K2GUI
+    if (k2gui_active())
+        {
+        k2gui_overlay_set_num_pages(c);
+        k2gui_overlay_set_pages_completed(0,NULL);
+        }
+#endif
+    tmp=&_tmp;
+    bmp_init(tmp);
+    for (c=c2=0,i=1;i<=np;i++)
+        {
+        int status;
+
+        if (!pagelist_includes_page(pagelist,i,np))
+            continue;
+        status=bmp_get_one_document_page(tmp,k2settings,src_type,mupdffilename,i,100.,8,NULL);
+        c2++;
+#ifdef HAVE_K2GUI
+        if (k2gui_active())
+            k2gui_overlay_set_pages_completed(c2,NULL);
+#endif
+        if (status)
+            {
+#ifdef HAVE_K2GUI
+            if (k2gui_active())
+                k2gui_overlay_error(filename,i,status);
+#endif
+            continue;
+            }
+        c++;
+        if (c==1)
+            bmp_copy(bmp,tmp);
+        else
+            bmp8_merge(bmp,tmp,c);
+        }
+    bmp_free(tmp);
     }
 
 

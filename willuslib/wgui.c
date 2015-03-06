@@ -4,7 +4,7 @@
 **
 ** Part of willus.com general purpose C code library.
 **
-** Copyright (C) 2014  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -93,12 +93,48 @@ void willusgui_close(void)
 /*
 ** 0 = normal
 ** 1 = wait
+**
+**      2------3------4
+**      |             |
+**      |             |
+**      |             |
+**      5      6      7
+**      |             |
+**      |             |
+**      |             |
+**      8------9------10
 */
 void willusgui_set_cursor(int type)
 
     {
 #ifdef MSWINGUI
-    SetCursor(LoadCursor(NULL,type==0?IDC_ARROW:IDC_WAIT));
+    switch(type)
+        {
+        case 1:
+            SetCursor(LoadCursor(NULL,IDC_WAIT));
+            break;
+        case 2:
+        case 10:
+            SetCursor(LoadCursor(NULL,IDC_SIZENWSE));
+            break;
+        case 3:
+        case 9:
+            SetCursor(LoadCursor(NULL,IDC_SIZENS));
+            break;
+        case 4:
+        case 8:
+            SetCursor(LoadCursor(NULL,IDC_SIZENESW));
+            break;
+        case 5:
+        case 7:
+            SetCursor(LoadCursor(NULL,IDC_SIZEWE));
+            break;
+        case 6:
+            SetCursor(LoadCursor(NULL,IDC_SIZEALL));
+            break;
+        default:
+            SetCursor(LoadCursor(NULL,IDC_ARROW));
+        }
 #endif
     }
 
@@ -145,36 +181,53 @@ void willusgui_open_file(char *filename)
 ** justification =    0     1      2
 **                    3     4      5
 **                    6     7      8
+**
+** If rect!=NULL, the text is not drawn and the extents are calculated instead
+** and stored in rect.
 */
 void willusgui_window_text_render(WILLUSGUIWINDOW *win,WILLUSGUIFONT *font,char *text,int x0,int y0,
-                                   int fgcolor,int bgcolor,int justification)
+                                   int fgcolor,int bgcolor,int justification,WILLUSGUIRECT *rect)
 
     {
 #ifdef MSWINGUI
-    int alignment,vc;
+    int alignment,vc,xo,yo;
     HDC hdc;
 
     alignment=0;
-    if ((justification%3) == 0)
+    xo=(justification%3);
+    yo=(justification/3)%3;
+    if (xo == 0)
         alignment |= TA_LEFT;
-    else if ((justification%3) == 1)
+    else if (xo == 1)
         alignment |= TA_CENTER;
     else
         alignment |= TA_RIGHT;
-    if ((justification/3) == 0)
+    if (yo == 0)
         alignment |= TA_TOP;
-    else if ((justification/3) == 1)
+    else if (yo == 1)
         alignment |= TA_BOTTOM;
     else
         alignment |= TA_BOTTOM;
-    vc = ((justification/3)==1);
+    vc = (yo==1);
     hdc=GetDC((HWND)win->handle);
     SelectObject(hdc,font->handle);
-    if (bgcolor<0)
-        SetBkMode(hdc,TRANSPARENT);
-    SetTextAlign(hdc,alignment);
-    SetTextColor(hdc,fgcolor);
-    win_textout_utf8((void *)hdc,x0,y0 + (vc ? font->size/3:0),text);
+    if (rect==NULL)
+        {
+        if (bgcolor<0)
+            SetBkMode(hdc,TRANSPARENT);
+        SetTextAlign(hdc,alignment);
+        SetTextColor(hdc,fgcolor);
+        win_textout_utf8((void *)hdc,x0,y0 + (vc ? font->size/3:0),text);
+        }
+    else
+        {
+        long w,h;
+        win_gettextextentpoint_utf8((void *)hdc,text,&w,&h);
+        rect->left = x0-xo*w/2;
+        rect->right = rect->left + w;
+        rect->top  = y0-yo*h/2;
+        rect->bottom = rect->top + h;
+        }
     ReleaseDC((HWND)win->handle,hdc);
 #endif
     }
@@ -274,6 +327,54 @@ void willusgui_window_draw_path_filled(WILLUSGUIWINDOW *win,int *x,int *y,int n,
     }
 
 
+void willusguirect_bound(WILLUSGUIRECT *rect,WILLUSGUIRECT *brect)
+
+    {
+    WILLUSGUIRECT r1;
+
+    r1=(*brect);
+    willusguirect_sort(&r1);
+    willusguirect_sort(rect);
+    if (rect->left < r1.left)
+        rect->left = r1.left;
+    if (rect->left > r1.right)
+        rect->left = r1.right;
+    if (rect->right < r1.left)
+        rect->right = r1.left;
+    if (rect->right > r1.right)
+        rect->right = r1.right;
+    if (rect->top < r1.top)
+        rect->top = r1.top;
+    if (rect->top > r1.bottom)
+        rect->top = r1.bottom;
+    if (rect->bottom < r1.top)
+        rect->bottom = r1.top;
+    if (rect->bottom > r1.bottom)
+        rect->bottom = r1.bottom;
+    willusguirect_sort(rect);
+    }
+
+
+void willusguirect_sort(WILLUSGUIRECT *rect)
+
+    {
+    if (rect->left > rect->right)
+        {
+        int t;
+        t=rect->left;
+        rect->left=rect->right;
+        rect->right=t;
+        }
+    if (rect->top > rect->bottom)
+        {
+        int t;
+        t=rect->top;
+        rect->top=rect->bottom;
+        rect->bottom=t;
+        }
+    }
+
+
 /*
 ** Number of displayable lines in an edit control
 */
@@ -286,6 +387,75 @@ int willusgui_control_nlines(WILLUSGUICONTROL *control)
     }
 
 
+void willusgui_window_draw_crosshair(WILLUSGUIWINDOW *win,int x,int y,int rgb)
+
+    {
+#ifdef MSWINGUI
+    HDC hdc;
+    HPEN hpen,oldpen;
+
+    hdc=GetDC((HWND)win->handle);
+    hpen=rgb<0 ? CreatePen(PS_SOLID,1,RGB(255,255,255)) 
+               : CreatePen(PS_SOLID,1,RGB(rgb&0xff0000>>16,rgb&0xff00>>8,rgb&0xff));
+    oldpen=SelectObject(hdc,hpen);
+    if (rgb<0)
+        SetROP2(hdc,R2_XORPEN);
+    MoveToEx(hdc,0,y,NULL);
+    LineTo(hdc,4000,y);
+    MoveToEx(hdc,x,0,NULL);
+    LineTo(hdc,x,4000);
+    SelectObject(hdc,oldpen);
+    DeleteObject(hpen);
+    ReleaseDC((HWND)win->handle,hdc);
+#endif
+    }
+
+
+/*
+** -1 = outside win
+** 0 = normal mouse ptr
+** 
+**      1------2------3
+**      |             |
+**      |             |
+**      |             |
+**      4      5      6
+**      |             |
+**      |             |
+**      |             |
+**      7------8------9
+**
+*/
+int willusguirect_cursor_type(WILLUSGUIRECT *rect,WILLUSGUIRECT *winrect,int x,int y)
+
+    {
+    int dx,ix,iy;
+
+    dx=7;
+    if (x<0 || y<0 || x>winrect->right || y>winrect->bottom)
+        return(-1);
+    if (rect->left<-9000)
+        return(0);
+    if (x<rect->left-dx || x>rect->right+dx)
+        return(0);
+    if (y<rect->top-dx || y>rect->bottom+dx)
+        return(0);
+    if (abs(x-rect->left)<=dx)
+        ix=0;
+    else if (abs(x-rect->right)<=dx)
+        ix=2;
+    else
+        ix=1;
+    if (abs(y-rect->top)<=dx)
+        iy=0;
+    else if (abs(y-rect->bottom)<=dx)
+        iy=2;
+    else
+        iy=1;
+    return(1+ix+iy*3);
+    }
+
+
 void willusgui_window_draw_rect_outline(WILLUSGUIWINDOW *win,WILLUSGUIRECT *rect,int rgb)
 
     {
@@ -294,15 +464,32 @@ void willusgui_window_draw_rect_outline(WILLUSGUIWINDOW *win,WILLUSGUIRECT *rect
     RECT wrect;
     HBRUSH brush;
 
-    wrect.top=rect->top;
-    wrect.bottom=rect->bottom;
-    wrect.left=rect->left;
-    wrect.right=rect->right;
-    brush = CreateSolidBrush(((rgb&0xff0000)>>16)|(rgb&0xff00)|((rgb&0xff)<<16));
     hdc=GetDC((HWND)win->handle);
-    FrameRect(hdc,&wrect,brush);
+    if (rgb<0)
+        {
+        HPEN hpen,oldpen;
+        hpen=CreatePen(PS_SOLID,1,RGB(255,255,255));
+        oldpen=SelectObject(hdc,hpen);
+        SetROP2(hdc,R2_XORPEN);
+        MoveToEx(hdc,rect->left,rect->top,NULL);
+        LineTo(hdc,rect->right,rect->top);
+        LineTo(hdc,rect->right,rect->bottom);
+        LineTo(hdc,rect->left,rect->bottom);
+        LineTo(hdc,rect->left,rect->top);
+        SelectObject(hdc,oldpen);
+        DeleteObject(hpen);
+        }
+    else
+        {
+        wrect.top=rect->top;
+        wrect.bottom=rect->bottom;
+        wrect.left=rect->left;
+        wrect.right=rect->right;
+        brush = CreateSolidBrush(((rgb&0xff0000)>>16)|(rgb&0xff00)|((rgb&0xff)<<16));
+        FrameRect(hdc,&wrect,brush);
+        DeleteObject(brush);
+        }
     ReleaseDC((HWND)win->handle,hdc);
-    DeleteObject(brush);
 #endif
     }
     
@@ -373,10 +560,12 @@ void willusgui_control_create(WILLUSGUICONTROL *control)
     switch (control->type)
         {
         case WILLUSGUICONTROL_TYPE_LISTBOX:
-            flags = WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_VSCROLL | LBS_USETABSTOPS
-                     | LBS_WANTKEYBOARDINPUT | LBS_STANDARD | LBS_NOTIFY | WS_OVERLAPPED;
+            flags = WS_CHILD | WS_VISIBLE | WS_VSCROLL | LBS_STANDARD
+                             | LBS_NOTIFY | WS_OVERLAPPED;
             if (control->attrib & WILLUSGUICONTROL_ATTRIB_MULTISELECT)
                 flags |= (LBS_MULTIPLESEL | LBS_EXTENDEDSEL);
+            if (!(control->attrib & WILLUSGUICONTROL_ATTRIB_NOKEYS))
+                flags |= WS_TABSTOP | LBS_USETABSTOPS | LBS_WANTKEYBOARDINPUT;
             flags &= (~LBS_SORT);
             {
             short *wname;
@@ -392,7 +581,9 @@ void willusgui_control_create(WILLUSGUICONTROL *control)
             SendMessage(control->handle,WM_SETFONT,(WPARAM)control->font.handle,1);
             break;
         case WILLUSGUICONTROL_TYPE_DROPDOWNLIST:
-            flags = WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_VSCROLL | CBS_DROPDOWNLIST;
+            flags = WS_CHILD | WS_VISIBLE | WS_VSCROLL | CBS_DROPDOWNLIST;
+            if (!(control->attrib & WILLUSGUICONTROL_ATTRIB_NOKEYS))
+                flags |= WS_TABSTOP;
             flags &= (~CBS_SORT);
             {
             short *wname;
@@ -413,7 +604,9 @@ void willusgui_control_create(WILLUSGUICONTROL *control)
             int checkbox;
 
             checkbox = (control->type == WILLUSGUICONTROL_TYPE_CHECKBOX);
-            flags = WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW;
+            flags = WS_CHILD | WS_VISIBLE | BS_OWNERDRAW;
+            if (!(control->attrib & WILLUSGUICONTROL_ATTRIB_NOKEYS))
+                flags |= WS_TABSTOP;
             control->handle = CreateWindow("button",checkbox ? control->label : control->name,flags,
                                    control->rect.left,control->rect.top,
                                    control->rect.right-control->rect.left+1,
@@ -442,7 +635,9 @@ void willusgui_control_create(WILLUSGUICONTROL *control)
             int h;
 
             h=control->rect.bottom-control->rect.top+1;
-            flags = WS_CHILD|WS_VISIBLE|WS_BORDER|WS_TABSTOP|ES_AUTOHSCROLL|ES_RIGHT;
+            flags = WS_CHILD|WS_VISIBLE|WS_BORDER|ES_AUTOHSCROLL|ES_RIGHT;
+            if (!(control->attrib & WILLUSGUICONTROL_ATTRIB_NOKEYS))
+                flags |= WS_TABSTOP;
             if (control->attrib & WILLUSGUICONTROL_ATTRIB_READONLY)
                 flags |= ES_READONLY;
             if (control->attrib & WILLUSGUICONTROL_ATTRIB_SCROLLBARS)
@@ -489,7 +684,9 @@ printf("width=%d\n",control->rect.right-control->rect.left-h-1);
             w1=h*2/3;
             w2=h;
             g=2;
-            flags = WS_CHILD|WS_VISIBLE|WS_BORDER|WS_TABSTOP|ES_AUTOHSCROLL|ES_RIGHT;
+            flags = WS_CHILD|WS_VISIBLE|WS_BORDER|ES_AUTOHSCROLL|ES_RIGHT;
+            if (!(control->attrib & WILLUSGUICONTROL_ATTRIB_NOKEYS))
+                flags |= WS_TABSTOP;
             if (control->attrib & WILLUSGUICONTROL_ATTRIB_READONLY)
                 flags |= ES_READONLY;
             if (control->attrib & WILLUSGUICONTROL_ATTRIB_SCROLLBARS)
@@ -537,7 +734,9 @@ printf("width=%d\n",control->rect.right-control->rect.left-h-1);
             }
         case WILLUSGUICONTROL_TYPE_EDITBOX:
             {
-            flags = WS_CHILD|WS_VISIBLE|WS_BORDER|WS_TABSTOP|ES_AUTOHSCROLL;
+            flags = WS_CHILD|WS_VISIBLE|WS_BORDER|ES_AUTOHSCROLL;
+            if (!(control->attrib & WILLUSGUICONTROL_ATTRIB_NOKEYS))
+                flags |= WS_TABSTOP;
             if (control->attrib & WILLUSGUICONTROL_ATTRIB_READONLY)
                 flags |= ES_READONLY;
             if (control->attrib & WILLUSGUICONTROL_ATTRIB_MULTILINE)
@@ -555,6 +754,7 @@ printf("width=%d\n",control->rect.right-control->rect.left-h-1);
             }
             break;
         case WILLUSGUICONTROL_TYPE_SCROLLABLEBITMAP:
+        case WILLUSGUICONTROL_TYPE_BITMAP:
             {
             static int need_new_class=1;
             static char *sbclass="ScrollableBitmap";
@@ -580,7 +780,9 @@ printf("width=%d\n",control->rect.right-control->rect.left-h-1);
                 RegisterClassEx(&wndclass);
                 need_new_class=0;
                 }
-            flags = WS_CHILD|WS_VISIBLE|WS_BORDER|WS_TABSTOP|WS_OVERLAPPED;
+            flags = WS_CHILD|WS_VISIBLE|WS_BORDER|WS_OVERLAPPED;
+            if (!(control->attrib & WILLUSGUICONTROL_ATTRIB_NOKEYS))
+                flags |= WS_TABSTOP;
             willusgui_sbitmap_resample_original(control);
             if (control->bmp.width>control->rect.right-control->rect.left-1)
                 flags |= WS_HSCROLL;
@@ -595,10 +797,12 @@ printf("width=%d\n",control->rect.right-control->rect.left-h-1);
                                    control->parent->handle,(HMENU)(size_t)(control->index),
                                    (HINSTANCE)willusgui_global_instance,NULL);
             SendMessage(control->handle,WM_SETFONT,(WPARAM)control->font.handle,1);
+            if (control->type==WILLUSGUICONTROL_TYPE_BITMAP)
+                control->timer_id=SetTimer(control->handle,0,20,NULL);
             }
             break;
         }
-    willusgui_control_draw_label(control);
+    willusgui_control_draw_label(control,NULL);
     if (control->handle!=NULL)
         willusgui_window_register(control);
     icontrol=NULL;
@@ -692,6 +896,24 @@ int willusgui_window_get_rect(WILLUSGUIWINDOW *win,WILLUSGUIRECT *guirect)
     return(0);
 #endif
     }
+
+
+int willusgui_window_set_pos(WILLUSGUIWINDOW *win,WILLUSGUIRECT *guirect)
+
+    {
+#ifdef MSWINGUI
+    HWND hwnd;
+    int status;
+
+    hwnd=(HWND)win->handle;
+    status=SetWindowPos(hwnd,HWND_TOP,guirect->left,guirect->top,guirect->right-guirect->left+1,
+                        guirect->bottom-guirect->top+1,0);
+    return(status);
+#else
+    return(0);
+#endif
+    }
+
 
 /*
 ** Returns NZ if succeeds
@@ -860,6 +1082,15 @@ void willusgui_control_init(WILLUSGUICONTROL *control)
     control->bmp.width=control->bmp.height=0;
     control->bmp.bpp=24;
     control->sbitmap_size=0;
+    control->rectmarked.left = -10000;
+    control->rectmarked.right = -10000;
+    control->rectanchor.left = -10000;
+    control->anchor.left = -10000;
+    control->crosshair.left = -10000;
+    control->rdcount=0;
+    control->timer_id=0;
+    control->dpi=0.;
+    control->dpi_rendered=0.;
     }
 
 
@@ -877,7 +1108,10 @@ int  willusgui_control_close(WILLUSGUICONTROL *control)
     ** thread (it also has its own class and callback function--not sure if
     ** that matters).
     */
-    if (control->type == WILLUSGUICONTROL_TYPE_SCROLLABLEBITMAP)
+    if (control->timer_id!=0)
+        KillTimer((HWND)control->handle,control->timer_id);
+    if (control->type == WILLUSGUICONTROL_TYPE_SCROLLABLEBITMAP
+          || control->type == WILLUSGUICONTROL_TYPE_BITMAP)
         SendMessage((HWND)control->handle,WM_CLOSE,0,0);
     else
         {
@@ -941,7 +1175,10 @@ int willusgui_control_close_ex(WILLUSGUICONTROL *control,int caller)
     }
 
 
-void willusgui_control_draw_label(WILLUSGUICONTROL *control)
+/*
+** If rect==NULL, label is drawn, otherwise the extents are returned in rect.
+*/
+void willusgui_control_draw_label(WILLUSGUICONTROL *control,WILLUSGUIRECT *rect)
 
     {
     if (control->label[0]=='\0')
@@ -949,7 +1186,7 @@ void willusgui_control_draw_label(WILLUSGUICONTROL *control)
     if (control->type==WILLUSGUICONTROL_TYPE_CHECKBOX)
         return;
     willusgui_window_text_render(control->parent,&control->font,control->label,
-                              control->labelx,control->labely,0,-1,control->labeljust);
+                              control->labelx,control->labely,0,-1,control->labeljust,rect);
     }
 
 
@@ -959,7 +1196,7 @@ void willusgui_control_draw_label(WILLUSGUICONTROL *control)
 void willusgui_control_redraw(WILLUSGUICONTROL *control,int children_too)
 
     {
-    willusgui_control_draw_label(control);
+    willusgui_control_draw_label(control,NULL);
 #ifdef MSWINGUI
     int flags;
     flags=RDW_INVALIDATE;
@@ -1297,13 +1534,41 @@ printf("SetFocus returns %p\n",p);
     }
 
 
+int willusgui_control_text_selected(WILLUSGUICONTROL *control,int *start,int *end)
+
+    {
+#ifdef MSWINGUI
+    if (control->handle!=NULL)
+        {
+        int status;
+        (*start)=(*end)=-1;
+        status=SendMessage((HWND)control->handle,EM_GETSEL,(WPARAM)start,(LPARAM)end);
+        return(status!=0 ? 1 : 0);
+        }
+#endif
+    return(0);
+    }
+
+
+void willusgui_control_text_select(WILLUSGUICONTROL *control,int start,int end)
+
+    {
+#ifdef MSWINGUI
+    if (control->handle!=NULL)
+        {
+        PostMessage((HWND)control->handle,EM_SETSEL,start,end);
+        }
+#endif
+    }
+
+
 void willusgui_control_text_select_all(WILLUSGUICONTROL *control)
 
     {
 #ifdef MSWINGUI
     if (control->handle!=NULL)
         {
-        SendMessage((HWND)control->handle,EM_SETSEL,0,-1);
+        PostMessage((HWND)control->handle,EM_SETSEL,0,-1);
         }
 #endif
     }
@@ -1651,6 +1916,28 @@ printf("    sbitmap_size = %d\n",control->sbitmap_size);
     rw = (double)src->width / (rect->right-rect->left-1);
     rh = (double)src->height / (rect->bottom-rect->top-1);
     rr = rw > rh ? rw : rh;
+/*
+printf("rr=%g\n",rr);
+*/
+    /* For normal bitmap, fit to window */
+    if (control->type==WILLUSGUICONTROL_TYPE_BITMAP)
+        {
+        w = src->width/rr+.5;
+        h = src->height/rr+.5;
+/*
+printf("w=%d, h=%d\n",w,h);
+*/
+        control->dpi_rendered = control->dpi/rr;
+        if (w==src->width && h==src->height)
+            bmp_copy(dst,src);
+        else
+            {
+            dst->bpp = 24;
+            bmp_resample(dst,src,0.,0.,(double)src->width,(double)src->height,w,h);
+            }
+        return;
+        }
+    /* For scrollable bitmap, fit to nearest size magnifier */
     o2osize = (int)(0.5+4.*log(rr)/log(2));
     if (control->sbitmap_size==o2osize)
         {
@@ -1737,8 +2024,10 @@ LRESULT CALLBACK willusgui_sbitmap_proc_internal(HWND hwnd,UINT message,WPARAM w
     static int yMaxScroll=0;       /* maximum vertical scroll value    */
     static int buttondown=0;
     static int mx0,my0,mx,my;
-    int hscroll,vscroll;
+    int x0,y0,w0,h0;
+    int hscroll,vscroll,scrollable;
     WILLUSGUICONTROL *control;
+    WILLUSGUIRECT rect0;
 	
 /*
 printf("@willusgui_sbitmap_proc...message=0x%04x\n",message);
@@ -1751,6 +2040,16 @@ printf("@willusgui_sbitmap_proc...message=0x%04x\n",message);
         else
             control=icontrol;
         }
+
+    scrollable = (control->type==WILLUSGUICONTROL_TYPE_SCROLLABLEBITMAP);
+    /* Get upper-left corner of bitmap for cropping */
+    {
+    willusgui_window_get_useable_rect(control,&rect0);
+    x0=rect0.left;
+    y0=rect0.top;
+    w0=rect0.right-rect0.left+1;
+    h0=rect0.bottom-rect0.top+1;
+    }
 
     hscroll = control->bmp.width > control->rect.right-control->rect.left-1;
     vscroll = control->bmp.height > control->rect.bottom-control->rect.top-1;
@@ -1853,7 +2152,7 @@ printf("    xscr,yscr = %d,%d\n",xCurrentScroll,yCurrentScroll);
             { 
             int xNewPos;    /* new position  */
 
-            if (!hscroll)
+            if (!scrollable || !hscroll)
                 break;
             switch (LOWORD(wParam)) 
                 { 
@@ -1902,7 +2201,7 @@ printf("    xscr,yscr = %d,%d\n",xCurrentScroll,yCurrentScroll);
             { 
             int yNewPos;    /* new position  */
 
-            if (!vscroll)
+            if (!scrollable || !vscroll)
                 break; 
             switch (LOWORD(wParam)) 
                 { 
@@ -1946,15 +2245,36 @@ printf("    xscr,yscr = %d,%d\n",xCurrentScroll,yCurrentScroll);
 
         case WM_LBUTTONDOWN:
             {
-            buttondown |= 1;
-            mx0=mx=LOWORD(lParam);
-            my0=my=HIWORD(lParam);
+            if (scrollable)
+                {
+                buttondown |= 1;
+                mx0=mx=LOWORD(lParam);
+                my0=my=HIWORD(lParam);
+                }
+/*
+            else
+                {
+                if (control->anchor.left < -9999)
+                    {
+                    control->anchor.left=LOWORD(lParam);
+                    control->anchor.top=HIWORD(lParam);
+                    if (control->rectmarked.left < -9999)
+                        {
+                        control->rectanchor = control->anchor;
+                        control->rectanchor.right = control->rectanchor.left;
+                        control->rectanchor.bottom = control->rectanchor.top;
+                        }
+                    }
+                }
+*/
             return(0);
             }
         case WM_MOUSEWHEEL:
             {
             int dy,ycs,flags;
 
+            if (!scrollable)
+                break;
             dy=HIWORD(wParam);
             if (dy>=32768)
                 dy -= 65536;
@@ -1985,6 +2305,322 @@ printf("    xscr,yscr = %d,%d\n",xCurrentScroll,yCurrentScroll);
                 }
             break;
             }
+        case WM_KEYDOWN:
+            {
+            int kshift,kctrl;
+            WILLUSGUIRECT newrect;
+
+            if (scrollable || control->rectmarked.left < -9000)
+                break;
+            kshift=GetKeyState(VK_SHIFT);
+            kshift= (kshift<0);
+            kctrl=GetKeyState(VK_CONTROL);
+            kctrl = (kctrl<0);
+            newrect = control->rectmarked;
+            switch (wParam)
+                {
+                case 37: /* Left arrow */
+                    if (kshift && kctrl && newrect.right > newrect.left)
+                        newrect.right--;
+                    else if (kctrl && !kshift && newrect.left > x0)
+                        {
+                        newrect.right--;
+                        newrect.left--;
+                        }
+                    break;
+                case 38: /* up arrow */
+                    if (kshift && kctrl)
+                        {
+                        if (newrect.bottom > newrect.top)
+                            newrect.bottom--;
+                        }
+                    else if (kctrl && newrect.top > y0)
+                        {
+                        newrect.top--;
+                        newrect.bottom--;
+                        }
+                    break;
+                case 39: /* right arrow */
+                    if (kshift && kctrl && newrect.right < x0+w0-1)
+                        newrect.right++;
+                    else if (kctrl && !kshift && newrect.right < x0+w0-1)
+                        {
+                        newrect.right++;
+                        newrect.left++;
+                        }
+                    break;
+                case 40: /* down arrow */
+                    if (kshift && kctrl && newrect.bottom < y0+h0-1)
+                        newrect.bottom++;
+                    else if (kctrl && !kshift && newrect.bottom < y0+h0-1)
+                        {
+                        newrect.top++;
+                        newrect.bottom++;
+                        }
+                    break;
+                }
+            if (memcmp(&newrect,&control->rectmarked,sizeof(WILLUSGUIRECT)))
+                {
+                willusgui_window_draw_rect_outline(control,&control->rectmarked,-1);
+                control->rdcount++;
+                control->rectmarked = newrect;
+                willusgui_window_draw_rect_outline(control,&control->rectmarked,-1);
+                control->rdcount++;
+                }
+            return(0);
+            }
+        case WM_CHAR:
+            {
+            /* ESC erases rectangle */
+            if (!scrollable)
+                {
+                if (wParam==0x1b && control->rectmarked.left > -9000)
+                    {
+                    willusgui_window_draw_rect_outline(control,&control->rectmarked,-1);
+                    control->rdcount++;
+                    control->rectmarked.left = -10000;
+                    }
+                return(0);
+                }
+            break;
+            }
+        case WM_TIMER:
+            {
+            POINT p;
+            int down,curstype;
+
+            if (scrollable)
+                return(0);
+            GetCursorPos(&p); /* Get mouse pos in screen coords */
+            MapWindowPoints(NULL,hwnd,&p,1);
+            down=GetKeyState(VK_LBUTTON);
+            curstype=willusguirect_cursor_type(&control->rectmarked,&control->rect,p.x,p.y);
+/*
+printf("ct=%d (%d,%d,%d,%d) (%d,%d,%d,%d) %d,%d\n",
+curstype,
+control->rectmarked.left,
+control->rectmarked.top,
+control->rectmarked.right,
+control->rectmarked.bottom,
+control->rect.left,
+control->rect.top,
+control->rect.right,
+control->rect.bottom,
+(int)p.x,(int)p.y);
+*/
+/*
+{
+static int ct=-2;
+if (ct!=curstype)
+{
+printf("ctype=%d\n",curstype);
+ct=curstype;
+}
+}
+*/
+            willusgui_set_cursor(curstype>0 ? curstype+1 : 0);
+            if (control->crosshair.left > -9000)
+                {
+                willusgui_window_draw_crosshair(control,control->crosshair.left,control->crosshair.top,-1);
+                control->crosshair.left = -10000;
+                }
+            /* Need to draw initial rectangle */
+            if (control->rectmarked.left > -9000 && (control->rdcount&1)==0)
+                {
+                willusgui_window_draw_rect_outline(control,&control->rectmarked,-1);
+                control->rdcount++;
+                }
+      
+            /* Left button down */
+            if (down&128)
+                {
+                char buf[256];
+
+                if (control->anchor.left < -9999)
+                    {
+/*
+printf("Just clicked, curstype=%d\n",curstype);
+*/
+                    /* Click outside the window doesn't start anything. */
+                    if (p.x<x0 || p.x>x0+w0-1 || p.y<y0 || p.y>y0+h0-1)
+                        return(0);
+                    control->anchor.left=p.x;
+                    control->anchor.top=p.y;
+                    if (control->rectmarked.left < -9999)
+                        control->anchor.right = 0;
+                    else
+                        {
+                        if (curstype < 0)
+                            return(0);
+                        if (curstype==0)
+                            {
+                            willusgui_window_draw_rect_outline(control,&control->rectmarked,-1);
+                            control->rdcount++;
+                            control->rectmarked.left = -10000;
+                            }
+                        control->anchor.right = curstype;
+                        }
+                    return(0);
+                    }
+                if (control->rectmarked.left > -9000)
+                    {
+                    willusgui_window_draw_rect_outline(control,&control->rectmarked,-1);
+                    control->rdcount++;
+                    }
+                
+                /* Need to check type of move */
+                switch (control->anchor.right)
+                    {
+                    case 0:
+                        control->rectmarked.left   = p.x;
+                        control->rectmarked.right  = control->anchor.left;
+                        control->rectmarked.top    = p.y;
+                        control->rectmarked.bottom = control->anchor.top;
+                        break;
+                    case 1:
+                        control->rectmarked.left = p.x;
+                        control->rectmarked.top = p.y;
+                        if (control->rectmarked.top > control->rectmarked.bottom
+                             && control->rectmarked.left > control->rectmarked.right)
+                            control->anchor.right=9;
+                        else if (control->rectmarked.top > control->rectmarked.bottom)
+                            control->anchor.right=7;
+                        else if (control->rectmarked.left > control->rectmarked.right)
+                            control->anchor.right=3;
+                        break;
+                    case 2:
+                        control->rectmarked.top = p.y;
+                        if (control->rectmarked.top > control->rectmarked.bottom)
+                            control->anchor.right=8;
+                        break;
+                    case 3:
+                        control->rectmarked.top = p.y;
+                        control->rectmarked.right = p.x;
+                        if (control->rectmarked.top > control->rectmarked.bottom
+                             && control->rectmarked.left > control->rectmarked.right)
+                            control->anchor.right=7;
+                        else if (control->rectmarked.top > control->rectmarked.bottom)
+                            control->anchor.right=9;
+                        else if (control->rectmarked.left > control->rectmarked.right)
+                            control->anchor.right=1;
+                        break;
+                    case 4:
+                        control->rectmarked.left = p.x;
+                        if (control->rectmarked.left > control->rectmarked.right)
+                            control->anchor.right=6;
+                        break;
+                    case 5:
+                        {
+                        double mx,my,dx,dy;
+                        mx = p.x-control->anchor.left;
+                        my = p.y - control->anchor.top;
+                        dx=control->rectmarked.right - control->rectmarked.left;
+                        dy=control->rectmarked.bottom - control->rectmarked.top;
+                        control->rectmarked.left += mx;
+                        control->rectmarked.right += mx;
+                        control->rectmarked.top += my;
+                        control->rectmarked.bottom += my;
+                        if (control->rectmarked.left < x0)
+                            {
+                            control->rectmarked.left = x0;
+                            control->rectmarked.right = x0+dx;
+                            }
+                        else if (control->rectmarked.right > x0+w0-1)
+                            {
+                            control->rectmarked.right = x0+w0-1;
+                            control->rectmarked.left = x0+w0-1-dx;
+                            }
+                        if (control->rectmarked.top < y0)
+                            {
+                            control->rectmarked.top=y0;
+                            control->rectmarked.bottom=y0+dy;
+                            }
+                        else if (control->rectmarked.bottom > y0+h0-1)
+                            {
+                            control->rectmarked.top=y0+h0-1-dy;
+                            control->rectmarked.bottom=y0+h0-1;
+                            }
+                        control->anchor.left = p.x;
+                        control->anchor.top = p.y;
+                        break;
+                        }
+                    case 6:
+                        control->rectmarked.right = p.x;
+                        if (control->rectmarked.left > control->rectmarked.right)
+                            control->anchor.right=4;
+                        break;
+                    case 7:
+                        control->rectmarked.left = p.x;
+                        control->rectmarked.bottom = p.y;
+                        if (control->rectmarked.top > control->rectmarked.bottom
+                             && control->rectmarked.left > control->rectmarked.right)
+                            control->anchor.right=3;
+                        else if (control->rectmarked.top > control->rectmarked.bottom)
+                            control->anchor.right=1;
+                        else if (control->rectmarked.left > control->rectmarked.right)
+                            control->anchor.right=9;
+                        break;
+                    case 8:
+                        control->rectmarked.bottom = p.y;
+                        if (control->rectmarked.top > control->rectmarked.bottom)
+                            control->anchor.right=2;
+                        break;
+                    case 9:
+                        control->rectmarked.right = p.x;
+                        control->rectmarked.bottom = p.y;
+                        if (control->rectmarked.top > control->rectmarked.bottom
+                             && control->rectmarked.left > control->rectmarked.right)
+                            control->anchor.right=1;
+                        else if (control->rectmarked.top > control->rectmarked.bottom)
+                            control->anchor.right=3;
+                        else if (control->rectmarked.left > control->rectmarked.right)
+                            control->anchor.right=7;
+                        break;
+                    }
+                willusguirect_bound(&control->rectmarked,&rect0);
+                willusgui_window_draw_rect_outline(control,&control->rectmarked,-1);
+                control->rdcount++;
+                if (control->dpi_rendered>0.)
+                    sprintf(buf,"%04d,%04d %04d x %04d (%05.2fin,%05.2fin %05.2fin x %05.2fin)",
+                                control->rectmarked.left,
+                                control->rectmarked.top,
+                                control->rectmarked.right-control->rectmarked.left+1,
+                                control->rectmarked.bottom-control->rectmarked.top+1,
+                                control->rectmarked.left/control->dpi_rendered,
+                                control->rectmarked.top/control->dpi_rendered,
+                                (control->rectmarked.right-control->rectmarked.left+1)
+                                      / control->dpi_rendered,
+                                (control->rectmarked.bottom-control->rectmarked.top+1)
+                                      / control->dpi_rendered);
+                else
+                    sprintf(buf,"%04d,%04d %04d x %04d",
+                                control->rectmarked.left,
+                                control->rectmarked.top,
+                                control->rectmarked.right-control->rectmarked.left+1,
+                                control->rectmarked.bottom-control->rectmarked.top+1);
+                SetWindowText((HWND)control->parent->handle,buf);
+                }
+            else
+                {
+                char buf[256];
+
+                control->anchor.left = -10000;
+                if (control->rectmarked.left < -9000)
+                    {
+                    control->crosshair.left=p.x;
+                    control->crosshair.top=p.y;
+                    willusgui_window_draw_crosshair(control,p.x,p.y,-1);
+                    if (control->dpi_rendered>0.)
+                        sprintf(buf,"%04d x %04d (%05.2f in x %05.2f in)",
+                                    (int)p.x,(int)p.y,p.x/control->dpi_rendered,
+                                                      p.y/control->dpi_rendered);
+                    else
+                        sprintf(buf,"%04d x %04d",(int)p.x,(int)p.y);
+                    SetWindowText((HWND)control->parent->handle,buf);
+                    }
+                }
+            return(0);
+            }
         case WM_MOUSEMOVE:
             {
             int x,y,dx,dy,xcs,ycs;
@@ -1992,6 +2628,8 @@ printf("    xscr,yscr = %d,%d\n",xCurrentScroll,yCurrentScroll);
 /*
 printf("sbitmap MOUSEMOVE.\n");
 */
+            if (!scrollable)
+                break;
             if (!(wParam&MK_RBUTTON))
                 {
                 if (buttondown&2)
@@ -2047,26 +2685,59 @@ printf("sbitmap MOUSEMOVE.\n");
             {
             int x,y;
 
-            x=LOWORD(lParam);
-            y=HIWORD(lParam);
-            if ((buttondown&1) && x==mx0 && y==my0)
+            if (scrollable)
                 {
+                x=LOWORD(lParam);
+                y=HIWORD(lParam);
+                if ((buttondown&1) && x==mx0 && y==my0)
+                    {
+                    buttondown &= (~1);
+                    /* willusgui_sbitmap__size(control,-1); */
+                    }
                 buttondown &= (~1);
-                /* willusgui_sbitmap__size(control,-1); */
                 }
-            buttondown &= (~1);
+/*
+            control->anchor.left = -10000;
+*/
             return(0);
             }
         case WM_RBUTTONDOWN:
-            buttondown |= 2;
+            if (scrollable)
+                buttondown |= 2;
+            else
+                {
+                static int bcolors[3]={0x60b060,0xe0ffe0,0xe0ffe0};
+                static char *help=
+                   "Use the left mouse button to click and drag to draw a crop box which will "
+                   "set your crop margins.\n"
+                   "Keyboard shortcuts:\n"
+                   "ESC:  Clear the crop box.\n"
+                   "CTRL-<arrows>:  Move the crop box.\n"
+                   "SHIFT-CTRL-<arrows>:  Change the crop box size.";
+                willusgui_message_box(control->parent,"Draw a crop box",help,"*&OK",NULL,NULL,
+                                   NULL,0,20,600,0xe0ffe0,bcolors,NULL,1);
+                }
+            /*
+                {
+                if (control->anchor.left < -9999)
+                    {
+                    control->anchor.left=LOWORD(lParam);
+                    control->anchor.top=HIWORD(lParam);
+                    control->anchor.right=2;
+                    }
+                }
+             */
             return(0);
         case WM_RBUTTONUP:
-            if (buttondown&2)
+            if (scrollable)
                 {
+                if (buttondown&2)
+                    {
+                    buttondown &= (~2);
+                    willusgui_sbitmap_change_size(control,0);
+                    }
                 buttondown &= (~2);
-                willusgui_sbitmap_change_size(control,0);
                 }
-            buttondown &= (~2);
             return(0);
         case WM_CLOSE:
             willusgui_control_close_ex(control,1);
@@ -2101,7 +2772,7 @@ LRESULT CALLBACK willusgui_edit2_proc(HWND hWnd,UINT message,WPARAM wParam,LPARA
             /* Ctrl-A */
             if (wParam==1)
                 {
-                SendMessage(hWnd,EM_SETSEL,0,-1);
+                PostMessage(hWnd,EM_SETSEL,0,-1);
                 return(0);
                 }
             else if ((TCHAR)wParam==VK_TAB)
@@ -2141,30 +2812,31 @@ if (message==WM_IME_NOTIFY)
 printf("edit3:  hwnd=%p, message=%04x, ins=%d\n",hWnd,message,ime_notify_status);
 printf("imenotify=%04x\n",WM_IME_NOTIFY);
 }
+if (message==WM_CAPTURECHANGED)
+printf("e3 0x%X WM_CAPTURECHANGED\n",hWnd);
+else if (message==WM_IME_NOTIFY)
+printf("e3 0x%X WM_IME_NOTIFY wparam=0x%X, lparam=0x%X\n",hWnd,(int)wParam,(int)lParam);
+else if (message==WM_SETFOCUS)
+printf("e3 0x%X WM_SETFOCUS wparam=0x%X, lparam=0x%X\n",hWnd,(int)wParam,(int)lParam);
+else if (message==EM_SETSEL)
+printf("e3 0x%X EM_SETSEL wparam=0x%X, lparam=0x%X\n",hWnd,(int)wParam,(int)lParam);
+*/
+/*
+else
+printf("edit3: 0x%X message=0x%X\n",hWnd,message);
+win_sleep(30);
 */
 	switch (message) 
         {
-        /* Need to find the right codes for this... */
-        case WM_CAPTURECHANGED:
-        case WM_IME_NOTIFY:
         case WM_SETFOCUS:
-            if (message!=WM_IME_NOTIFY || ime_notify_status)
-                {
-                SendMessage(hWnd,EM_SETSEL,0,-1);
-                /* Kludgey way to keep entire text box selected when re-drawing */
-                if (message==WM_IME_NOTIFY)
-                    {
-                    willusgui_set_ime_notify(1);
-                    if (ime_notify_status>4)
-                        willusgui_set_ime_notify(0);
-                    }
-                }
+            /* Fix applied at k2pdfopt v2.32 */
+            PostMessage(hWnd,EM_SETSEL,0,-1);
             break;
         case WM_CHAR:
             /* Ctrl-A */
             if (wParam==1)
                 {
-                SendMessage(hWnd,EM_SETSEL,0,-1);
+                PostMessage(hWnd,EM_SETSEL,0,-1);
                 return(0);
                 }
             break;

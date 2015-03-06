@@ -1,7 +1,7 @@
 /*
 ** k2cmdparse.c   Parse command-line options for k2pdfopt.
 **
-** Copyright (C) 2014  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -184,7 +184,6 @@ int parse_cmd_args(K2PDFOPT_CONVERSION *k2conv,STRBUF *env,STRBUF *cmdline,
         MINUS_OPTION("-sp",echo_source_page_count,1)
         MINUS_OPTION("-neg",dst_negative,1)
         MINUS_OPTION("-hy",hyphen_detect,1)
-        MINUS_OPTION("-ls",dst_landscape,1)
         MINUS_OPTION("-sm",show_marked_source,1)
         MINUS_OPTION("-fc",fit_columns,1)
         MINUS_OPTION("-d",dst_dither,1)
@@ -194,6 +193,7 @@ int parse_cmd_args(K2PDFOPT_CONVERSION *k2conv,STRBUF *env,STRBUF *cmdline,
         MINUS_OPTION("-t",src_trim,1)
         MINUS_OPTION("-s",dst_sharpen,1)
         MINUS_OPTION("-to",text_only,1)
+        MINUS_OPTION("-ac",autocrop,1)
 #ifdef HAVE_GHOSTSCRIPT
         MINUS_OPTION("-ppgs",ppgs,1)
 #endif
@@ -205,6 +205,28 @@ int parse_cmd_args(K2PDFOPT_CONVERSION *k2conv,STRBUF *env,STRBUF *cmdline,
         MINUS_OPTION("-pi",preserve_indentation,1)
         */
 
+        /* New in 2.32:  -ls can have a page list specified. */
+        if (!strnicmp(cl->cmdarg,"-ls",3))
+            {
+            if (setvals==1)
+                {
+                int ipl;
+
+                if (cl->cmdarg[3]=='-')
+                    {
+                    k2settings->dst_landscape = 0;
+                    ipl=4;
+                    }
+                else
+                    {
+                    k2settings->dst_landscape = 1;
+                    ipl=3;
+                    }
+                strncpy(k2settings->dst_landscape_pages,&cl->cmdarg[ipl],1023);
+                k2settings->dst_landscape_pages[1023]='\0';
+                }
+            continue;
+            }
         if (!stricmp(cl->cmdarg,"-a") || !stricmp(cl->cmdarg,"-a-"))
             {
             if (setvals>=1)
@@ -395,6 +417,7 @@ int parse_cmd_args(K2PDFOPT_CONVERSION *k2conv,STRBUF *env,STRBUF *cmdline,
                     if (fitpage)
                         k2settings->dst_fit_to_page=-2;
                     k2settings->dst_landscape=fitpage ? 0 : 1;
+                    k2settings->dst_landscape_pages[0]='\0';
                     }
                 else if (!stricmp(cl->cmdarg,"2col")
                           || !stricmp(cl->cmdarg,"2-column")
@@ -420,6 +443,7 @@ int parse_cmd_args(K2PDFOPT_CONVERSION *k2conv,STRBUF *env,STRBUF *cmdline,
                     k2settings->dst_ocr='m';
 #endif
                     k2settings->dst_landscape=0;
+                    k2settings->dst_landscape_pages[0]='\0';
                     k2settings->text_wrap=1;
                     k2settings->max_columns=2;
                     k2settings->vertical_break_threshold=1.75;

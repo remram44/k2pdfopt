@@ -1,7 +1,7 @@
 /*
 ** k2gui_osdep.c    K2pdfopt O/S-Dependent WILLUSGUI functions
 **
-** Copyright (C) 2013  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -28,6 +28,7 @@
 #ifdef HAVE_K2GUI
 static K2GUI *k2gui;
 static K2CONVBOX *k2gui_cbox;
+static K2CONVBOX *k2gui_overlay;
 
 #ifdef MSWINGUI
 #include <windows.h>
@@ -36,6 +37,7 @@ static K2CONVBOX *k2gui_cbox;
 
 #ifdef MSWINGUI
 LRESULT CALLBACK k2mswingui_cbox_process_messages(HWND hwnd,UINT iMsg,WPARAM wParam,LPARAM lParam);
+LRESULT CALLBACK k2mswingui_overlay_process_messages(HWND hwnd,UINT iMsg,WPARAM wParam,LPARAM lParam);
 LRESULT CALLBACK k2mswingui_process_messages(HWND hwnd,UINT iMsg,WPARAM wParam,LPARAM lParam);
 #endif
 
@@ -58,7 +60,11 @@ void k2gui_osdep_init(K2GUI *k2gui0) /* ,void *hinst,void *hprevinst) */
     }
 
 
-int k2gui_osdep_window_proc_messages(WILLUSGUIWINDOW *win,void *semaphore,WILLUSGUICONTROL *closebutton)
+/*
+** procid==1 for conversion, 2 for overlay.
+*/
+int k2gui_osdep_window_proc_messages(WILLUSGUIWINDOW *win,void *semaphore,int procid,
+                                     WILLUSGUICONTROL *closebutton)
 
     {
 #ifdef MSWINGUI
@@ -75,19 +81,37 @@ int k2gui_osdep_window_proc_messages(WILLUSGUIWINDOW *win,void *semaphore,WILLUS
                 {
                 done=1;
                 /* Final print */
-                k2gui_cbox_final_print();
-                /* Change button to "Close" */
-                if (closebutton!=NULL)
-                    k2gui_cbox_close_buttons();
+                if (procid==1)
+                    {
+                    k2gui_cbox_final_print();
+                    /* Change button to "Close" */
+                    if (closebutton!=NULL)
+                        k2gui_cbox_close_buttons();
+                    }
+                else
+                    {
+                    k2gui_overlay_final_print();
+                    /* Change button to "Close" */
+                    if (closebutton!=NULL)
+                        k2gui_overlay_close_buttons();
+                    }
                 continue;
                 }
             }
 
         /* This gets tab-stops to work */
-        if (!IsDialogMessage((HWND)win->handle,&msg))
+        if (procid==2) /* Don't want tab stops if overlay window */
             {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
+            }
+        else
+            {
+            if (!IsDialogMessage((HWND)win->handle,&msg))
+                {
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+                }
             }
         }
     if (semaphore!=NULL)
@@ -111,7 +135,7 @@ void k2gui_osdep_main_window_init(WILLUSGUIWINDOW *win,int normal_size)
     HICON       iconr,smalliconr;
     HWND hwnd;
 
-#if (WILLUSDEBUG & 0x2000)
+#if (WILLUSDEBUGX & 0x2000)
 printf("@k2gui_osdep_main_window_init\n");
 #endif
     win_icons_from_exe((void **)&iconr,(void **)&smalliconr);
@@ -184,7 +208,7 @@ void k2gui_osdep_cbox_init(K2CONVBOX *k2cb0,WILLUSGUIWINDOW *win,WILLUSGUIWINDOW
         wndclass.hIconSm       = NULL;
         RegisterClassEx(&wndclass);
         class_registered=1;
-#if (WILLUSDEBUG & 0x2000)
+#if (WILLUSDEBUGX & 0x2000)
 printf("Class registered.\n");
 #endif
         }
@@ -194,6 +218,79 @@ printf("Class registered.\n");
     ** k2gui_osdep_window_menus_init().
     */
     k2gui_cbox->mainwin.handle=NULL;
+/*
+printf("@(%d,%d), %d x %d\n",win->rect.left,win->rect.top,win->rect.right-win->rect.left+1,
+win->rect.bottom-win->rect.top+1);
+*/
+
+    /*
+    ** v2.02:  Use WS_OVERLAPPEDWINDOW instead of WS_OVERLAPPED so that we get a close
+    **         and a minimize button.
+    */
+    win->handle = (void*)CreateWindow(classname,title,WS_OVERLAPPEDWINDOW,
+                             win->rect.left,win->rect.top,
+                             win->rect.right-win->rect.left+1,
+                             win->rect.bottom-win->rect.top+1,
+                             parent->handle,NULL,0,NULL);
+    /*
+    win->handle = (void*)CreateWindowEx(WS_EX_TOPMOST,classname,title,WS_OVERLAPPEDWINDOW,
+                             win->rect.left,win->rect.top,
+                             win->rect.right-win->rect.left+1,
+                             win->rect.bottom-win->rect.top+1,
+                             parent->handle,NULL,0,NULL);
+    */
+    ShowWindow(win->handle,SW_SHOW);
+    UpdateWindow(win->handle);
+#else
+    win->handle=NULL;
+#endif
+    }
+
+
+/*
+** Initialize and display k2pdfopt overlay dialog box.
+*/
+void k2gui_osdep_overlay_init(K2CONVBOX *k2ol0,WILLUSGUIWINDOW *win,WILLUSGUIWINDOW *parent,
+                              void *hinst,int rgbcolor)
+
+    {
+#ifdef MSWINGUI
+    static char *classname="k2gui_overlay";
+    static char *title="K2pdfopt: Creating overlay...";
+    static int class_registered=0;
+
+    k2gui_overlay=k2ol0;
+    /* Register class only once */
+    if (!class_registered)
+        {
+        WNDCLASSEX  wndclass;
+        static HBRUSH hbrush;
+
+        hbrush = CreateSolidBrush(((rgbcolor&0xff0000)>>16)|(rgbcolor&0xff00)|((rgbcolor&0xff)<<16));
+        wndclass.cbSize        = sizeof(wndclass);
+        wndclass.style         = CS_SAVEBITS | CS_HREDRAW | CS_VREDRAW;
+        wndclass.lpfnWndProc   = (WNDPROC)k2mswingui_overlay_process_messages;
+        wndclass.cbClsExtra    = 0;
+        wndclass.cbWndExtra    = 0;
+        wndclass.hInstance     = (HINSTANCE)hinst;
+        wndclass.hIcon         = NULL;
+        wndclass.hCursor       = NULL;
+        wndclass.hbrBackground = hbrush;
+        wndclass.lpszMenuName  = NULL;
+        wndclass.lpszClassName = classname;
+        wndclass.hIconSm       = NULL;
+        RegisterClassEx(&wndclass);
+        class_registered=1;
+#if (WILLUSDEBUGX & 0x2000)
+printf("Class registered.\n");
+#endif
+        }
+    /*
+    ** This handle actually gets assigned earlier--in k2mswingui_process_messages(),
+    ** otherwise it is too late for some of the functions that need it, e.g.
+    ** k2gui_osdep_window_menus_init().
+    */
+    k2gui_overlay->mainwin.handle=NULL;
 /*
 printf("@(%d,%d), %d x %d\n",win->rect.left,win->rect.top,win->rect.right-win->rect.left+1,
 win->rect.bottom-win->rect.top+1);
@@ -252,9 +349,9 @@ void k2gui_osdep_main_repaint(int changing)
 LRESULT CALLBACK k2mswingui_cbox_process_messages(HWND hwnd,UINT iMsg,WPARAM wParam,LPARAM lParam)
 
     {
+#if (WILLUSDEBUGX & 0x2000)
 if (iMsg!=WM_MOUSEFIRST && iMsg!=WM_SETCURSOR && iMsg!=WM_NCHITTEST 
                         && iMsg!=WM_NCMOUSEMOVE && iMsg!=WM_TIMER)
-#if (WILLUSDEBUG & 0x2000)
 printf("CONVERT iMsg = 0x%X, wParam=0x%X, lParam=0x%X\n",(int)iMsg,(int)wParam,(int)lParam);
 #endif
     if (k2gui_cbox->mainwin.handle==NULL)
@@ -351,7 +448,7 @@ printf("CONVERT WM_COMMAND: iMsg=%d, wParam=%d,%d, lParam=%d\n",(int)iMsg,(int)L
                 else
                     /* Button press.  Status = button index pressed. */
                     k2gui_cbox->status -= 2;
-#if (WILLUSDEBUG & 0x2000)
+#if (WILLUSDEBUGX & 0x2000)
 printf("\nk2gui_cbox->status=%d\n\n",k2gui_cbox->status);
 #endif
                 if (k2gui_cbox->status!=2 && k2gui_cbox->status!=3)
@@ -381,6 +478,182 @@ printf("\nk2gui_cbox->status=%d\n\n",k2gui_cbox->status);
     }
 
 
+LRESULT CALLBACK k2mswingui_overlay_process_messages(HWND hwnd,UINT iMsg,WPARAM wParam,LPARAM lParam)
+
+    {
+#if (WILLUSDEBUGX & 0x2000)
+if (iMsg!=WM_MOUSEFIRST && iMsg!=WM_SETCURSOR && iMsg!=WM_NCHITTEST 
+                        && iMsg!=WM_NCMOUSEMOVE && iMsg!=WM_TIMER)
+printf("OVERLAY iMsg = 0x%X, wParam=0x%X, lParam=0x%X\n",(int)iMsg,(int)wParam,(int)lParam);
+#endif
+/*
+if (iMsg!=WM_MOUSEFIRST && iMsg!=WM_SETCURSOR && iMsg!=WM_NCHITTEST 
+                        && iMsg!=WM_NCMOUSEMOVE && iMsg!=WM_TIMER
+if (iMsg!=0xAE && iMsg!=0xC && iMsg!=0x20)
+printf("OVERLAY iMsg = 0x%X, wParam=0x%X, lParam=0x%X\n",(int)iMsg,(int)wParam,(int)lParam);
+*/
+    if (k2gui_overlay->mainwin.handle==NULL)
+        k2gui_overlay->mainwin.handle=hwnd;
+    switch (iMsg)
+        {
+        case WM_CREATE:
+            return(0);
+        /* v2.02:  Echo any minimize/maximize/restore click to the main window also. */
+        case WM_SYSCOMMAND:
+            if (wParam==SC_MINIMIZE)
+                ShowWindow((HWND)k2gui->mainwin.handle,SW_MINIMIZE);
+            else if (wParam==SC_MAXIMIZE)
+                ShowWindow((HWND)k2gui->mainwin.handle,SW_MAXIMIZE);
+            else if (wParam==SC_RESTORE)
+                ShowWindow((HWND)k2gui->mainwin.handle,SW_RESTORE);
+            break;
+        /* v2.02:  Limit max size of dialog box to the original size */
+        case WM_GETMINMAXINFO:
+            {
+            MINMAXINFO *mmi;
+            mmi=(MINMAXINFO *)lParam;
+            mmi->ptMaxSize.x = k2gui_overlay->mainwin.rect.right - k2gui_overlay->mainwin.rect.left+1;
+            mmi->ptMaxSize.y = k2gui_overlay->mainwin.rect.bottom - k2gui_overlay->mainwin.rect.top+1;
+            return(0);
+            }
+        case WM_KEYDOWN:
+            if (k2gui_overlay->control[0].rectmarked.left > -9000)
+                {
+                SendMessage((HWND)k2gui_overlay->control[0].handle,iMsg,wParam,lParam);
+                return(0);
+                }
+            break;
+        case WM_CHAR:
+/*
+printf("Overlay WM_CHAR: %d\n",(int)wParam);
+*/
+            if (wParam==0x1b) /* ESC */
+                k2gui_overlay->status = -1;
+            else if (wParam==0xd || wParam=='s' || wParam=='S' || wParam=='M' || wParam=='m')
+                k2gui_overlay->status=1;
+            else if (wParam=='z' || wParam=='Z')
+                k2gui_overlay->status=2;
+            else if (wParam=='c' || wParam=='C')
+                k2gui_overlay->status=3;
+            else
+                k2gui_overlay->status=0;
+            if (k2gui_overlay->status)
+                {
+                if (k2gui_overlay->status==1)
+                    k2gui_overlay_store_margins(&k2gui_overlay->control[0]);
+                else if (k2gui_overlay->status==2)
+                    {
+                    int ii;
+                    for (ii=0;ii<4;ii++)
+                        k2gui_overlay->margins[ii]=0.;
+                    k2gui_overlay->status=1;
+                    }
+                SendMessage(hwnd,WM_CLOSE,0,0);
+                return(0);
+                }
+            if (k2gui_overlay->control[0].rectmarked.left > -9000)
+                {
+                SendMessage((HWND)k2gui_overlay->control[0].handle,iMsg,wParam,lParam);
+                return(0);
+                }
+            break;
+        case WM_DRAWITEM:
+            {
+            int buttonid;
+
+            buttonid=(int)wParam;
+            if (buttonid>=3 && buttonid<=5)
+                {
+                LPDRAWITEMSTRUCT lpdis;
+                int buttoncolor,cav,textcolor;
+                
+                buttoncolor=k2gui_overlay->control[buttonid-2].color;
+                lpdis=(LPDRAWITEMSTRUCT)((size_t)lParam);
+                cav=(0.11*((buttoncolor&0xff0000)>>16)
+                       + 0.59*((buttoncolor&0xff00)>>8)
+                       + 0.3*(buttoncolor&0xff));
+                textcolor = cav>128 ? 0 : 0xffffff;
+                winmbox_button_draw((void *)lpdis->hDC,(void *)&lpdis->rcItem,
+                                     lpdis->itemState,buttoncolor,(void *)k2gui_overlay->bf.handle,
+                                     k2gui_overlay->control[buttonid-2].name,textcolor);
+                }
+            return(1);
+            }
+        case WM_COMMAND:
+/*
+printf("OVERLAY WM_COMMAND: iMsg=%d, wParam=%d,%d, lParam=%d\n",(int)iMsg,(int)LOWORD(wParam),(int)HIWORD(wParam),(int)lParam);
+*/
+            /* Focus moved to "convert" button? */
+            if (LOWORD(wParam)==10 && HIWORD(wParam)==EN_SETFOCUS)
+                {
+                k2gui_overlay_draw_defbutton_border(1);
+                break;
+                }
+            /* Focus moved away from "convert" button? */
+            if (LOWORD(wParam)==10 && HIWORD(wParam)==EN_KILLFOCUS)
+                {
+                k2gui_overlay_draw_defbutton_border(0);
+                break;
+                }
+            if (LOWORD(wParam)>=0 && LOWORD(wParam)<=5)
+                {
+                k2gui_overlay->status=LOWORD(wParam);
+                /* ESC press?  If so, status = -1 */
+                if (k2gui_overlay->status==2)
+                    {
+                    /* Need to see if rectangle is drawn...if so, send ESC to bitmap window */
+                    if (k2gui_overlay->control[0].rectmarked.left > -9000)
+                        {
+                        SendMessage((HWND)k2gui_overlay->control[0].handle,WM_CHAR,0x1b,0);
+                        return(0);
+                        }
+                    k2gui_overlay->status=-1;
+                    }
+                /* Set Margins or Zero Margins */
+                else if (k2gui_overlay->status==3 || k2gui_overlay->status==4)
+                    {
+                    if (k2gui_overlay->status==3)
+                        k2gui_overlay_store_margins(&k2gui_overlay->control[0]);
+                    else
+                        {
+                        int ii;
+                        for (ii=0;ii<4;ii++)
+                            k2gui_overlay->margins[ii]=0.;
+                        }
+                    k2gui_overlay->status=1;
+                    SendMessage(hwnd,WM_CLOSE,0,0);
+                    return(0);
+                    }
+                else
+                    /* Button press.  Status = button index pressed. */
+                    k2gui_overlay->status -= 2;
+#if (WILLUSDEBUGX & 0x2000)
+printf("\nk2gui_overlay->status=%d\n\n",k2gui_overlay->status);
+#endif
+                if (k2gui_overlay->status==1 || k2gui_overlay->status==2
+                         || k2gui_overlay->status<0)
+                    {
+                    SendMessage(hwnd,WM_CLOSE,0,0);
+                    return(0);
+                    }
+                }
+            break;
+        /*
+        case WM_QUIT:
+            k2gui_overlay->status=-1;
+            k2gui_overlay_destroy();
+            return(0);
+        */
+        case WM_CLOSE:
+            k2gui_overlay_destroy();
+            return(0);
+        case WM_DESTROY:
+            return(0);
+        }
+    return(DefWindowProc(hwnd,iMsg,wParam,lParam));
+    }
+
+
 LRESULT CALLBACK k2mswingui_process_messages(HWND hwnd,UINT iMsg,WPARAM wParam,LPARAM lParam)
 
     {
@@ -392,6 +665,14 @@ if (iMsg!=WM_MOUSEFIRST && iMsg!=WM_SETCURSOR && iMsg!=WM_NCHITTEST
                         && iMsg!=WM_NCMOUSEMOVE && iMsg!=WM_TIMER)
 printf("MAINWIN: iMsg = 0x%X, wParam=0x%X, lParam=0x%X\n",(int)iMsg,(int)wParam,(int)lParam);
 */
+#if (WILLUSDEBUGX & 0x4000)
+/*
+if (iMsg!=WM_MOUSEFIRST && iMsg!=WM_SETCURSOR && iMsg!=WM_NCHITTEST 
+                        && iMsg!=WM_NCMOUSEMOVE && iMsg!=WM_TIMER)
+printf("@k2mswingui_proc_messages: iMsg=0x%X\n",iMsg);
+*/
+#endif
+
     message=&_message;
     if (k2gui->mainwin.handle==NULL)
         k2gui->mainwin.handle=hwnd;
@@ -425,6 +706,13 @@ printf("MAINWIN: iMsg = 0x%X, wParam=0x%X, lParam=0x%X\n",(int)iMsg,(int)wParam,
 //         case WM_GETICON:
 // printf("Geticon: ftype=%s\n",wParam==ICON_BIG ? "big" : "small");
 //             return(LoadIcon(k2wingui->hinst,"k2pdfopt"));
+        case WM_RBUTTONDOWN:
+            message->guiaction = WILLUSGUIACTION_RBUTTONDOWN;
+            message->param[0] = LOWORD(lParam);
+            message->param[1] = HIWORD(lParam);
+            k2gui_process_message(message);
+            return(0);
+            break;
         case WM_MOUSEWHEEL:
             {
             WILLUSGUICONTROL *control;
@@ -461,9 +749,11 @@ printf("MAINWIN: iMsg = 0x%X, wParam=0x%X, lParam=0x%X\n",(int)iMsg,(int)wParam,
                 subid++;
                 }
 /*
-printf("DRAWITEM: controlid=%d\n",controlid);
+#if (WILLUSDEBUGX & 0x4000)
+printf("DRAWITEM: controlid=%d of %d\n",controlid,k2gui->ncontrols);
 printf("      name = %s\n",k2gui->control[controlid].name);
 printf("      type = %d, subid = %d\n",k2gui->control[controlid].type,subid);
+#endif
 */
             if (controlid>=0 && controlid<k2gui->ncontrols 
                        && (k2gui->control[controlid].type==WILLUSGUICONTROL_TYPE_BUTTON 
@@ -783,7 +1073,7 @@ printf("              lparam=%d\n",lParam);
             break;
 */
         case WM_PAINT:
-#if (WILLUSDEBUG & 0x2000)
+#if (WILLUSDEBUGX & 0x2000)
 printf("WM_PAINT...\n");
 #endif
             message->guiaction = WILLUSGUIACTION_REPAINT;

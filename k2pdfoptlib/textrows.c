@@ -1,7 +1,7 @@
 /*
 ** textrows.c   Functions to handle TEXTROWS structure.
 **
-** Copyright (C) 2014  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -488,7 +488,7 @@ void textrows_find_doubles(TEXTROWS *textrows,int *rowthresh,BMPREGION *region,
                            int dynamic_aperture)
 
     {
-    int i,r1,r2;
+    int i,r1,r2,max_added_rows,n_added_rows;
     int rb[4];
     static char *funcname="textrows_find_doubles";
 
@@ -496,6 +496,9 @@ void textrows_find_doubles(TEXTROWS *textrows,int *rowthresh,BMPREGION *region,
     r2=region->r2;
     if (maxsize > 5)
         maxsize = 5;
+    n_added_rows=0;
+    /* 2.32 fix */
+    max_added_rows=(maxsize>3 ? 3 : maxsize)*textrows->n;
 #if (WILLUSDEBUGX & 256)
 printf("@textrows_find_doubles, textrows->n=%d\n",textrows->n);
 printf("    dpi = %d\n",region->dpi);
@@ -554,7 +557,7 @@ printf("Large gap:  row[%d] = rows %d - %d, capheight = %d, lch=%d, rh=%d\n",i,t
 #endif
 
            /*
-           ** Default is to use rowthresh array, but rthresh may bet re-assigned in the
+           ** Default is to use rowthresh array, but rthresh may get re-assigned in the
            ** if statement below.
            */
            rthresh = rowthresh;
@@ -733,7 +736,8 @@ printf("    rat[%d rows] = %g = %d / %d\n",j,rat,c2,c1);
 printf("MAX RATIO (%d rows) = %g\n",jbest,maxrat);
 #endif
            /* If figure of merit is met, split this row into jbest rows */
-           if (maxrat > k2settings->row_split_fom)
+           /* 2.32 fix--limit the max number of added rows */
+           if (maxrat > k2settings->row_split_fom && n_added_rows+(jbest-1) <= max_added_rows)
                {
                int ii;
                TEXTROWS newrows;
@@ -744,6 +748,7 @@ printf("MAX RATIO (%d rows) = %g\n",jbest,maxrat);
                    textrows_add_textrow(&newrows,&textrows->textrow[i]);
                textrows_insert(textrows,i,&newrows);
                textrows_free(&newrows);
+               n_added_rows += (jbest-1);
 
                /* Modify the copies */
 #if (WILLUSDEBUGX & 256)
@@ -779,7 +784,6 @@ printf("    rb[%d]=%d\n",k,rb[k]);
                    if (ii>i)
                        textrow->r1 = rb[ii-i-1]+1;
 #if (WILLUSDEBUGX & 256)
-if (partial)
 printf("    1. row[%d]: (%d,%d) - (%d,%d)\n",ii,textrow->c1,textrow->r1,textrow->c2,textrow->r2);
 #endif
                    newregion=&_newregion;
@@ -794,7 +798,6 @@ printf("    1. row[%d]: (%d,%d) - (%d,%d)\n",ii,textrow->c1,textrow->r1,textrow-
                    textrow_assign_bmpregion(textrow,newregion,REGION_TYPE_TEXTLINE);
                    textrow->rat=maxrat;
 #if (WILLUSDEBUGX & 256)
-if (partial)
 printf("    2. row[%d]: (%d,%d) - (%d,%d)\n",ii,textrow->c1,textrow->r1,textrow->c2,textrow->r2);
 #endif
                    bmpregion_free(newregion);

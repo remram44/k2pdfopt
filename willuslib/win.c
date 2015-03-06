@@ -3,7 +3,7 @@
 **
 ** Part of willus.com general purpose C code library.
 **
-** Copyright (C) 2014  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -412,8 +412,13 @@ int win_createprocess_utf8(char *exename,char *cmdline,int inherits,int cflags,
     STARTUPINFO *sii;
     static char *funcname="win_createprocess_utf8";
 
+    /*
+    ** VERY important not to pass pwd as empty string.  CreateProcess will fail.
+    ** Pass a full path or NULL, but NOT an empty string.
+    */
     if (utf8_is_ascii(exename) && utf8_is_ascii(cmdline) && (pwd==NULL || utf8_is_ascii(pwd)))
-        return(CreateProcess(exename,cmdline,0,0,inherits,cflags,0,pwd,
+        return(CreateProcess(exename,cmdline,0,0,inherits,cflags,0,
+                             pwd==NULL?pwd:(pwd[0]=='\0'?NULL:pwd),
                              (LPSTARTUPINFO)si,(LPPROCESS_INFORMATION)pi));
     utf8_to_utf16_alloc((void **)&exenamew,exename);
     utf8_to_utf16_alloc((void **)&cmdlinew,cmdline);

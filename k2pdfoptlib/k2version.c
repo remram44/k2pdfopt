@@ -1,8 +1,8 @@
-char *k2pdfopt_version = "v2.31";
+char *k2pdfopt_version = "v2.32";
 /*
 ** k2version.c  K2pdfopt version number and history.
 **
-** Copyright (C) 2014  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -19,6 +19,51 @@ char *k2pdfopt_version = "v2.31";
 **
 **
 ** VERSION HISTORY
+**
+** v2.32 6 MAR 2015
+**           NEW FEATURES
+**           - A new auto-cropping feature (-ac) has been added where k2pdfopt will
+**             attempt to crop out dark edges due to scanning / copying artifacts.
+**             There is a checkbox for it in the MS Windows GUI.
+**           - MS Windows GUI: graphical selection of crop margins has now been
+**             implemented.  When you click the "Select Margins" button, k2pdfopt will
+**             overlay all of the pages in the "Pages to Convert" box and allow you
+**             to select a rectangular crop region with the mouse, which it will then
+**             use to populate the "Crop Margins" values.
+**           - The -ls option now takes an optional page range so that it can be
+**             applied to specified pages.  A control was added to the MS Windows
+**             GUI for this.
+**             http://www.mobileread.com/forums/showthread.php?p=3016119#post3016119
+**           - Improved the context sensitive help in the MS Windows GUI.
+**
+**           OTHER
+**           - Update the list of devices and their dimension from the information
+**             collected at http://www.mobileread.com/forums/showthread.php?t=253579
+**           - Clarified -cbox usage.
+**             http://www.mobileread.com/forums/showthread.php?p=3048458#post3048458
+**           - Added source code flow description to k2pdfopt.c.  (2-18-15 e-mail).
+**
+**           BUG FIXES
+**           - Fixed a bug with notes in the margins (-nl/-nr options), checking
+**             for notesrows->n==0 (was causing a crash).  E-mailed on 13 Jan 2015.
+**           - Clarified usage for -m option.
+**           - Added MS Windows GUI confirmation of Tesseract initialization (in the
+**             conversion dialog box).
+**             http://www.mobileread.com/forums/showthread.php?p=3016119#post3016119
+**           - -cbox<n>- did not work correctly if <n> was beyond the last page of
+**             the source PDF.  This is fixed.
+**             http://www.mobileread.com/forums/showthread.php?p=3047145#post3047145
+**           - Fixed a preview error noted by a mobileread member.  Was due to
+**             not correctly clearing a WTEXTCHARS structure in
+**             ocrlayer_bounding_box_inches().
+**             http://www.mobileread.com/forums/showthread.php?p=3027213#post3027213
+**           - Fixed some issues with masterinfo_should_flush() where it wasn't
+**             correctly figuring out the next page.
+**           - Fixed issues selecting the text in text edit boxes as they gain focus
+**             (either through tabbing or mouse clicks).
+**           - The number of inserted rows added by textrows_find_doubles() is now
+**             limited to a reasonable number.  This was going out of control in
+**             one oddball case and (I think) causing k2pdfopt to crash.
 **
 ** v2.31 27 DEC 2014
 **           NEW FEATURES
