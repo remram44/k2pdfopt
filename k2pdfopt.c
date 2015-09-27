@@ -155,7 +155,7 @@ int main(int argc,char *argv[])
         return(0);
         }
 #endif
-    if (k2settings->show_usage)
+    if (k2settings->show_usage[0]!='\0')
         {
         k2sys_header(NULL);
         if (k2settings->query_user==0 
@@ -163,10 +163,10 @@ int main(int argc,char *argv[])
               || !win_has_own_window()
 #endif
                           )
-            k2usage_show_all(stdout);
+            k2pdfopt_usage(k2settings->show_usage,0);
         else
             {
-            if (!k2pdfopt_usage())
+            if (!k2pdfopt_usage(k2settings->show_usage,1))
                 {
                 k2sys_close(k2settings);
                 strbuf_free(usermenu);

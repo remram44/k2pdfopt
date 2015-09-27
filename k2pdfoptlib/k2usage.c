@@ -45,7 +45,10 @@ static char *usageenv=
 "the environment variable K2PDFOPT.\n\n";
 
 static char *k2pdfopt_options=
-"-?[-]             Show [don't show] usage only (no file processing).\n"
+"-?[-] [pattern]   Show [don't show] usage only (no file processing).\n"
+"                  If pattern is specified, only options with text matching\n"
+"                  the pattern are shown.  The pattern can use * as a wild\n"
+"                  card, e.g. -? -col.  Use -?- to turn off usage.\n"
 "                  Combine with -ui- to get something you can redirect\n"
 "                  to a file.\n"
 "-a[-]             Turn on [off] text coloring (use of ANSI color codes) on\n"
@@ -62,6 +65,8 @@ static char *k2pdfopt_options=
 "                  Will rotate up to +/-<maxdegrees> degrees if a value is\n"
 "                  specified, otherwise defaults to 4 degrees max.  Use -1 to\n"
 "                  turn off. Default is off (-as -1 or -as-).\n"
+"-author <author>   Set the author of the PDF output file(s). Default is to use\n"
+"                  the author of the source document (-author \"\").\n"
 "-bmp[-] <pageno>  Generate [do not generate] a bitmap rendering of converted\n"
 "                  page number <pageno> and write it to file k2pdfopt_out.png.\n"
 "                  If this option is used, no other files are written, i.e. the\n"
@@ -91,6 +96,15 @@ static char *k2pdfopt_options=
 "                  as the -p option.  See also -p, -bp, -toc, -toclist.  Default\n"
 "                  is no page list.  Example:  -bpl 10,25,50,70,93,117,143.\n"
 "                  This automatically sets -bp to it's default value (-bp-).\n"
+"-bpm[<type>] <color>  Set a page break mark type and color.  This option allows\n"
+"                  you to put colored marks in the PDF file to specify where to\n"
+"                  break pages or where to avoid page breaks.  <type> is either\n"
+"                  1 to force a page break or 2 to prevent a page break until\n"
+"                  next mark.  <color> is an R,G,B triplet, 0-1 for each color\n"
+"                  component, no spaces.  For example, to break the page\n"
+"                  wherever the source file has a green dot or short green\n"
+"                  horizontal line:  -bpm1 0,1,0.  Use <color> = -1 to clear.\n"
+"                  If you omit the <type>, 1 is assumed.\n"
 "-c[-]             Output in color [grayscale].  Default is grayscale.\n"
 /*
 "-cd <threshold>   Set column detection threshold.  Default = 0.01.  Range\n"
@@ -139,6 +153,7 @@ static char *k2pdfopt_options=
 "                      -cbox1 ...   -cbox2- 0,0\n"
 "                  The -cbox2- 0,0 will set the cropbox for pages 2 and beyond\n"
 "                  to the full page size.\n"
+"                  See also:  -ibox.\n"
 "-col <maxcol>     Set max number of columns.  <maxcol> can be 1, 2, or 4.\n"
 "                  Default is -col 2.  -col 1 disables column searching.\n"
 "-colorbg <hexcolor>  Map the color white (background color) to <hexcolor>,\n"
@@ -178,11 +193,11 @@ static char *k2pdfopt_options=
 "                  contrast from being adjusted.  Use a negative value to\n"
 "                  specify a fixed contrast adjustment.  Def = 2.0.\n"
 "-comax <range>    Stands for Column Offset Maximum.  The <range> given is as a\n"
-"                  fraction of the total horizontal 2-column span, as with -cgr,\n"
-"                  and it specifies how much the column divider can move around\n"
-"                  and still have the columns considered contiguous.  Set to -1\n"
-"                  to revert back to how columns were treated in k2pdfopt v1.34\n"
-"                  and before.  Default = 0.2.\n"
+"                  fraction of the width of a single column, and it specifies\n"
+"                  how much the column divider can move around and still have\n"
+"                  the columns considered contiguous.  Set to -1 to revert back\n"
+"                  to how columns were treated in k2pdfopt v1.34 and before.\n"
+"                  Default = 0.3.\n"
 "-crgh <inches>    Set the min height of the blank area that separates regions\n"
 "                  with different numbers of columns.  Default = 1/72 inch.\n"
 "-d[-]             Turn on [off] dithering for bpc values < 8.  See -bpc.\n"
@@ -207,6 +222,8 @@ static char *k2pdfopt_options=
 "                  it should actually be 8.5 x 11 inches, use -ds 0.5.  Default\n"
 "                  is 1.0.\n"
 /* "-debug [<n>]      Set debug mode to <n> (def = 1).\n" */
+"-ehl <n>          Same as -evl, except erases horizontal lines instead of\n"
+"                  vertical lines.  See -evl.  Default is -ehl 0.\n"
 "-evl <n>          Detects and erases vertical lines in the source document\n"
 "                  which may be keeping k2pdfopt from correctly separating\n"
 "                  columns or wrapping text, e.g. column dividers.  If <n> is\n"
@@ -223,7 +240,7 @@ static char *k2pdfopt_options=
 "                  than the screen in order to fit better.  Use -1 to fit the\n"
 "                  object no matter what.  Use -2 as a special case--all\n"
 "                  \"red-boxed\" regions (see -sm option) are placed one per\n"
-"                  page.  Default is -f2p 0.  See also -jf.\n"
+"                  page.  Default is -f2p 0.  See also -jf, -fr.\n"
 "                  Note:  -f2p -2 will automatically also set -vb -2 to\n"
 "                  exactly preserve the spacing in the red-boxed region.  If\n"
 "                  you want to compress the vertical spacing in the red-boxed\n"
@@ -231,6 +248,9 @@ static char *k2pdfopt_options=
 "-fc[-]            For multiple column documents, fit [don't fit] columns to\n"
 "                  the width of the reader screen regardless of -odpi.\n"
 "                  Default is to fit the columns to the reader.\n"
+"-fr[-]            Figure rotate--rotates wide-aspect-ratio figures to landscape\n"
+"                  so that they best fit on the reader page.  Default is not\n"
+"                  to rotate.  See also -f2p.\n"
 "-g <gamma>        Set gamma value of output bitmaps. A value less than 1.0\n"
 "                  makes the page darker and may make the font more readable.\n"
 "                  Default is 0.5.\n"
@@ -306,7 +326,15 @@ static char *k2pdfopt_options=
 "                  be used with this -gs option.  Use -gs- to use Ghostscript\n"
 "                  only if MuPDF fails.  Use -gs-- to never use Ghostscript.\n"
 "                  Download ghostscript at http://www.ghostscript.com.\n"
+"-i                Echo information about the source file (PDF only).\n"
+"                  Disables all other processing.\n"
 #endif
+"-ibox[<pagelist>|-] <cropbox>   Same as -cbox (see -cbox), except that these\n"
+"                  boxes are ignored by k2pdfopt.  This is done by whiting out\n"
+"                  the boxes in the source bitmap.  For native output, the\n"
+"                  area in the -ibox will not affect the parsing of the source\n"
+"                  file, but it may still be visible in the output file.\n"
+"                  Default is no iboxes (-ibox-).  See also -cbox.\n"
 "-idpi <dpi>       Set pixels per inch for input file.  Use a negative value\n"
 "                  as a multiplier on the output dpi (e.g. -2 will set the\n"
 "                  input file dpi to twice the output file dpi (see -odpi).\n"
@@ -444,8 +472,10 @@ static char *k2pdfopt_options=
 "                     with the -grid option.  It is used by default in those\n"
 "                     cases.\n"
 #endif
-"-neg[-]           Inverse [don't inverse] the output images (white letters\n"
-"                  on black background, or \"night mode\").\n"
+"-neg[-|+]         Inverse [don't inverse] the output images (white letters\n"
+"                  on black background, or \"night mode\").  If -neg+, inverts\n"
+"                  all graphics no matter what.  If just -neg, attempts to\n"
+"                  invert text only and not figures.  Default = -neg-.\n"
 "-ng <gap>         Set gap between notes and main text in the output document.\n"
 "                  The <gap> defaults to inches but can have other units (see\n"
 "                  -h, for example).  See -nl and -nr for how to turn on notes\n"
@@ -579,6 +609,7 @@ static char *k2pdfopt_options=
 "                  'e' and 'o' can be used to denote even and odd pages, e.g.\n"
 "                      -p o,e        Process all odd pages, then all even ones.\n"
 "                      -p 2-52e,3-33o    Process 2,4,6,...,52,3,5,7,...,33.\n"
+"                  Overridden by -px option.  See -px.\n"
 "-pad <padlist>    A shortcut for -pl, -pt, -pr, -pb.  E.g. -pad 15,10,13,20\n"
 "                  is the same as -pl 15 -pt 10 -pr 13 -pb 20.  Also, using\n"
 "                  -pad 15 will set all pads to 15, for example.\n"
@@ -607,6 +638,8 @@ static char *k2pdfopt_options=
 "                     <srcfile>\n"
 "                  The default is not to post process with ghostscript.\n"
 #endif
+"-px <pagelist>    Exclude pages from <pagelist>.  Overrides -p option.  Default\n"
+"                  is no excluded pages (-px -1).\n"
 "-r[-]             Right-to-left [left-to-right] page scans.  Default is\n"
 "                  left to right.\n"
 #ifdef HAVE_K2GUI
@@ -659,6 +692,8 @@ static char *k2pdfopt_options=
 "                  any output region.  Default is to trim.  Using -t- is not\n"
 "                  recommended unless you want to exactly duplicate the source\n"
 "                  document.\n"
+"-title <author>   Set the title of the PDF output file(s).  Default is to use\n"
+"                  the title of the source document (-title \"\").\n"
 "-to[-]            Text only output.  Remove figures from output.  Figures are\n"
 "                  determined empirically as any contiguous region taller than\n"
 "                  0.75 inches (or you can specify this using the -jf option).\n"
@@ -768,9 +803,10 @@ static char *k2pdfopt_options=
 
 static int strlencrlf(char *s);
 static void strcatcrlf(char *d,char *s);
-static int prcmdopts(char *s,int nl);
+static int prcmdopts(char *s,int nl,char *pattern,int prompt);
+static int opts_match(char *pattern,char *usage);
 static int cmdoplines(char *s);
-static char *pr1cmdopt(char *s,int maxlines);
+static char *pr1cmdopt(char *s,int maxlines,int display);
 static void prlines(char *s,int nlines);
 static int wait_enter(void);
 
@@ -830,37 +866,50 @@ static void strcatcrlf(char *d,char *s)
     }
 
 
-int k2pdfopt_usage(void)
+int k2pdfopt_usage(char *pattern,int prompt)
 
     {
     int nl;
 
-    nl=get_ttyrows();
-    if (nl < 20)
-        nl=20;
-    prlines(usageintro,nl-4);
-    if (wait_enter()<0)
-        return(0);
-    prlines(usageenv,nl-1);
-    if (wait_enter()<0)
-        return(0);
-    if (!prcmdopts(k2pdfopt_options,nl))
+    if (!prompt)
+        ansi_set(0);
+    if (prompt)
+        {
+        nl=get_ttyrows();
+        if (nl < 20)
+            nl=20;
+        }
+    else
+        nl=-1;
+    if (!strcmp(pattern,"*"))
+        {
+        prlines(usageintro,nl-4);
+        if (prompt && wait_enter()<0)
+            return(0);
+        prlines(usageenv,nl-1);
+        if (prompt && wait_enter()<0)
+            return(0);
+        }
+    if (!prcmdopts(k2pdfopt_options,nl,pattern,prompt))
         return(0);
     return(1);
     }
 
 
-static int prcmdopts(char *s,int nl)
+static int prcmdopts(char *s,int nl,char *pattern,int prompt)
 
     {
-    int i,ll,c;
-   
+    int i,ll,c,all;
+    char pat2[64];
+
+    all=!strcmp(pattern,"*");
+    sprintf(pat2,"*%s*",pattern);   
     for (i=0;1;i++)
         { 
         if (i==0)
             k2printf(TTEXT_BOLD "Command Line Options\n"
                                "--------------------\n" TTEXT_NORMAL);
-        else
+        else if (prompt)
             k2printf(TTEXT_BOLD "Command Line Options (cont'd)\n"
                                "-----------------------------\n" TTEXT_NORMAL);
         ll=!i ? nl-3 : nl-2;
@@ -869,27 +918,60 @@ static int prcmdopts(char *s,int nl)
             {
             int nlo;
             nlo=cmdoplines(s);
-            if (ll-2-nlo<0 && c==0)
-                nlo=ll-2;
-            c++;
-            if (s[0]=='\0' || ll-2-nlo<0)
-                break;
-            s=pr1cmdopt(s,ll-2);
-            ll-=nlo;
+            if (!all && !opts_match(pat2,s))
+                {
+                nlo=0;
+                if (s[0]=='\0')
+                    break;
+                s=pr1cmdopt(s,-1,0);
+                }
+            else
+                {
+                if (ll-2-nlo<0 && c==0)
+                    nlo=ll-2;
+                c++;
+                if (s[0]=='\0' || ll-2-nlo<0)
+                    break;
+                s=pr1cmdopt(s,ll-2,1);
+                ll-=nlo;
+                }
             }
         while (ll>1)
             {
-            k2printf("\n");
+            if (prompt)
+                k2printf("\n");
             ll--;
             }
-        if (!i)
+        if (!i && prompt)
             k2printf("\n");
-        if (wait_enter()<0)
+        if (prompt && wait_enter()<0)
             return(0);
         if (s[0]=='\0')
             break;
         }
     return(1);
+    }
+
+
+static int opts_match(char *pattern,char *usage)
+
+    {
+    int i,status;
+    char *buf;
+    static char *funcname="opts_match";
+
+    for (i=0;usage[i]!='\0';i++)
+        if (usage[i]=='\n' && usage[i+1]=='-')
+            break;
+    if (i==0)
+        return(0);
+    buf=NULL;
+    willus_mem_alloc_warn((void **)&buf,i+1,funcname,10);
+    strncpy(buf,usage,i);
+    buf[i]='\0';
+    status=wfile_unix_style_match(pattern,buf);
+    willus_mem_free((double **)&buf,funcname);
+    return(status);
     }
 
 
@@ -910,7 +992,7 @@ static int cmdoplines(char *s)
     }
 
 
-static char *pr1cmdopt(char *s,int maxlines)
+static char *pr1cmdopt(char *s,int maxlines,int display)
 
     {
     int j,k,k0,nl;
@@ -921,23 +1003,26 @@ static char *pr1cmdopt(char *s,int maxlines)
         for (k=0;k<18 && s[j]!=' ' && s[j]!='\n' && s[j]!='\0';j++)
             buf[k++]=s[j];
         buf[k]='\0';
-        k2printf(TTEXT_BOLD "%s" TTEXT_NORMAL,buf);
+        if (display)
+            k2printf(TTEXT_BOLD "%s" TTEXT_NORMAL,buf);
         if (k<17 && s[j]==' ' && s[j+1]!=' ')
             {
             for (k0=0;k<18 && s[j]!='\n' && s[j]!='\0';j++,k++)
                 buf[k0++]=s[j];
             buf[k0]='\0';
-            k2printf(TTEXT_MAGENTA "%s" TTEXT_NORMAL,buf);
+            if (display)
+                k2printf(TTEXT_MAGENTA "%s" TTEXT_NORMAL,buf);
             }
         if (s[j]!='\0' && s[j]!='\n')
             {
             for (k=0;s[j]!='\n' && s[j]!='\0';j++)
                 buf[k++]=s[j];
             buf[k]='\0';
-            k2printf("%s\n",buf);
+            if (display)
+                k2printf("%s\n",buf);
             }
         nl++;
-        if (nl>=maxlines)
+        if (maxlines>0 && nl>=maxlines)
             return(&s[j]);
         if (s[j]=='\0')
             return(&s[j]);

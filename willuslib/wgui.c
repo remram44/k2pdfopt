@@ -138,15 +138,17 @@ void willusgui_set_cursor(int type)
 #endif
     }
 
+
 void willusgui_open_file(char *filename)
 
     {
 #ifdef MSWINGUI
     char cmd[64];
     char cmdopts[512];
+    char pwd[512];
     int procnum;
 
-    if (wfile_status(filename)==0)
+    if (strnicmp(filename,"http://",7) && wfile_status(filename)==0)
         {
         char *message;
         int len;
@@ -163,7 +165,12 @@ void willusgui_open_file(char *filename)
         }
     sprintf(cmd,"cmd");
     sprintf(cmdopts,"/c start \"\" \"%s\"",filename);
-    process_launch_ex(cmd,cmdopts,1,1,NULL,6,&procnum);
+    strncpy(pwd,wfile_get_wd(),511);
+    pwd[511]='\0';
+    /* Make sure PWD isn't UNC -- if it is, default C:\ */
+    if (pwd[0]=='\\' && pwd[1]=='\\')
+        strcpy(pwd,"C:\\");
+    process_launch_ex(cmd,cmdopts,1,1,pwd,6,&procnum);
     /*
     sprintf(cmd,"start \"\" \"%s\"",filename);
     system(cmd);
@@ -607,7 +614,7 @@ void willusgui_control_create(WILLUSGUICONTROL *control)
             flags = WS_CHILD | WS_VISIBLE | BS_OWNERDRAW;
             if (!(control->attrib & WILLUSGUICONTROL_ATTRIB_NOKEYS))
                 flags |= WS_TABSTOP;
-            control->handle = CreateWindow("button",checkbox ? control->label : control->name,flags,
+            control->handle = CreateWindow("button",control->label,flags,
                                    control->rect.left,control->rect.top,
                                    control->rect.right-control->rect.left+1,
                                    control->rect.bottom-control->rect.top+1,
@@ -740,7 +747,10 @@ printf("width=%d\n",control->rect.right-control->rect.left-h-1);
             if (control->attrib & WILLUSGUICONTROL_ATTRIB_READONLY)
                 flags |= ES_READONLY;
             if (control->attrib & WILLUSGUICONTROL_ATTRIB_MULTILINE)
+                {
                 flags |= ES_MULTILINE;
+                flags &= ~ES_AUTOHSCROLL;
+                }
             if (control->attrib & WILLUSGUICONTROL_ATTRIB_SCROLLBARS)
                 flags |= (WS_HSCROLL | WS_VSCROLL);
             control->handle = CreateWindow(flags&ES_MULTILINE ? eclass2 : eclass3,
@@ -1183,7 +1193,7 @@ void willusgui_control_draw_label(WILLUSGUICONTROL *control,WILLUSGUIRECT *rect)
     {
     if (control->label[0]=='\0')
         return;
-    if (control->type==WILLUSGUICONTROL_TYPE_CHECKBOX)
+    if (control->type==WILLUSGUICONTROL_TYPE_CHECKBOX || control->type==WILLUSGUICONTROL_TYPE_BUTTON)
         return;
     willusgui_window_text_render(control->parent,&control->font,control->label,
                               control->labelx,control->labely,0,-1,control->labeljust,rect);
@@ -1344,6 +1354,20 @@ int willusgui_control_dropdownlist_get_selected_item(WILLUSGUICONTROL *control,c
     return(0);
 #endif
     }
+
+
+int willusgui_control_listbox_get_item_count(WILLUSGUICONTROL *control)
+
+    {
+    if (control->type != WILLUSGUICONTROL_TYPE_LISTBOX)
+        return(-1);
+#ifdef MSWINGUI
+    return(SendMessage((HWND)control->handle,LB_GETCOUNT,0,(LPARAM)0));
+#else
+    return(0);
+#endif
+    }
+
 
 /*
 ** Returns number of selected items in a list box.
@@ -1611,14 +1635,23 @@ int willusgui_file_select_dialog(char *buf,int maxlen,char *allowedfiles,
 
     {
 #ifdef MSWINGUI
-    short *filename;
+    short *filename,*fn;
     int status;
+    char *p;
     static char *funcname="willusgui_file_select_dialog";
 
     willus_mem_alloc_warn((void **)&filename,(maxlen+1)*sizeof(short),funcname,10);
     status=wincomdlg_get_filenamew(filename,maxlen,allowedfiles,prompt,defext,for_writing ? 0 : 1,
                                    for_writing ? 0 : 1,for_writing);
-    utf16_to_utf8(buf,filename,maxlen-1);
+    for (p=buf,fn=filename;1;p=&p[strlen(p)+1])
+        {
+        utf16_to_utf8(p,fn,maxlen-1);
+        for (;(*fn)!=0;fn++);
+        fn++;
+        if ((*fn)==0)
+            break;
+        }
+    p[strlen(p)+1]='\0';
     willus_mem_free((double **)&filename,funcname);
     return(status);
     /*

@@ -1,4 +1,4 @@
-char *k2pdfopt_version = "v2.32";
+char *k2pdfopt_version = "v2.33";
 /*
 ** k2version.c  K2pdfopt version number and history.
 **
@@ -17,8 +17,73 @@ char *k2pdfopt_version = "v2.32";
 ** You should have received a copy of the GNU Affero General Public License
 ** along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **
-**
 ** VERSION HISTORY
+**
+** v2.33 27 SEP 2015
+**           NEW FEATURES
+**           - Compiled with GCC v5.2.0 and MuPDF v1.7a (released May 7, 2015).
+**             The MuPDF upgrade involved modifying a significant amount of the
+**             MuPDF interface code in the willus library since Artifex changed the
+**             APIs on several functions, but the bulk of the logic did not change.
+**             I uncovered a bug in the pdf_dict_del() function as well (reported).
+**           - The -i option displays information about the source PDF file.  Added
+**             to MS Windows GUI also.
+**           - Added -fr option to rotate wide-aspect-ratio figures to landscape.
+**             http://www.mobileread.com/forums/showthread.php?p=3060339#post3060339
+**           - Added Kindle Paperwhite 3 (2015 release) and Pocketbook Basic 2 to
+**             dev list (from http://www.mobileread.com/forums/showthread.php?t=253579)
+**           - Smarter sorting of red regions on a multiple-column page.  See
+**             pageregion_sort() function in pageregions.c.
+**           - New -ibox option has same format as -cbox, but these boxes are ignored
+**             by k2pdfopt--they are "whited out" in the source file.  For native
+**             output, the contents may still be visible in the output.
+**           - The -neg option now attempts to only negate text passages to white
+**             on black and to leave figures alone.  Use -neg+ to negate everything.
+**             http://www.mobileread.com/forums/showthread.php?p=3104536#post3104536
+**           - Added option -ehl to erase horizontal lines in the document.  Works
+**             exactly like the -evl option.
+**           - Added -author and -title options to specify the author and title of
+**             the output PDF.
+**             http://www.mobileread.com/forums/showthread.php?p=3112052#post3112052
+**           - Added -px option to exclude a set of pages, e.g. -px 4,7,10-20.
+**             http://www.mobileread.com/forums/showthread.php?p=3112052#post3112052
+**           - User can use color markings to tell k2pdfopt where to apply page
+**             breaks to the output file.
+**             http://www.mobileread.com/forums/showthread.php?p=3152988#post3152988
+**           - The -? option can now be followed by a (wildcard) matching string to
+**             show the usage of a particlar option, e.g. -? -ws.
+**
+**           NEW MS WINDOWS GUI FEATURES
+**           - Crop margins replaced by three crop-box entries.
+**             These entries can act as either -cbox or -ibox.
+**           - Added an "INFO" button to show information on the selected PDF file.
+**           - If a wildcard is specified for a PDF source file
+**             on the command line (e.g. *.pdf), and the GUI is launched, all matching
+**             entries are placed into the GUI file list.
+**
+**           BUG FIXES
+**           - With notes options turned on (-nl / -nr), k2pdfopt will still search
+**             for multiple columns if no notes are found on the page.  In addition,
+**             the -crgh option now more directly affects column divider finding.
+**             See textrows_remove_small_rows() call in bmpregion_find_multicolumn_divider().
+**             http://www.mobileread.com/forums/showthread.php?p=3148589#post3148589
+**           - Fixed multiple file select (broke when I converted to wide chars in v2.30).
+**           - Modified bmpregion_hyphen_detect() to be less strict about rejecting
+**             hyphens that aren't exactly centered.  Also modified calculation of
+**             lcheight in bmpregion_calc_bbox()--see the function.
+**             http://www.mobileread.com/forums/showthread.php?p=3119501#post3119501
+**           - The k2pdfopt web site and help pages work again from the help menu.
+**           - Turned off some debugging text from the bmp_autocrop2 function in k2bmp.c.
+**           - Not really a bug fix, but the command-line help is now shown in
+**             Courier New in MS Windows (a mono-spaced font).
+**           - In info_update() in wmupdf.c in the willus library, I check to see
+**             if I can resolve the Info dictionary.  This checks to see if it can
+**             be parsed correctly.  If not, I discard the dictionary.  This was
+**             causing a bug that a user submitted to me in an e-mail on 15 April 2015.
+**             The users had a PDF file with a corrupt "Info" dictionary.
+**           - WPDFOUTLINE structures correctly freed.
+**           - MuPDF v1.7 stores ligatured characters differently than previous versions
+**             in its internal character arrays, so I had to compensate for this.
 **
 ** v2.32 6 MAR 2015
 **           NEW FEATURES

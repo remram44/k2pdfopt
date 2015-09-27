@@ -50,8 +50,8 @@ static void k2gui_overlay_message_box_add_children(char *buttonlabel[],int butto
 ** Returned margins are in inches
 **     margins[0] = left
 **     margins[1] = top
-**     margins[2] = right
-**     margins[3] = bottom
+**     margins[2] = width (v2.33)
+**     margins[3] = height (v2.33)
 */
 int k2gui_overlay_get_crop_margins(K2GUI *k2gui0,char *filename,char *pagelist,double *margins)
 
@@ -338,8 +338,8 @@ void k2gui_overlay_store_margins(WILLUSGUICONTROL *control)
     marked=&control->rectmarked;
     k2gui_overlay->margins[0] = (double)(marked->left-rect0.left)/control->dpi_rendered;
     k2gui_overlay->margins[1] = (double)(marked->top-rect0.top)/control->dpi_rendered;
-    k2gui_overlay->margins[2] = (double)(rect0.right-marked->right)/control->dpi_rendered;
-    k2gui_overlay->margins[3] = (double)(rect0.bottom-marked->bottom)/control->dpi_rendered;
+    k2gui_overlay->margins[2] = (double)(marked->right-marked->left)/control->dpi_rendered;
+    k2gui_overlay->margins[3] = (double)(marked->bottom-marked->top)/control->dpi_rendered;
     for (ii=0;ii<4;ii++)
         if (k2gui_overlay->margins[ii]<0.)
             k2gui_overlay->margins[ii]=0.;
@@ -363,8 +363,12 @@ void k2gui_overlay_apply_margins(WILLUSGUICONTROL *control)
     marked->top=k2gui_overlay->margins[1]*control->dpi_rendered+rect0.top;
     if (marked->top<0)
         marked->top=0;
+/*
     marked->right=rect0.right-k2gui_overlay->margins[2]*control->dpi_rendered;
     marked->bottom=rect0.bottom-k2gui_overlay->margins[3]*control->dpi_rendered;
+*/
+    marked->right=rect0.left+k2gui_overlay->margins[2]*control->dpi_rendered;
+    marked->bottom=rect0.top+k2gui_overlay->margins[3]*control->dpi_rendered;
     }
 
 

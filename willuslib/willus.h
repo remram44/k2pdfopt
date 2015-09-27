@@ -471,6 +471,8 @@ void bmp_grey_pixel_setf(WILLUSBITMAP *bmp,int x,int y,int grey,double f);
 void bmp_rgb_pixel_setf(WILLUSBITMAP *bmp,int x,int y,int r,int g,int b,double f);
 void bmp_resize(WILLUSBITMAP *bmp,double scalefactor);
 void bmp_integer_resample(WILLUSBITMAP *dest,WILLUSBITMAP *src,int n);
+void bmp_draw_filled_rect(WILLUSBITMAP *bmp,int col1,int row1,int col2,int row2,
+                          int r,int g,int b);
 /*
 ** As of Sept. 2013, the floating-point bmp_resample() is only faster than
 ** the fixed-point version on 64-bit compiles.  For 32-bit Intel (and ARM),
@@ -680,6 +682,9 @@ typedef void wmetafile;
 #define WFILE_HIDDEN    0x0008
 #define WFILE_READONLY  0x0010
 #define WFILE_SYMLINK   0x0020
+#define WFILE_CANCOPY   0x0100
+#define WFILE_STREAM    0x0200
+#define WFILE_STORAGE   0x0400
 typedef struct
         {
         char    fullname[MAXFILENAMELEN];
@@ -799,6 +804,7 @@ void wfile_slash_this_way(char *filename,int slash);
 char *wfile_temppath(char *path);
 void wfile_temppath_from_env(char *dir);
 char *wfile_tempname(char *dir,char *prefix);
+void wfile_abstmpnam_ex(char *filename,char *ext);
 void wfile_abstmpnam(char *filename);
 int wfile_hushit(char *filename);
 int wfile_eitherslash(int c);
@@ -934,6 +940,7 @@ int win_set_priority(int pri);
 int win_copy_file(char *destfile,char *srcfile);
 int win_fileattr_to_wfile(int winattr);
 void win_windate_to_tm(struct tm *filedate,void *wtime);
+void win_set_windate_warn(int status);
 void win_windate_to_tm_direct(struct tm *filedate,void *wtime);
 void win_tm_to_windate(void *wtime,struct tm *filedate);
 int win_file_is_ntfs(char *filename);
@@ -977,7 +984,7 @@ void *win_shared_handle_utf8(char *filename);
 #endif
 
 /* winshell.c */
-#ifdef HAVE_WIN32_API
+#if (defined(HAVE_WIN32_API) && (!defined(__GNUC__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)))
 int win_resolve_shortcut(void *shortcut,void *target,int maxlen,int wide);
 int winshell_get_foldername(char *foldername,char *title);
 int winshell_get_foldernamew(short *foldername,char *title);
@@ -1008,6 +1015,7 @@ void winmbox_checkbox_button_draw(void *hdc0,void *rect0,int state,void *hfont0,
                                   WILLUSBITMAP *bgbmp,int x0,int y0);
 void winmbox_button_draw(void *hdc0,void *rect0,int state,int basecolorrgb,
                          void *hfont0,char *text,int textcolorrgb);
+void winmbox_set_font(char *fontname);
 #endif
 
 /* winbmp.c */
@@ -1415,6 +1423,8 @@ void ocrwords_box(OCRWORDS *ocrwords,WILLUSBITMAP *bmp);
 void wpdfoutline_init(WPDFOUTLINE *wpdfoutline);
 void wpdfoutline_init(WPDFOUTLINE *wpdfoutline);
 void wpdfoutline_free(WPDFOUTLINE *wpdfoutline);
+void wpdfoutline_append(WPDFOUTLINE *outline1,WPDFOUTLINE *outline2);
+void wpdfoutline_add_to_srcpages(WPDFOUTLINE *outline,int pagecount);
 void wpdfoutline_set_dstpage(WPDFOUTLINE *outline,int srcpage,int dstpage);
 int  wpdfoutline_includes_srcpage(WPDFOUTLINE *outline,int pageno,int level);
 void wpdfoutline_echo(WPDFOUTLINE *outline,int level,int count,FILE *out);
@@ -1424,7 +1434,7 @@ WPDFOUTLINE *wpdfoutline_read_from_text_file(char *filename);
 int  wpdf_docenc_from_utf8(char *dst,char *src_utf8,int maxlen);
 
 /* wpdf.c */
-/* PDF file support functions--no depedence on MuPDF */
+/* PDF file support functions--no dependence on MuPDF */
 typedef struct
     {
     int pageno;
@@ -1470,6 +1480,8 @@ typedef struct
 typedef struct
     {
     char producer[128];  /* Producer */
+    char author[256];    /* Author */
+    char title[256];     /* Title */
     double width_pts;    /* Destination page width in pts. */
     double height_pts;   /* Destination page height in pts. */
     int srcpage;                 /* Ignored by wmupdf_remake_pdf */
@@ -1538,6 +1550,12 @@ int  wtextchars_fill_from_page_ex(WTEXTCHARS *wtc,char *filename,int pageno,char
                                  int boundingbox);
 WPDFOUTLINE *wpdfoutline_read_from_pdf_file(char *filename);
 #endif /* HAVE_MUPDF_LIB */
+
+/* wmupdfinfo.c */
+/* Mupdf support functions */
+#ifdef HAVE_MUPDF_LIB
+void wmupdfinfo_get(char *filename,int *pagelist,char **buf);
+#endif
 
 #ifdef HAVE_DJVU_LIB
 /* bmpdjvu.c */
@@ -1729,6 +1747,7 @@ void willusgui_start_browser(char *link);
 int  willusgui_control_get_checked(WILLUSGUICONTROL *control);
 void willusgui_control_set_checked(WILLUSGUICONTROL *control,int checked);
 int  willusgui_control_dropdownlist_get_selected_item(WILLUSGUICONTROL *control,char *buf);
+int  willusgui_control_listbox_get_item_count(WILLUSGUICONTROL *control);
 int  willusgui_control_listbox_get_selected_items_count(WILLUSGUICONTROL *control,int *selected_indices,
                                                          int maxsel);
 int  willusgui_control_listbox_select_item(WILLUSGUICONTROL *control,char *string);

@@ -143,7 +143,9 @@ printf("wfile_status(%s) = %d\n",arg,wfile_status(arg));
 #endif
         return;
         }
-    if (k2settings->preview_page!=0)
+    if (k2settings->info) /* Info only? */
+        autorot = 0;
+    else if (k2settings->preview_page!=0)
         autorot = (fabs(k2settings->src_rot - SRCROT_AUTOPREV)<.5);
     else
         autorot = (fabs(k2settings->src_rot - SRCROT_AUTOPREV)<.5
@@ -283,6 +285,36 @@ printf("@k2pdfopt_proc_one(%s)\n",filename);
 /*
 printf("@k2pdfopt_proc_one(filename='%s', rot_deg=%g, preview_bitmap=%p)\n",filename,rot_deg,k2out->bmp);
 */
+
+    /*
+    ** Check to see if we're only echoing page info
+    */
+    if (k2settings0->info)
+        {
+#ifdef HAVE_MUPDF_LIB
+        char *buf;
+        int *pagelist;
+        pagelist_get_array(&pagelist,k2settings0->pagelist);
+/*
+{
+int i;
+for (i=0;pagelist!=NULL&&pagelist[i]>=0;i++)
+printf("pagelist[%d]=%d\n",i,pagelist[i]);
+printf("pagelist[%d]=%d\n",i,pagelist[i]);
+}
+*/
+        wmupdfinfo_get(filename,pagelist,&buf);
+        printf("%s",buf);
+        if (buf!=NULL)
+            free(buf);
+        if (pagelist!=NULL)
+            free(pagelist);
+#else
+        printf("FILE: %s\n",filename);
+        printf("Cannot print file info.  MuPDF not compiled into application.\n");
+#endif
+        return(0.);
+        }
     local_tocwrites=0;
     k2out->status = 1;
     k2settings=&_k2settings;
@@ -536,7 +568,7 @@ printf("@k2pdfopt_proc_one(filename='%s', rot_deg=%g, preview_bitmap=%p)\n",file
         else
             masterinfo->outline=wpdfoutline_read_from_text_file(k2settings->toclist);
         }
-    pagecount = np<0 ? -1 : pagelist_count(k2settings->pagelist,np);
+    pagecount = np<0 ? -1 : double_pagelist_count(k2settings->pagelist,k2settings->pagexlist,np);
 #ifdef HAVE_K2GUI
     if (k2gui_active())
         {
@@ -556,8 +588,8 @@ printf("@k2pdfopt_proc_one(filename='%s', rot_deg=%g, preview_bitmap=%p)\n",file
     if (np>0 && pagecount==0)
         {
         if (!second_time_through)
-            k2printf("\a\n" TTEXT_WARN "No %ss to convert (-p %s)!" TTEXT_NORMAL "\n\n",
-                     folder?"file":"page",k2settings->pagelist);
+            k2printf("\a\n" TTEXT_WARN "No %ss to convert (-p %s -px %s)!" TTEXT_NORMAL "\n\n",
+                     folder?"file":"page",k2settings->pagelist,k2settings->pagexlist);
         masterinfo_free(masterinfo,k2settings);
         if (folder)
             filelist_free(fl);
@@ -592,8 +624,9 @@ willus_mem_debug_update(bmpfile);
         pageno=0;
         if (pagecount>0 && i+1>pagecount)
             break;
-        pageno = pagelist_page_by_index(k2settings->pagelist,i,np);
-        nextpage = (i+2>pagecount) ? -1 : pagelist_page_by_index(k2settings->pagelist,i+1,np);
+        pageno = double_pagelist_page_by_index(k2settings->pagelist,k2settings->pagexlist,i,np);
+        nextpage = (i+2>pagecount) ? -1 : double_pagelist_page_by_index(k2settings->pagelist,
+                                                             k2settings->pagexlist,i+1,np);
         /* Removed in v2.32 */
         /* This always returned non-zero */
         /*
@@ -658,7 +691,7 @@ willus_mem_debug_update(bmpfile);
 
             /* Read again at nominal source dpi */
             wsys_set_decimal_period(1);
-            if (k2settings->dst_color)
+            if (k2settings_need_color_initially(k2settings))
                 status=bmp_get_one_document_page(src,k2settings,src_type,mupdffilename,pageno,
                                                  dpi,24,stdout);
             else
@@ -684,11 +717,14 @@ willus_mem_debug_update(bmpfile);
 
         {
         BMPREGION region;
+        int mstatus;
 
         /* Got Good Page Render */
         bmpregion_init(&region);
-        if (masterinfo_new_source_page_init(masterinfo,k2settings,src,srcgrey,marked,
-                                 &region,rot_deg,&bormean,rotstr,pageno,nextpage,stdout)==0)
+        bmpregion_k2pagebreakmarks_allocate(&region);
+        mstatus=masterinfo_new_source_page_init(masterinfo,k2settings,src,srcgrey,marked,
+                                 &region,rot_deg,&bormean,rotstr,pageno,nextpage,stdout);
+        if (mstatus==0)
             {
             /* v2.15 -- memory leak fix */
             bmpregion_free(&region);
@@ -845,6 +881,10 @@ willus_mem_debug_update("End");
     else
 #endif
         author[0]=title[0]=cdate[0]='\0';
+    if (k2settings->dst_author[0]!='\0')
+        strcpy(author,k2settings->dst_author);
+    if (k2settings->dst_title[0]!='\0')
+        strcpy(title,k2settings->dst_title);
     if (!k2settings->use_crop_boxes)
         {
         if (masterinfo->outline!=NULL)
@@ -863,8 +903,18 @@ willus_mem_debug_update("End");
 wpdfboxes_echo(&masterinfo->pageinfo.boxes,stdout);
 #endif
 #ifdef HAVE_MUPDF_LIB
+#if (WILLUSDEBUGX & 64)
+printf("Calling wpdfpageinfo_scale_source_boxes()...\n");
+#endif
+        if (k2settings->dst_author[0]!='\0')
+            strcpy(masterinfo->pageinfo.author,k2settings->dst_author);
+        if (k2settings->dst_title[0]!='\0')
+            strcpy(masterinfo->pageinfo.title,k2settings->dst_title);
         /* v2.20 bug fix -- need to compensate for document_scale_factor if its not 1.0 */
         wpdfpageinfo_scale_source_boxes(&masterinfo->pageinfo,1./k2settings->document_scale_factor);
+#if (WILLUSDEBUGX & 64)
+printf("Calling wmupdf_remake_pdf()...\n");
+#endif
         wmupdf_remake_pdf(mupdffilename,dstfile,&masterinfo->pageinfo,1,masterinfo->outline,stdout);
 #endif
         }
@@ -1322,6 +1372,55 @@ void k2file_get_overlay_bitmap(WILLUSBITMAP *bmp,double *dpi,char *filename,char
             bmp8_merge(bmp,tmp,c);
         }
     bmp_free(tmp);
+    }
+
+
+void k2file_look_for_pagebreakmarks(K2PAGEBREAKMARKS *k2pagebreakmarks,
+                                    K2PDFOPT_SETTINGS *k2settings,WILLUSBITMAP *src,
+                                    WILLUSBITMAP *srcgrey,int dpi)
+
+    {
+    int color[2];
+    int type[2];
+    int n;
+
+#if (WILLUSDEBUGX & 0x800000)
+printf("@k2file_look_for_pagebreakmarks.\n");
+printf("    k2pagebreakmarks = %p\n",k2pagebreakmarks);
+printf("    n=%d\n",k2pagebreakmarks->n);
+#endif
+    if (k2pagebreakmarks==NULL)
+        return;
+    k2pagebreakmarks->n=n=0;
+    if (k2settings->pagebreakmark_breakpage_color>0)
+        {
+        color[n]=k2settings->pagebreakmark_breakpage_color;
+        type[n]=K2PAGEBREAKMARK_TYPE_BREAKPAGE;
+        n++;
+        }
+#if (WILLUSDEBUGX & 0x800000)
+printf("AA\n");
+#endif
+    if (k2settings->pagebreakmark_nobreak_color>0)
+        {
+        color[n]=k2settings->pagebreakmark_nobreak_color;
+        type[n]=K2PAGEBREAKMARK_TYPE_NOBREAK;
+        n++;
+        }
+#if (WILLUSDEBUGX & 0x800000)
+printf("BB\n");
+#endif
+    if (n==0)
+        return;
+#if (WILLUSDEBUGX & 0x800000)
+printf("CC\n");
+#endif
+    k2pagebreakmarks_find_pagebreak_marks(k2pagebreakmarks,src,srcgrey,dpi,color,type,n);
+#if (WILLUSDEBUGX & 0x800000)
+printf("\n%d PAGE BREAK MARKS FOUND.\n",k2pagebreakmarks->n);
+for (n=0;n<k2pagebreakmarks->n;n++)
+printf("    Mark %2d / %2d at %.2f, %.2f in from top left, type %d\n",n+1,k2pagebreakmarks->n,(double)k2pagebreakmarks->k2pagebreakmark[n].col/dpi,(double)k2pagebreakmarks->k2pagebreakmark[n].row/dpi,k2pagebreakmarks->k2pagebreakmark[n].type);
+#endif
     }
 
 

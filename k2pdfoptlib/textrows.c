@@ -229,9 +229,13 @@ void textrows_compute_row_gaps(TEXTROWS *textrows,int r2)
 
 /*
 ** v2.10:  Tosses out figures for computing statistics
+**
+** v2.33:  Added mingap_in parameter--if this is > 0 and if any gap between two
+**         rows exceeds this gap, the two rows are joined.
 */
 void textrows_remove_small_rows(TEXTROWS *textrows,K2PDFOPT_SETTINGS *k2settings,
-                                double fracrh,double fracgap,BMPREGION *region)
+                                double fracrh,double fracgap,BMPREGION *region,
+                                double mingap_in)
 
     {
     int i,j,mg,mh,mg0,mg1,nr,ng;
@@ -241,6 +245,11 @@ void textrows_remove_small_rows(TEXTROWS *textrows,K2PDFOPT_SETTINGS *k2settings
 
 #if (WILLUSDEBUGX & 2)
 k2printf("@textrows_remove_small_rows(fracrh=%g,fracgap=%g)\n",fracrh,fracgap);
+#endif
+#if (WILLUSDEBUGX & 0x40000)
+if (mingap_in>0.)
+k2printf("@textrows_remove_small_rows from multicolumn divider. mingap=%g in\n",mingap_in);
+k2printf("    nrows=%d\n",textrows->n);
 #endif
     if (textrows->n<2)
         return;
@@ -284,6 +293,7 @@ k2printf("mg = %d x %g = %d\n",gap[textrows->n/2],fracgap,mg);
         TEXTROW *textrow;
         int trh,gs1,gs2,g1,g2,gap_is_big,row_too_small;
         double m1,m2,row_width_inches;
+        int gap_too_small;
 
         textrow=&textrows->textrow[i];
         trh=textrow->r2-textrow->r1+1;
@@ -307,6 +317,7 @@ k2printf("mg = %d x %g = %d\n",gap[textrows->n/2],fracgap,mg);
             g2=textrows->textrow[i+1].r1-textrow->r2-1;
             gs2=textrows->textrow[i].gap;
             }
+        gap_too_small = i<textrows->n-1 && mingap_in>0. && (double)g2/region->dpi < mingap_in;
 #if (WILLUSDEBUGX & 2)
 k2printf("   rowheight[%d] = %d, mh=%d, gs1=%d, gs2=%d\n",i,trh,mh,gs1,gs2);
 #endif
@@ -325,20 +336,24 @@ k2printf("   rowheight[%d] = %d, mh=%d, gs1=%d, gs2=%d\n",i,trh,mh,gs1,gs2);
 #if (WILLUSDEBUGX & 2)
 k2printf("       m1=%g, m2=%g, rwi=%g, g1=%d, g2=%d, mg0=%d\n",m1,m2,row_width_inches,g1,g2,mg0);
 #endif
-        if (gap_is_big && !row_too_small)
+        if (!gap_too_small && gap_is_big && !row_too_small)
             continue;
-#if (WILLUSDEBUGX & 2)
-k2printf("   row[%d] to be combined w/next row.\n",i);
+#if (WILLUSDEBUGX & 0x40000)
+if (mingap_in>0.)
+k2printf("   row[%d] to be combined w/next row (gaptoosmall=%d, gapbig=%d, rowtoosmall=%d).\n",i,gap_too_small,gap_is_big,row_too_small);
 #endif
-        if (row_too_small)
+        if (!gap_too_small)
             {
-            if (g1<g2)
-                i--;
-            }
-        else
-            {
-            if (gs1<gs2)
-                i--;
+            if (row_too_small)
+                {
+                if (g1<g2)
+                    i--;
+                }
+            else
+                {
+                if (gs1<gs2)
+                    i--;
+                }
             }
 /*
 k2printf("Removing row.  nrows=%d, rh=%d, gs1=%d, gs2=%d\n",textrows->n,trh,gs1,gs2);
@@ -818,19 +833,13 @@ void textrow_determine_type(BMPREGION *region,K2PDFOPT_SETTINGS *k2settings,int 
     {
     TEXTROW *textrow;
     int nr,nc;
-    double aspect_ratio;
-    double region_height_inches;
 
     textrow=&region->textrows.textrow[index];
     if (textrow->type != REGION_TYPE_FIGURE)
         {
         nr=textrow->r2-textrow->r1+1;
         nc=textrow->c2-textrow->c1+1;
-        aspect_ratio = (double)nr/nc;
-        region_height_inches = (double)nr/region->dpi;
-        if (aspect_ratio > k2settings->no_wrap_ar_limit
-                  && (region_height_inches > k2settings->no_wrap_height_limit_inches
-                       || region_height_inches > k2settings->dst_min_figure_height_in))
+        if (region_is_figure(k2settings,(double)nc/region->dpi,(double)nr/region->dpi))
             {
             textrow->type = REGION_TYPE_FIGURE;
 /*
@@ -838,6 +847,18 @@ printf("2. textrow[%d] type = figure.\n",index);
 */
             }
         }
+    }
+
+
+int region_is_figure(K2PDFOPT_SETTINGS *k2settings,double width_in,double height_in)
+
+    {
+    double aspect_ratio;
+
+    aspect_ratio = width_in / height_in;
+    return(aspect_ratio > k2settings->no_wrap_ar_limit
+             && (height_in > k2settings->no_wrap_height_limit_inches
+                 || height_in > k2settings->dst_min_figure_height_in));
     }
 
 

@@ -5,7 +5,7 @@
 **
 ** Part of willus.com general purpose C code library.
 **
-** Copyright (C) 2014  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -29,6 +29,7 @@
 #endif
 #if (defined(WIN32))
 #include <windows.h>
+#include <io.h>
 #endif
 #include <stdio.h>
 #ifdef MSDOS16
@@ -2099,6 +2100,14 @@ char *wfile_tempname(char *dir,char *prefix)
         }
     return(tname);
 #endif /* LINUX */
+    }
+
+
+void wfile_abstmpnam_ex(char *filename,char *ext)
+
+    {
+    wfile_abstmpnam(filename);
+    wfile_newext(filename,NULL,ext);
     }
 
 

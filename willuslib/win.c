@@ -53,6 +53,8 @@ static int win_registry_search1(char *value,int maxlen,HKEY key_class,char *keyn
 static BOOL CALLBACK find_win_by_procid(HWND hwnd,LPARAM lp);
 static int win_adjust_privilege(void);
 
+static int windate_warn=1;
+
 typedef struct
     {
     int used;
@@ -336,6 +338,16 @@ int process_launch_ex(char *command,char *cmdlineopts,int inherits,
     static char cmdline[MAXFILENAMELEN];
     static char exename[MAXFILENAMELEN];
 
+/*
+printf("@process_launch_ex()\n");
+printf("    command='%s'\n",command);
+printf("    cmdlineopts='%s'\n",cmdlineopts);
+printf("    inherits=%d\n",inherits);
+printf("    detached=%d\n",detached);
+printf("    pwd='%s'\n",pwd);
+printf("    flags=%d\n",flags);
+printf("    pnum=%p\n",pnum);
+*/
     if (win_which(exename,command)==0)
         return(0);
     if (gpii<0)
@@ -417,9 +429,14 @@ int win_createprocess_utf8(char *exename,char *cmdline,int inherits,int cflags,
     ** Pass a full path or NULL, but NOT an empty string.
     */
     if (utf8_is_ascii(exename) && utf8_is_ascii(cmdline) && (pwd==NULL || utf8_is_ascii(pwd)))
-        return(CreateProcess(exename,cmdline,0,0,inherits,cflags,0,
+        {
+        int status;
+        sii=(STARTUPINFO *)si;
+        status=CreateProcess(exename,cmdline,0,0,inherits,cflags,0,
                              pwd==NULL?pwd:(pwd[0]=='\0'?NULL:pwd),
-                             (LPSTARTUPINFO)si,(LPPROCESS_INFORMATION)pi));
+                             sii,(LPPROCESS_INFORMATION)pi);
+        return(status);
+        }
     utf8_to_utf16_alloc((void **)&exenamew,exename);
     utf8_to_utf16_alloc((void **)&cmdlinew,cmdline);
     if (pwd!=NULL && pwd[0]!='\0')
@@ -1287,6 +1304,13 @@ void win_windate_to_tm(struct tm *filedate,void *wtime)
     }
 
 
+void win_set_windate_warn(int status)
+
+    {
+    windate_warn=status;
+    }
+
+
 void win_windate_to_tm_direct(struct tm *filedate,void *wtime)
 
     {
@@ -1314,7 +1338,8 @@ void win_windate_to_tm_direct(struct tm *filedate,void *wtime)
     /* ANSI C 32-bit date structure can only handle dates up to 2036 */
     if (stime.wYear > 2036)
         {
-        printf("Warning:  File date beyond 2036 in win_windate_to_tm_direct()!\n");
+        if (windate_warn)
+            printf("Warning:  File date beyond 2036 in win_windate_to_tm_direct()!\n");
         stime.wYear=2036;
         }
     filedate->tm_sec  = stime.wSecond;
@@ -2252,8 +2277,13 @@ static BOOL CALLBACK find_win_by_procid(HWND hwnd,LPARAM lp)
     GetWindowThreadProcessId(hwnd,(LPDWORD)&pid);
     if (pid==fwbp_pid)
         {
-        // fwbp_handle=hwnd;
-        fwbp_count++;
+        char buf[64];
+        GetWindowText(hwnd,buf,63);
+        if (strcmp(buf,"GDI+ Window") && strcmp(buf,"Default IME"))
+            {
+            // fwbp_handle=hwnd;
+            fwbp_count++;
+            }
         }
     return(TRUE);
     }

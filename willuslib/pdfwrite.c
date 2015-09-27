@@ -3,7 +3,7 @@
 **
 ** Part of willus.com general purpose C code library.
 **
-** Copyright (C) 2014  http://willus.com
+** Copyright (C) 2015  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -2008,14 +2008,38 @@ void wpdfoutline_init(WPDFOUTLINE *wpdfoutline)
 void wpdfoutline_free(WPDFOUTLINE *wpdfoutline)
 
     {
+    static char *funcname="wpdfoutline_free";
+
     if (wpdfoutline==NULL)
         return;
     wpdfoutline_free(wpdfoutline->down);
-    wpdfoutline->down=NULL;
+    willus_mem_free((double **)&wpdfoutline->down,funcname);
     wpdfoutline_free(wpdfoutline->next);
-    wpdfoutline->next=NULL;
+    willus_mem_free((double **)&wpdfoutline->next,funcname);
+    willus_mem_free((double **)&wpdfoutline->title,funcname);
     wpdfoutline->srcpage=-1;
     wpdfoutline->dstpage=-1;
+    }
+
+
+void wpdfoutline_append(WPDFOUTLINE *outline1,WPDFOUTLINE *outline2)
+
+    {
+    WPDFOUTLINE *p;
+
+    for (p=outline1;p->next!=NULL;p=p->next);
+    p->next=outline2;
+    }
+
+
+void wpdfoutline_add_to_srcpages(WPDFOUTLINE *outline,int pagecount)
+
+    {
+    if (outline==NULL)
+        return;
+    outline->srcpage += pagecount;
+    wpdfoutline_add_to_srcpages(outline->next,pagecount);
+    wpdfoutline_add_to_srcpages(outline->down,pagecount);
     }
 
 

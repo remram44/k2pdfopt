@@ -35,6 +35,10 @@ static int bmp_autocrop2_ex(WILLUSBITMAP *bmp,int pixwidth,int pixstep,int white
 static double frame_area(double area,int *cx);
 static void bmp_convert_to_monochrome(WILLUSBITMAP *bmp,int whitethresh);
 static double frame_black_percentage(WILLUSBITMAP *bmp,int *cx);
+static void k2pagebreakmarks_add_mark(K2PAGEBREAKMARKS *k2pagebreakmarks,int markcol,int markrow,
+                                      int marktype,int dpi);
+static int k2pagebreakmarks_too_close_to_others(K2PAGEBREAKMARKS *k2pagebreakmarks,int markcol,
+                                                int markrow,int dpi);
 
 
 int bmp_get_one_document_page(WILLUSBITMAP *src,K2PDFOPT_SETTINGS *k2settings,
@@ -115,7 +119,8 @@ void bmp_adjust_contrast(WILLUSBITMAP *src,WILLUSBITMAP *srcgrey,
     if (k2settings->contrast_max < 0.)
         {
         bmp_contrast_adjust(srcgrey,srcgrey,-k2settings->contrast_max);
-        if (k2settings->dst_color && fabs(k2settings->contrast_max+1.0)>1e-4)
+        if (k2settings->dst_color && src!=srcgrey && src!=NULL && src->bpp>8
+                                  && fabs(k2settings->contrast_max+1.0)>1e-4)
             bmp_contrast_adjust(src,src,-k2settings->contrast_max);
         return;
         }
@@ -179,7 +184,8 @@ exit(10);
 */
     bmp_copy(srcgrey,dst);
     /* Maybe don't adjust the contrast for the color bitmap? */
-    if (k2settings->dst_color && fabs(contrast-1.0)>1e-4)
+    if (k2settings->dst_color && src!=srcgrey && src!=NULL && src->bpp>8
+                              && fabs(contrast-1.0)>1e-4)
         bmp_contrast_adjust(src,src,contrast);
     bmp_free(dst);
     }
@@ -193,12 +199,13 @@ void bmp_clear_outside_crop_border(MASTERINFO *masterinfo,WILLUSBITMAP *src,
                                    WILLUSBITMAP *srcgrey,K2PDFOPT_SETTINGS *k2settings)
 
     {
-    int i,n;
+    int i,n,bytes_per_pix;
     BMPREGION *region,_region;
 
     region=&_region;
     bmpregion_init(region);
-    region->bmp = k2settings->dst_color ? src : srcgrey;
+    bytes_per_pix = src==NULL ? 0 : src->bpp>>8;
+    region->bmp = (src!=NULL && src->bpp>8) ? src : srcgrey;
     region->bmp8 = srcgrey;
     region->dpi = k2settings->src_dpi;
     bmpregion_trim_to_crop_margins(region,masterinfo,k2settings);
@@ -206,10 +213,10 @@ void bmp_clear_outside_crop_border(MASTERINFO *masterinfo,WILLUSBITMAP *src,
     for (i=0;i<srcgrey->height;i++)
         {
         unsigned char *p;
-        if (k2settings->dst_color)
+        if (src!=NULL && src != srcgrey)
             {
             p=bmp_rowptr_from_top(src,i);
-            memset(p,255,n*3);
+            memset(p,255,n*bytes_per_pix);
             }
         p=bmp_rowptr_from_top(srcgrey,i);
         memset(p,255,n);
@@ -218,10 +225,10 @@ void bmp_clear_outside_crop_border(MASTERINFO *masterinfo,WILLUSBITMAP *src,
     for (i=0;i<srcgrey->height;i++)
         {
         unsigned char *p;
-        if (k2settings->dst_color)
+        if (src!=NULL && src != srcgrey)
             {
-            p=bmp_rowptr_from_top(src,i)+3*(src->width-n);
-            memset(p,255,n*3);
+            p=bmp_rowptr_from_top(src,i)+bytes_per_pix*(src->width-n);
+            memset(p,255,n*bytes_per_pix);
             }
         p=bmp_rowptr_from_top(srcgrey,i)+srcgrey->width-n;
         memset(p,255,n);
@@ -230,10 +237,10 @@ void bmp_clear_outside_crop_border(MASTERINFO *masterinfo,WILLUSBITMAP *src,
     for (i=0;i<n;i++)
         {
         unsigned char *p;
-        if (k2settings->dst_color)
+        if (src!=NULL && src != srcgrey)
             {
             p=bmp_rowptr_from_top(src,i);
-            memset(p,255,src->width*3);
+            memset(p,255,src->width*bytes_per_pix);
             }
         p=bmp_rowptr_from_top(srcgrey,i);
         memset(p,255,srcgrey->width);
@@ -242,10 +249,10 @@ void bmp_clear_outside_crop_border(MASTERINFO *masterinfo,WILLUSBITMAP *src,
     for (i=srcgrey->height-n;i<srcgrey->height;i++)
         {
         unsigned char *p;
-        if (k2settings->dst_color)
+        if (src!=NULL && src != srcgrey)
             {
             p=bmp_rowptr_from_top(src,i);
-            memset(p,255,src->width*3);
+            memset(p,255,src->width*bytes_per_pix);
             }
         p=bmp_rowptr_from_top(srcgrey,i);
         memset(p,255,srcgrey->width);
@@ -539,6 +546,26 @@ fclose(f);
     willus_dmem_free(23,&xs,funcname);
     return(f1*f2*ni);
     }
+
+/*
+** Detect horizontal lines by making them vertical first.
+*/
+void bmp_detect_horizontal_lines(WILLUSBITMAP *bmp,WILLUSBITMAP *cbmp,
+                                 double dpi,/* double minwidth_in, */
+                                 double maxthick_in,double minwidth_in,double anglemax_deg,
+                                 int white_thresh,int erase_horizontal_lines,int debug,int verbose)
+
+    {
+    bmp_rotate_right_angle(bmp,90);
+    if (cbmp!=NULL && cbmp!=bmp)
+        bmp_rotate_right_angle(cbmp,90);
+    bmp_detect_vertical_lines(bmp,cbmp,dpi,maxthick_in,minwidth_in,anglemax_deg,
+                              white_thresh,erase_horizontal_lines,debug,verbose);
+    if (cbmp!=NULL && cbmp!=bmp)
+        bmp_rotate_right_angle(cbmp,-90);
+    bmp_rotate_right_angle(bmp,-90);
+    }
+
 
 /*
 ** bmp must be grayscale! (cbmp might be color, might be grayscale, can be null)
@@ -1146,7 +1173,9 @@ int bmp_autocrop2(WILLUSBITMAP *bmp0,int *cx)
     double s30;
     double hist[256];
 
+#if (WILLUSDEBUGX & 0x8000)
 printf("@bmp_autocrop2...\n");
+#endif
     bmp=&_bmp;
     bmp_init(bmp);
     bmp_copy(bmp,bmp0);
@@ -1178,10 +1207,12 @@ printf("pw=%d, wt=%d\n",pw,wt);
     status=bmp_autocrop2_ex(bmp,pw,pw,wt,10.,.6,cx);
     cx[2] = bmp->width-1-cx[2];
     cx[3] = bmp->height-1-cx[3];
+#if (WILLUSDEBUGX & 0x8000)
 printf("cx[0]=%d\n",cx[0]);
 printf("cx[1]=%d\n",cx[1]);
 printf("cx[2]=%d\n",cx[2]);
 printf("cx[3]=%d\n",cx[3]);
+#endif
 /*
     printf("bmp_autocrop returns %d\n",status);
     printf("    (%d,%d) - (%d,%d)\n",cx[0],cx[1],cx[2],cx[3]);
@@ -1378,4 +1409,165 @@ static double frame_black_percentage(WILLUSBITMAP *bmp,int *cx)
     for (;h>0;h--,p1+=dr,p2+=dr)
         sum+=(*p1)+(*p2);
     return((double)sum/len);
+    }
+
+
+void k2pagebreakmarks_find_pagebreak_marks(K2PAGEBREAKMARKS *k2pagebreakmarks,WILLUSBITMAP *bmp,
+                                        WILLUSBITMAP *bmpgrey,int dpi,int *color,int *type,int n)
+
+    {
+    int j,row,width;
+    double rr[8],gg[8],bb[8];
+
+#if (WILLUSDEBUGX & 0x800000)
+printf("At k2pagebreakmarks_find_pagebreak_marks.\n");
+for (j=0;j<n;j++)
+printf("    color[%d]=0x%0X\n",j,color[j]);
+printf("    type[%d]=%d\n",j,type[j]);
+#endif
+    if (bmp==NULL || bmp->bpp<24 || (bmpgrey!=NULL && bmpgrey->bpp!=8))
+        {
+        printf("Internal Error--Bit-per-pixel mismatch in k2pagebreaks_find_pagebreak_marks.  Contact Author.\n");
+        exit(20);
+        }
+    width=bmp->width;
+    for (j=0;j<n && j<8;j++)
+        {
+        rr[j]=((color[j]>>16)&0xff)/255.;
+        gg[j]=((color[j]>>8)&0xff)/255.;
+        bb[j]=(color[j]&0xff)/255.;
+        }
+    for (row=0;row<bmp->height;row++)
+        {
+        unsigned char *p,*pg;
+        int jbest,jlast,lastcol,col;
+
+        p=bmp_rowptr_from_top(bmp,row);
+        pg = bmpgrey==NULL ? NULL : bmp_rowptr_from_top(bmpgrey,row);
+        for (jbest=-1,jlast=-1,lastcol=-1,col=0;col<width;col++,p+=3)
+            {
+            double blackmatch,whitematch,graymatch,cm,cmbest;
+            int r,g,b;
+
+            /* Find best color match */
+            r=p[0];
+            g=p[1];
+            b=p[2];
+            blackmatch=(r/255.+g/255.+b/255.)/3.;
+            whitematch=1.-blackmatch;
+            graymatch=(abs(r-g)/255.+abs(g-b)/255.+abs(r-b)/255.)/3.;
+            for (cmbest=3.,jbest=-1,j=0;j<n && j<8;j++)
+                {
+                cm = (fabs(r/255.-rr[j])+fabs(g/255.-gg[j])+fabs(b/255.-bb[j]))/3.;
+                if (cm<cmbest && cm<blackmatch && cm<whitematch && cm<graymatch)
+                    {
+                    jbest=j;
+                    cmbest=cm;
+                    }
+                }
+
+            /* Paint over mark if it matches a color */
+            if (jbest>=0)
+                {
+                p[0]=p[1]=p[2]=255;
+                if (pg!=NULL)
+                    pg[col]=255;
+                }
+/*
+if (jbest>=0)
+printf(" TYPE %d (%d,%d,%d) @ %4d,%4d\n",jbest,p[0],p[1],p[2],col,row);
+*/
+            if (jbest==jlast && col<width-1)
+                continue;
+            if (jbest>=0 && jbest==jlast)
+                {
+                int markcol,markrow;
+
+                markcol=(col+lastcol)/2;
+                markrow=row;
+/*
+printf("    Adding type %d at %d,%d\n",jbest,markcol,markrow);
+*/
+                k2pagebreakmarks_add_mark(k2pagebreakmarks,markcol,markrow,type[jbest],dpi);
+                }
+            else if (jbest!=jlast && jlast>=0)
+                {
+                int markcol,markrow;
+
+                markcol=(col-1+lastcol)/2;
+                markrow=row;
+/*
+printf("    Adding type %d at %d,%d\n",jlast,markcol,markrow);
+*/
+                k2pagebreakmarks_add_mark(k2pagebreakmarks,markcol,markrow,type[jlast],dpi);
+                }
+            if (jbest!=jlast)
+                {
+                jlast=jbest;
+                if (jlast>=0)
+                    lastcol=col;
+                else
+                    lastcol=-1;
+                }
+            }
+        }
+#if (WILLUSDEBUGX & 0x800000)
+printf("...Call complete.\n");
+#endif
+    }
+
+
+static void k2pagebreakmarks_add_mark(K2PAGEBREAKMARKS *k2pagebreakmarks,int markcol,int markrow,
+                                      int marktype,int dpi)
+
+    {
+    int n;
+    static int warned=0;
+    K2PAGEBREAKMARK *breakmark;
+
+    if (k2pagebreakmarks_too_close_to_others(k2pagebreakmarks,markcol,markrow,dpi))
+/*
+{
+printf("    %d,%d too close to other marks.\n",markcol,markrow);
+*/
+        return;
+/*
+}
+*/
+    n=k2pagebreakmarks->n;
+    if (n>=MAXK2PAGEBREAKMARKS)
+        {
+        if (!warned)
+            k2printf("\n" TTEXT_WARN "Warning: Max page break marks exceeded.  "
+                         "Some will be ignored!" TTEXT_NORMAL "\n\n");
+        warned=1;
+        return;
+        }
+    warned=0;
+    breakmark = &k2pagebreakmarks->k2pagebreakmark[n];
+    breakmark->row = markrow;
+    breakmark->col = markcol;
+    breakmark->type = marktype;
+    k2pagebreakmarks->n++;
+    }
+
+
+static int k2pagebreakmarks_too_close_to_others(K2PAGEBREAKMARKS *k2pagebreakmarks,int markcol,
+                                                int markrow,int dpi)
+
+    {
+    int i;
+
+    for (i=0;i<k2pagebreakmarks->n;i++)
+        {
+        K2PAGEBREAKMARK *mark;
+        double dx,dy;
+
+        mark=&k2pagebreakmarks->k2pagebreakmark[i];
+        dx = (double)abs(mark->col - markcol)/dpi;
+        dy = (double)abs(mark->row - markrow)/dpi;
+        if (dx < 1.0 && dy < .1)
+            return(1);
+        }
+    return(0);
     }

@@ -2504,6 +2504,69 @@ void bmp_integer_resample(WILLUSBITMAP *dest,WILLUSBITMAP *src,int n)
     }
 
 
+void bmp_draw_filled_rect(WILLUSBITMAP *bmp,int col1,int row1,int col2,int row2,
+                          int r,int g,int b)
+
+    {
+    if (row1<0)
+        row1=0;
+    if (row1>bmp->height-1)
+        row1=bmp->height-1;
+    if (row2<0)
+        row2=0;
+    if (row2>bmp->height-1)
+        row2=bmp->height-1;
+    if (col1<0)
+        col1=0;
+    if (col1>bmp->width-1)
+        col1=bmp->width-1;
+    if (col2<0)
+        col2=0;
+    if (col2>bmp->width-1)
+        col2=bmp->width-1;
+    if (row2<row1)
+        {
+        int t;
+        t=row2;
+        row2=row1;
+        row1=t;
+        }
+    if (col2<col1)
+        {
+        int t;
+        t=col2;
+        col2=col1;
+        col1=t;
+        }
+    if (bmp->bpp==24)
+        {
+        int row;
+        for (row=row1;row<=row2;row++)
+            {
+            int col;
+            unsigned char *p;
+            p=bmp_rowptr_from_top(bmp,row)+col1*3;
+            for (col=col1;col<=col2;col++,p+=3)
+                {
+                RGBSET24(bmp,p,r,g,b);
+                }
+            }
+        }
+    else
+        {
+        int row;
+        for (row=row1;row<=row2;row++)
+            {
+            int col;
+            unsigned char *p;
+            p=bmp_rowptr_from_top(bmp,row)+col1;
+            for (col=col1;col<=col2;col++,p++)
+                (*p)=r;
+            }
+        }
+    }
+
+
 /*
 ** Resample (re-size) bitmap.  The pixel positions left to right go from
 ** 0.0 to src->width (x-coord), and top to bottom go from

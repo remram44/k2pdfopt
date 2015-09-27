@@ -43,6 +43,7 @@ static void find_word_gaps_using_textrow(WILLUSBITMAP *src,K2PDFOPT_SETTINGS *k2
                                          int **pgappos,int **pgapsize,int *png,int whitethresh,
                                          int dpi);
 static int masterinfo_break_point(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings,int maxsize);
+static int masterinfo_break_point_1(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings,int maxsize);
 static int ocrlayer_bounding_box_inches(MASTERINFO *masterinfo,LINE2D *rect);
 
 
@@ -98,6 +99,7 @@ void masterinfo_init(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings)
     masterinfo->nocr=0;
     masterinfo->mandatory_region_gap=0;
     masterinfo->page_region_gap_in=-1.;
+    masterinfo->k2pagebreakmarks.n=0;
     sprintf(masterinfo->pageinfo.producer,"K2pdfopt %s",k2pdfopt_version);
     }
 
@@ -179,7 +181,7 @@ printf("masterinfo->landscape=%d\n",masterinfo->landscape);
         bmp_copy(srcgrey,src);
     else
         bmp_convert_to_greyscale_ex(srcgrey,src);
-    if (!OR_DETECT(rot_deg) && (k2settings->dst_color || k2settings->show_marked_source))
+    if (!OR_DETECT(rot_deg) && k2settings_need_color_permanently(k2settings))
         bmp_promote_to_24(src);
     bmp_adjust_contrast(src,srcgrey,k2settings,&white);
     /* v2.20 -- paint pixels above white threshold white if requested */
@@ -198,6 +200,11 @@ printf("masterinfo->landscape=%d\n",masterinfo->landscape);
                         k2settings->min_column_height_inches,k2settings->src_autostraighten,white,
                         k2settings->erase_vertical_lines,
                         k2settings->debug,k2settings->verbose);
+    if (k2settings->erase_horizontal_lines>0)
+        bmp_detect_horizontal_lines(srcgrey,src,(double)k2settings->src_dpi,/*0.005,*/0.25,
+                        k2settings->min_column_height_inches,k2settings->src_autostraighten,white,
+                        k2settings->erase_horizontal_lines,
+                        k2settings->debug,k2settings->verbose);
     if (k2settings->src_autostraighten > 0.)
         {
         double rot;
@@ -209,7 +216,23 @@ printf("masterinfo->landscape=%d\n",masterinfo->landscape);
 #if (WILLUSDEBUGX & 0x20000)
 printf("k2settings->srccropmargins->units[0]=%d\n",k2settings->srccropmargins.units[0]);
 #endif
+#if (WILLUSDEBUGX & 0x800000)
+printf("00\n");
+printf("src=%p (%dx%dx%d)\n",src,src->width,src->height,src->bpp);
+printf("srcgrey=%p (%dx%dx%d)\n",srcgrey,srcgrey->width,srcgrey->height,srcgrey->bpp);
+#endif
     bmp_clear_outside_crop_border(masterinfo,src,srcgrey,k2settings);
+#if (WILLUSDEBUGX & 0x800000)
+printf("11\n");
+#endif
+    /* Find page break marks -- src bitmap must be color if there are page-break marks */
+    k2file_look_for_pagebreakmarks(region->k2pagebreakmarks,k2settings,src,srcgrey,k2settings->src_dpi);
+#if (WILLUSDEBUGX & 0x800000)
+printf("22\n");
+#endif
+    /* Convert source back to gray scale if not using color output */
+    if (!k2settings_need_color_permanently(k2settings))
+        bmp_convert_to_greyscale(src);
     region->dpi = k2settings->src_dpi;
     region->r1 = 0;
     region->r2 = srcgrey->height-1;
@@ -242,6 +265,24 @@ printf("k2settings->srccropmargins->units[0]=%d\n",k2settings->srccropmargins.un
     /* Set destination size (flush output bitmap if it changes) */
     k2pdfopt_settings_set_margins_and_devsize(k2settings,region,masterinfo,0);
     return(1);
+    }
+
+
+void masterinfo_add_pagebreakmark(MASTERINFO *masterinfo,int marktype)
+
+    {
+    int n;
+
+    n=masterinfo->k2pagebreakmarks.n;
+    if (n < MAXK2PAGEBREAKMARKS)
+        {
+        masterinfo->k2pagebreakmarks.k2pagebreakmark[n].row=masterinfo->rows;
+        masterinfo->k2pagebreakmarks.k2pagebreakmark[n].type=marktype;
+        masterinfo->k2pagebreakmarks.n++;
+        }
+    /*
+    printf("\nPAGEBREAK MARK ADD:  rows = %d\n\n",masterinfo->rows);
+    */
     }
 
 
@@ -882,7 +923,7 @@ printf("lastrow->gap now = %d(r2) - %d(rowbase) = %d\n",region->r2,textrow[n-1].
 void masterinfo_remove_top_rows(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings,int rows)
 
     {
-    int bw,i;
+    int bw,i,j;
 
     /* Clear the published page:  move everything "up" by "rows" pixels */
     bw=bmp_bytewidth(&masterinfo->bmp);
@@ -894,6 +935,24 @@ void masterinfo_remove_top_rows(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2sett
         memcpy(pdst,psrc,bw);
         }
     masterinfo->rows -= rows;
+
+    /* Adjust page break markers and remove if they are out of range */
+    for (i=j=0;i<masterinfo->k2pagebreakmarks.n;i++)
+        {
+        K2PAGEBREAKMARK *mark;
+
+        mark=&masterinfo->k2pagebreakmarks.k2pagebreakmark[i];
+        mark->row -= rows;
+        if (mark->row<0 || (mark->row<=0 && mark->type==K2PAGEBREAKMARK_TYPE_BREAKPAGE)
+                        || mark->type<0)
+            continue;
+        if (i!=j)
+            masterinfo->k2pagebreakmarks.k2pagebreakmark[j]
+               = masterinfo->k2pagebreakmarks.k2pagebreakmark[i];
+        j++;
+        }
+    masterinfo->k2pagebreakmarks.n=j;
+
     /* Move unused crop box positions by -rows so they track the master bitmap */
 #ifdef HAVE_MUPDF_LIB
     if (k2settings->use_crop_boxes)
@@ -1305,13 +1364,13 @@ k2printf("              box->y1 = %g, rows-.1 = %g\n",box->y1,rows-.1);
         /* If crop box not on this page, skip it */
         if (box->y1 > rows-.1)
             continue;
-        /* If crop-box is cut off by this page, split it */
 #if (WILLUSDEBUGX & 64)
 k2printf("    box[%d]:  rows(bp)=%d, ix0=%d, iy0=%d, y1=%g, usery=%g, bmp1->ht=%d\n",i,rows,
 (int)(box->srcbox.x0_pts*10.+.5),
 (int)((box->srcbox.page_height_pts-box->srcbox.y0_pts)*10.+.5),
 box->y1,box->usery,bmp1->height);
 #endif
+        /* If crop-box is cut off by this page, split it */
         if (box->y1+box->usery > bmp1->height+.1)
             {
             double newheight,dy;
@@ -1343,35 +1402,83 @@ k2printf("    Adding box %d (dstpageno=%d).\n",i,dstpageno);
 #endif
         box->dstpage = dstpageno;
         w1=(bmp1->width-masterinfo->bmp.width)/2;
+/*
+printf("w1=%d\n",w1);
+printf("bmp1->widthxheight=%dx%d\n",bmp1->width,bmp1->height);
+printf("masterinfo->bmp.widthxheight=%dx%d\n",masterinfo->bmp.width,masterinfo->bmp.height);
+printf("box->x1,y1=%g,%g\n",box->x1,box->y1);
+printf("box->userxxusery=%gx%g\n",box->userx,box->usery);
+*/
+        // sr=(int)((box->srcrot_deg+765.)/90.);
+        /* box->dstrot_deg will be +/-90 if this is a rotated figure */
+        /* See k2proc.c -- call to ...add_crop_boxes() */
+        {
+        int bmpheight_pix,bmpwidth_pix;
+        int scalewidth_pix,scaleheight_pix;
+        double buserx,busery,devheight_pts,devwidth_pts,scalex,scaley;
+
         xd=w1+box->x1;
         yd=height-(box->y1+box->usery+r0);
-        // sr=(int)((box->srcrot_deg+765.)/90.);
-        if (masterinfo->landscape)
+        scaleheight_pix = bmpheight_pix = height;
+        scalewidth_pix = bmpwidth_pix = bmp1->width;
+        devheight_pts = box->dst_height_pts;
+        devwidth_pts = box->dst_width_pts;
+        buserx = box->userx;
+        busery = box->usery;
+        if ((masterinfo->landscape && fabs(box->dstrot_deg)<.1)
+             || (!masterinfo->landscape && box->dstrot_deg>89.))
             {
-            yd=xd;
-            xd=box->y1+box->usery+r0;
-            box->x1 = box->dst_width_pts*xd/height;
-            box->y1 = box->dst_height_pts*yd/bmp1->width;
-            box->dstrot_deg=90.;
-            if (box->userx > box->usery)
-                box->scale = box->userx*box->dst_height_pts/bmp1->width
-                             / box->srcbox.crop_width_pts;
+            if (masterinfo->landscape)
+                int_swap(bmpheight_pix,bmpwidth_pix);
+            if (!masterinfo->landscape)
+                {
+                int_swap(scalewidth_pix,scaleheight_pix);
+                int_swap(buserx,busery);
+                }
+            double_swap(devheight_pts,devwidth_pts);
+            if (masterinfo->landscape)
+                {
+                int_swap(xd,yd);
+                xd = height-xd;
+                box->dstrot_deg=90.;
+                }
             else
-                box->scale = box->usery*box->dst_width_pts/bmp1->height
-                             / box->srcbox.crop_height_pts;
+                {
+                xd = bmp1->width - xd;
+                }
+            }
+        else if (box->dstrot_deg < -89.) /* rotated figure in landscape */
+            {
+            box->dstrot_deg=0.;
+            int_swap(buserx,busery);
+            int_swap(scalewidth_pix,scaleheight_pix);
+            int_swap(xd,yd);
+            xd=box->y1+r0;
             }
         else
-            {
-            box->x1 = box->dst_width_pts*xd/bmp1->width;
-            box->y1 = box->dst_height_pts*yd/height;
             box->dstrot_deg=0.;
-            if (box->userx > box->usery)
-                box->scale = box->userx*box->dst_width_pts/bmp1->width
-                             / box->srcbox.crop_width_pts;
-            else
-                box->scale = box->usery*box->dst_height_pts/height
-                             / box->srcbox.crop_height_pts;
-            }
+        box->x1 = box->dst_width_pts*xd/bmpwidth_pix;
+        box->y1 = box->dst_height_pts*yd/bmpheight_pix;
+        scalex = buserx*devwidth_pts/scalewidth_pix/box->srcbox.crop_width_pts;
+        scaley = busery*devheight_pts/scaleheight_pix/box->srcbox.crop_height_pts;
+        box->scale = scalex < scaley ? scalex : scaley;
+/*
+printf("AFTER TRANSFORM:\n");
+printf("    xd=%d, yd=%d\n",xd,yd);
+printf("    userx=%g, usery=%g\n",buserx,busery);
+printf("    bmp w,h = %d, %d\n",bmpwidth_pix,bmpheight_pix);
+printf("    dev w,h = %g, %g\n",devwidth_pts,devheight_pts);
+printf("    dstrot_deg = %g\n",box->dstrot_deg);
+printf("    box->x1,y1 = %g,%g\n",box->x1,box->y1);
+printf("    box->srcbox=%gx%g\n",box->srcbox.crop_width_pts,box->srcbox.crop_height_pts);
+printf("    scalex=buserx*devwidpts/scalewidpix/srcwidpts=%g*%g/%d/%g\n",
+buserx,devwidth_pts,scalewidth_pix,box->srcbox.crop_width_pts);
+printf("    scaley=busery*devhtpts/scalehtpix/srchtpts=%g*%g/%d/%g\n",
+busery,devheight_pts,scaleheight_pix,box->srcbox.crop_height_pts);
+printf("    scalex,y = %g,%g\n",scalex,scaley);
+printf("    box->scale = %g\n\n",box->scale);
+*/
+        }
         }
     }
 #endif /* HAVE_MUPDF_LIB */
@@ -1924,6 +2031,8 @@ k2printf("     bp1f=%d, bp2f=%d, bp1e=%d, bp2e=%d\n",bp1f,bp2f,bp1e,bp2e);
 ** Find gaps in the master bitmap so that it can be broken into regions
 ** which go onto separate pages.
 **
+** v2.33:  Factor in page break markers
+**
 ** maxsize is the ideal desired bitmap size to fit the page.
 ** Depending on the fit_to_page setting, the bitmap can actually go
 ** beyond this.
@@ -1932,6 +2041,87 @@ k2printf("     bp1f=%d, bp2f=%d, bp1e=%d, bp2e=%d\n",bp1f,bp2f,bp1e,bp2e);
 **
 */
 static int masterinfo_break_point(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings,int maxsize)
+
+    {
+    int rowcount;
+    int i,nobreak;
+
+    rowcount=masterinfo_break_point_1(masterinfo,k2settings,maxsize);
+#if (WILLUSDEBUGX & 0x800000)
+printf("\n@masterinfo_break_point(rows=%d, recommended break=%d)\n",masterinfo->rows,rowcount);
+#endif
+    if (masterinfo->k2pagebreakmarks.n==0)
+{
+#if (WILLUSDEBUGX & 0x800000)
+printf("    No page break marks.\n");
+#endif
+        return(rowcount);
+}
+    nobreak=-999;
+#if (WILLUSDEBUGX & 0x800000)
+for (i=0;i<masterinfo->k2pagebreakmarks.n;i++)
+{
+K2PAGEBREAKMARK *mark;
+mark=&masterinfo->k2pagebreakmarks.k2pagebreakmark[i];
+if (mark->type>=0)
+printf("    Mark Type %d @ row=%d\n",mark->type,mark->row);
+}
+#endif
+    for (i=0;i<masterinfo->k2pagebreakmarks.n;i++)
+        {
+        K2PAGEBREAKMARK *mark;
+
+        mark=&masterinfo->k2pagebreakmarks.k2pagebreakmark[i];
+        if (mark->type<0)
+            continue;
+        if (mark->row >= rowcount && nobreak < -990)
+            break;
+        if (mark->type==K2PAGEBREAKMARK_TYPE_BREAKPAGE)
+            {
+            mark->type=-1;
+            rowcount=mark->row;
+#if (WILLUSDEBUGX & 0x800000)
+printf("    Page break mark forces rowcount = %d\n",rowcount);
+#endif
+            nobreak = -999;
+            break;
+            }
+        if (mark->type==K2PAGEBREAKMARK_TYPE_NOBREAK)
+            {
+            if (nobreak > 1)
+                {
+                if (mark->row > rowcount)
+                    {
+                    rowcount=nobreak;
+#if (WILLUSDEBUGX & 0x800000)
+printf("    No-break span pre-dump forces rowcount = %d\n",nobreak);
+#endif
+                    break;
+                    }
+                }
+            nobreak=nobreak > -990 ? -999 : mark->row;
+            if (nobreak < -990 && mark->row > rowcount)
+                {
+#if (WILLUSDEBUGX & 0x800000)
+printf("    No-break span forces rowcount = %d\n",mark->row);
+#endif
+                rowcount=mark->row;
+                mark->type=-1;
+                break;
+                }
+            }
+        }
+#if (WILLUSDEBUGX & 0x800000)
+printf("    Final breakpoint = %d\n\n",rowcount);
+#endif
+    return(rowcount);
+    }
+
+
+/*
+** Called by masterinfo_break_point -- does not factor in page break markers.
+*/
+static int masterinfo_break_point_1(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings,int maxsize)
 
     {
     int scanheight,j,r1,r2,r1a,r2a,rowcount;

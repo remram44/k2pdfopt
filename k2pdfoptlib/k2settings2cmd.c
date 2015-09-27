@@ -29,11 +29,12 @@ static void minus_inverse(STRBUF *cmdline,STRBUF *nongui,char *optname,int *srcv
 static void plus_minus_check(STRBUF *cmdline,STRBUF *nongui,char *optname,int *srcval,int dstval);
 static void integer_check(STRBUF *cmdline,STRBUF *nongui,char *optname,int *srcval,int dstval);
 static void double_check(STRBUF *cmdline,STRBUF *nongui,char *optname,double *srcval,double dstval);
+static void help_check(STRBUF *cmdline,STRBUF *nongui,char *optname,char *srcval,char *dstval);
 static void string_check(STRBUF *cmdline,STRBUF *nongui,char *optname,char *srcval,char *dstval);
-static char *unit_string(int units);
 static void cropbox_check(STRBUF *cmdline,STRBUF *nongui,char *opt,K2CROPBOX *src,K2CROPBOX *dst);
 static void notesets_check(STRBUF *cmdline,STRBUF *nongui,K2NOTESET *src,K2NOTESET *dst);
-static void cropboxes_check(STRBUF *cmdline,STRBUF *nongui,K2CROPBOXES *src,K2CROPBOXES *dst);
+static void cropboxes_check(STRBUF *cmdline,STRBUF *nongui,K2CROPBOXES *src,K2CROPBOXES *dst,
+                            int maxguiboxes);
 static int notesets_are_different(K2NOTESET *src,K2NOTESET *dst);
 static int cropboxes_are_different(K2CROPBOXES *src,K2CROPBOXES *dst);
 static int cropbox_differ(K2CROPBOX *src,K2CROPBOX *dst);
@@ -48,6 +49,7 @@ static void margins_integercheck(STRBUF *cmdline,STRBUF *nongui,char *opt,int *s
                                 int *stop,int dtop,
                                 int *sright,int dright,
                                 int *sbottom,int dbottom);
+static void pagebreak_check(STRBUF *cmdline,STRBUF *nongui,int *srccolor,int dstcolor,int type);
 
 /*
 ** Fills cmdline with the appropriate command-line options that will
@@ -232,7 +234,7 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
     minus_check(cmdline,"-guimin",&src->guimin,dst->guimin);
     */
 #endif
-    minus_check(cmdline,nongui,"-?",&src->show_usage,dst->show_usage);
+    help_check(cmdline,nongui,"-?",src->show_usage,dst->show_usage);
     /*
     if (!stricmp(cl->cmdarg,"-a") || !stricmp(cl->cmdarg,"-a-"))
         {
@@ -253,7 +255,9 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
         minus_check(cmdline,nongui,"-ui",&src->query_user,dst->query_user);
     /* v2.31--fixed "evl" arg processing */
     integer_check(cmdline,dst->erase_vertical_lines==2?nongui:NULL,"-evl",
-                  &src->erase_vertical_lines,dst->erase_vertical_lines);    
+                  &src->erase_vertical_lines,dst->erase_vertical_lines); 
+    integer_check(cmdline,dst->erase_horizontal_lines==2?nongui:NULL,"-ehl",
+                  &src->erase_horizontal_lines,dst->erase_horizontal_lines);    
     double_check(cmdline,nongui,"-vls",&src->vertical_line_spacing,dst->vertical_line_spacing);
     double_check(cmdline,nongui,"-vm",&src->vertical_multiplier,dst->vertical_multiplier);
     double_check(cmdline,nongui,"-vs",&src->max_vertical_gap_inches,dst->max_vertical_gap_inches);
@@ -302,8 +306,13 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
         }
     minus_check(cmdline,NULL,"-n",&src->use_crop_boxes,dst->use_crop_boxes);
 #endif /* HAVE_MUPDF_LIB */
+    minus_check(cmdline,nongui,"-i",&src->info,dst->info);
     minus_check(cmdline,nongui,"-to",&src->text_only,dst->text_only);
-    minus_check(cmdline,nongui,"-neg",&src->dst_negative,dst->dst_negative);
+    if (src->dst_negative!=dst->dst_negative)
+        {
+        strbuf_dsprintf(cmdline,nongui,"-neg%s",dst->dst_negative==2?"+":(dst->dst_negative==1?"":"-"));
+        src->dst_negative=dst->dst_negative;
+        }
     minus_check(cmdline,nongui,"-sp",&src->echo_source_page_count,dst->echo_source_page_count);
     minus_inverse(cmdline,NULL,"-r",&src->src_left_to_right,dst->src_left_to_right);
     minus_check(cmdline,nongui,"-hy",&src->hyphen_detect,dst->hyphen_detect);
@@ -314,6 +323,8 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
 #ifdef HAVE_OCR_LIB
     string_check(cmdline,nongui,"-ocrout",src->ocrout,dst->ocrout);
 #endif
+    pagebreak_check(cmdline,nongui,&src->pagebreakmark_breakpage_color,dst->pagebreakmark_breakpage_color,1);
+    pagebreak_check(cmdline,nongui,&src->pagebreakmark_nobreak_color,dst->pagebreakmark_nobreak_color,2);
     if (dst->overwrite_minsize_mb != src->overwrite_minsize_mb)
         {
         if (dst->overwrite_minsize_mb<0.)
@@ -363,6 +374,7 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
     minus_check(cmdline,NULL,"-c",&src->dst_color,dst->dst_color);
     minus_check(cmdline,NULL,"-ac",&src->autocrop,dst->autocrop);
     minus_check(cmdline,nongui,"-v",&src->verbose,dst->verbose);
+    minus_check(cmdline,nongui,"-fr",&src->dst_figure_rotate,dst->dst_figure_rotate);
     if (src->jpeg_quality != dst->jpeg_quality)
         {
         if (dst->jpeg_quality <= 0)
@@ -451,6 +463,9 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
     double_check(cmdline,nongui,"-comax",&src->column_offset_max,dst->column_offset_max);
     integer_check(cmdline,NULL,"-col",&src->max_columns,dst->max_columns);
     string_check(cmdline,NULL,"-p",src->pagelist,dst->pagelist);
+    string_check(cmdline,nongui,"-px",src->pagexlist,dst->pagexlist);
+    string_check(cmdline,nongui,"-author",src->dst_author,dst->dst_author);
+    string_check(cmdline,nongui,"-title",src->dst_title,dst->dst_title);
     string_check(cmdline,nongui,"-colorfg",src->dst_fgcolor,dst->dst_fgcolor);
     string_check(cmdline,nongui,"-colorbg",src->dst_bgcolor,dst->dst_bgcolor);
     string_check(cmdline,nongui,"-bpl",src->bpl,dst->bpl);
@@ -468,9 +483,10 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
     double_check(cmdline,nongui,"-ds",&src->document_scale_factor,dst->document_scale_factor);
     double_check(cmdline,nongui,"-idpi",&src->user_src_dpi,dst->user_src_dpi);
     integer_check(cmdline,NULL,"-odpi",&src->dst_dpi,dst->dst_dpi);
-    cropbox_check(cmdline,NULL,"-m",&src->srccropmargins,&dst->srccropmargins);
+    cropbox_check(cmdline,nongui,"-m",&src->srccropmargins,&dst->srccropmargins);
     cropbox_check(cmdline,nongui,"-om",&src->dstmargins,&dst->dstmargins);
-    cropboxes_check(cmdline,nongui,&src->cropboxes,&dst->cropboxes);
+    /* 3 = max GUI boxes */
+    cropboxes_check(cmdline,nongui,&src->cropboxes,&dst->cropboxes,3);
     notesets_check(cmdline,nongui,&src->noteset,&dst->noteset);
     if (src->dst_figure_justify!=dst->dst_figure_justify
            || src->dst_min_figure_height_in != dst->dst_min_figure_height_in)
@@ -494,14 +510,14 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
     if (src->dst_userheight!=dst->dst_userheight
             || src->dst_userheight_units!=dst->dst_userheight_units)
         {
-        strbuf_sprintf(cmdline,"-h %g%s",dst->dst_userheight,unit_string(dst->dst_userheight_units));
+        strbuf_sprintf(cmdline,"-h %g%s",dst->dst_userheight,k2pdfopt_settings_unit_string(dst->dst_userheight_units));
         src->dst_userheight=dst->dst_userheight;
         src->dst_userheight_units=dst->dst_userheight_units;
         }
     if (src->dst_userwidth!=dst->dst_userwidth
             || src->dst_userwidth_units!=dst->dst_userwidth_units)
         {
-        strbuf_sprintf(cmdline,"-w %g%s",dst->dst_userwidth,unit_string(dst->dst_userwidth_units));
+        strbuf_sprintf(cmdline,"-w %g%s",dst->dst_userwidth,k2pdfopt_settings_unit_string(dst->dst_userwidth_units));
         src->dst_userwidth=dst->dst_userwidth;
         src->dst_userwidth_units=dst->dst_userwidth_units;
         }
@@ -592,6 +608,20 @@ printf("dcheck: '%s' srcval=%g, dstval=%g\n",optname,(*srcval),dstval);
     }
 
 
+static void help_check(STRBUF *cmdline,STRBUF *nongui,char *optname,char *srcval,char *dstval)
+
+    {
+    if (strcmp(srcval,dstval))
+        {
+        if (dstval[0]=='\0')
+            strbuf_dsprintf(cmdline,nongui,"%s-",optname);
+        else
+            strbuf_dsprintf(cmdline,nongui,"%s \"%s\"",optname,dstval);
+        strcpy(srcval,dstval);
+        }
+    }
+
+
 static void string_check(STRBUF *cmdline,STRBUF *nongui,char *optname,char *srcval,char *dstval)
 
     {
@@ -606,26 +636,6 @@ static void string_check(STRBUF *cmdline,STRBUF *nongui,char *optname,char *srcv
     }
 
 
-static char *unit_string(int units)
-
-    {
-    static char *strvals[] = {"","in","cm","s","t","x"};
-
-    if (units==UNITS_INCHES)
-        return(strvals[1]);
-    else if (units==UNITS_CM)
-        return(strvals[2]);
-    else if (units==UNITS_SOURCE)
-        return(strvals[3]);
-    else if (units==UNITS_TRIMMED)
-        return(strvals[4]);
-    else if (units==UNITS_OCRLAYER)
-        return(strvals[5]);
-    else
-        return(strvals[0]);
-    }
-
-
 static void cropbox_check(STRBUF *cmdline,STRBUF *nongui,char *opt,K2CROPBOX *src,K2CROPBOX *dst)
 
     {
@@ -636,7 +646,7 @@ static void cropbox_check(STRBUF *cmdline,STRBUF *nongui,char *opt,K2CROPBOX *sr
         strbuf_dsprintf(cmdline,nongui,"%s",opt);
         for (i=0;i<4;i++)
             strbuf_dsprintf_no_space(cmdline,nongui,"%s%.4g%s",i==0?" ":",",dst->box[i],
-                                    unit_string(dst->units[i]));
+                                    k2pdfopt_settings_unit_string(dst->units[i]));
         (*src)=(*dst);
         }
     }
@@ -664,22 +674,30 @@ static void notesets_check(STRBUF *cmdline,STRBUF *nongui,K2NOTESET *src,K2NOTES
     }
 
         
-static void cropboxes_check(STRBUF *cmdline,STRBUF *nongui,K2CROPBOXES *src,K2CROPBOXES *dst)
+static void cropboxes_check(STRBUF *cmdline,STRBUF *nongui,K2CROPBOXES *src,K2CROPBOXES *dst,
+                            int maxguiboxes)
 
     {
     if (cropboxes_are_different(src,dst))
         {
         int i;
+        STRBUF *ngui;
 
-        strbuf_dsprintf(cmdline,nongui,"-cbox-");
+        strbuf_dsprintf(cmdline,NULL,"-cbox- -ibox-");
         for (i=0;i<dst->n;i++)
             {
             int c;
-            strbuf_dsprintf(cmdline,nongui,"-cbox%s",dst->cropbox[i].pagelist);
+
+            if (dst->cropbox[i].cboxflags&K2CROPBOX_FLAGS_NOTUSED)
+                continue;
+            ngui = i<maxguiboxes ? NULL : nongui;
+            strbuf_dsprintf(cmdline,ngui,"-%sbox%s",
+                           (dst->cropbox[i].cboxflags&K2CROPBOX_FLAGS_IGNOREBOXEDAREA)?"i":"c",
+                            dst->cropbox[i].pagelist);
             for (c=0;c<4;c++)
-                strbuf_dsprintf_no_space(cmdline,nongui,"%s%.4g%s",c==0?" ":",",
+                strbuf_dsprintf_no_space(cmdline,ngui,"%s%.4g%s",c==0?" ":",",
                                          dst->cropbox[i].box[c],
-                                         unit_string(dst->cropbox[i].units[c]));
+                                         k2pdfopt_settings_unit_string(dst->cropbox[i].units[c]));
             src->cropbox[i]=dst->cropbox[i];
             }
         src->n=dst->n;
@@ -720,6 +738,10 @@ static int cropbox_differ(K2CROPBOX *src,K2CROPBOX *dst)
     {
     int i;
 
+    if ((src->cboxflags&K2CROPBOX_FLAGS_NOTUSED) && (dst->cboxflags&K2CROPBOX_FLAGS_NOTUSED))
+        return(0);
+    if (src->cboxflags!=dst->cboxflags)
+        return(1);
     if (stricmp(src->pagelist,dst->pagelist))
         return(1);
     for (i=0;i<4;i++)
@@ -807,6 +829,23 @@ static void margins_integercheck(STRBUF *cmdline,STRBUF *nongui,char *opt,int *s
         integer_check(cmdline,nongui,opt2,sleft,dleft);
         sprintf(opt2,"-%cr",opt[1]);
         integer_check(cmdline,nongui,opt2,sright,dright);
+        }
+    }
+
+
+static void pagebreak_check(STRBUF *cmdline,STRBUF *nongui,int *srccolor,int dstcolor,int type)
+
+    {
+    if ((*srccolor)!=dstcolor)
+        {
+        (*srccolor)=dstcolor;
+        if (dstcolor<0)
+            strbuf_dsprintf(cmdline,nongui,"-bpm%s -1",type==1?"":"2");
+        else
+            strbuf_dsprintf(cmdline,nongui,"-bpm%s %g,%g,%g",type==1?"":"2",
+                                ((dstcolor>>16)&0xff)/255.,
+                                ((dstcolor>>8)&0xff)/255.,
+                                (dstcolor&0xff)/255.);
         }
     }
 #endif /* HAVE_K2GUI */

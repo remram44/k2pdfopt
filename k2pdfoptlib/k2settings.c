@@ -43,7 +43,7 @@ void k2pdfopt_settings_init(K2PDFOPT_SETTINGS *k2settings)
     k2settings->gtc_in=.005; // detecting gap between columns
     k2settings->gtr_in=.006; // detecting gap between rows
     k2settings->gtw_in=.0015; // detecting gap between words
-    k2settings->show_usage=0;
+    k2settings->show_usage[0]='\0';
     k2settings->src_left_to_right=1;
     k2settings->src_whitethresh=-1;
     k2settings->src_paintwhite=0;
@@ -91,6 +91,7 @@ void k2pdfopt_settings_init(K2PDFOPT_SETTINGS *k2settings)
     strcpy(k2settings->dst_opname_format,"%s_k2opt");
     k2settings->src_autostraighten=0;
     k2settings->dstmargins.pagelist[0]='\0';
+    k2settings->dstmargins.cboxflags=0;
     for (i=0;i<4;i++)
         {
         k2settings->dstmargins.box[i]=.02;
@@ -101,6 +102,7 @@ void k2pdfopt_settings_init(K2PDFOPT_SETTINGS *k2settings)
     k2settings->min_column_height_inches=1.5;
     k2settings->row_split_fom=20.; /* Higher make it hard to split rows */
     k2settings->srccropmargins.pagelist[0]='\0';
+    k2settings->srccropmargins.cboxflags=0;
     for (i=0;i<4;i++)
         {
         k2settings->srccropmargins.box[i]=0.;
@@ -109,7 +111,7 @@ void k2pdfopt_settings_init(K2PDFOPT_SETTINGS *k2settings)
     k2settings->max_region_width_inches = 3.6; /* Max viewable width (device width minus margins) */
     k2settings->max_columns=2;
     k2settings->column_gap_range=0.33;
-    k2settings->column_offset_max=0.2;
+    k2settings->column_offset_max=0.3;
     k2settings->column_row_gap_height_in=1./72.;
     k2settings->text_wrap=1;
     k2settings->word_spacing=-0.20;
@@ -164,7 +166,7 @@ void k2pdfopt_settings_init(K2PDFOPT_SETTINGS *k2settings)
     k2settings->toclist[0]='\0';
     k2settings->tocsavefile[0]='\0';
     k2settings->bpl[0]='\0';
-    k2settings->cropboxes.n=0;
+    k2cropboxes_init(&k2settings->cropboxes);
 
     /* v2.13 */
     k2settings->devsize_set=0;
@@ -190,6 +192,16 @@ void k2pdfopt_settings_init(K2PDFOPT_SETTINGS *k2settings)
     /* v2.32 */
     /* dst_landscape_pages (above) */
     k2settings->autocrop=0;
+
+    /* v2.33 */
+    k2settings->dst_figure_rotate=0;
+    k2settings->info=0;
+    k2settings->pagebreakmark_breakpage_color=-1;
+    k2settings->pagebreakmark_nobreak_color=-1;
+    k2settings->erase_horizontal_lines=0;
+    k2settings->pagexlist[0]='\0';
+    k2settings->dst_author[0]='\0';
+    k2settings->dst_title[0]='\0';
     }
 
 
@@ -403,6 +415,20 @@ void k2pdfopt_settings_set_region_widths(K2PDFOPT_SETTINGS *k2settings)
     get_dest_margins(dstmar_pixels,k2settings,(double)k2settings->dst_dpi,
                      k2settings->dst_width,k2settings->dst_height);
     k2settings->max_region_width_inches -= (double)(dstmar_pixels[0]+dstmar_pixels[2])/k2settings->dst_dpi;
+    }
+
+
+void k2pdfopt_settings_dst_viewable(K2PDFOPT_SETTINGS *k2settings,MASTERINFO *masterinfo,
+                                    double *width_in,double *height_in)
+
+    {
+    int dstmar_pixels[4];
+    get_dest_margins(dstmar_pixels,k2settings,k2settings->dst_dpi,masterinfo->bmp.width,
+                     k2settings->dst_height);
+    (*width_in) = (double)k2settings->dst_width/k2settings->dst_dpi
+                    - (double)(dstmar_pixels[0]+dstmar_pixels[2])/k2settings->dst_dpi;
+    (*height_in) = (double)k2settings->dst_height/k2settings->dst_dpi
+                    - (double)(dstmar_pixels[1]+dstmar_pixels[3])/k2settings->dst_dpi;
     }
 
 
@@ -655,3 +681,96 @@ void k2cropbox_set_default_values(K2CROPBOX *cbox,double value,int units)
         }
     }
 */
+
+/*
+** Clear cropboxes that have flags set to flagtype
+*/
+void k2pdfopt_settings_clear_cropboxes(K2PDFOPT_SETTINGS *k2settings,int flagmask,int flagtype)
+
+    {
+    int i;
+    K2CROPBOXES *boxes;
+
+    boxes=&k2settings->cropboxes;
+    for (i=0;i<boxes->n;i++)
+        if ((boxes->cropbox[i].cboxflags&flagmask)==flagtype)
+            boxes->cropbox[i].cboxflags |= K2CROPBOX_FLAGS_NOTUSED;
+    }
+
+
+void k2cropboxes_init(K2CROPBOXES *cropboxes)
+
+    {
+    int i,j;
+
+    cropboxes->n=MAXK2CROPBOXES;
+    for (i=0;i<cropboxes->n;i++)
+        {
+        K2CROPBOX *box;
+
+        box=&cropboxes->cropbox[i];
+        box->pagelist[0]='\0';
+        for (j=0;j<4;j++)
+            {
+            box->box[j]=j<2?0.:-1.;
+            box->units[j]=UNITS_INCHES;
+            }
+        box->cboxflags = K2CROPBOX_FLAGS_NOTUSED;
+        }
+    }
+
+
+int k2cropboxes_count(K2CROPBOXES *cropboxes,int flagmask,int flagtype)
+
+    {
+    int i,n;
+
+    for (n=i=0;i<cropboxes->n;i++)
+        if ((cropboxes->cropbox[i].cboxflags&flagmask)==flagtype)
+            n++;
+    return(n);
+    }
+
+
+int k2settings_has_cropboxes(K2PDFOPT_SETTINGS *k2settings)
+
+    {
+    return(k2cropboxes_count(&k2settings->cropboxes,
+                      K2CROPBOX_FLAGS_NOTUSED|K2CROPBOX_FLAGS_IGNOREBOXEDAREA,0)>0);
+    }
+
+
+int k2settings_need_color_initially(K2PDFOPT_SETTINGS *k2settings)
+
+    {
+    return(k2settings->dst_color 
+             || (k2settings->pagebreakmark_breakpage_color >= 0)
+             || (k2settings->pagebreakmark_nobreak_color >= 0));
+    }
+
+
+int k2settings_need_color_permanently(K2PDFOPT_SETTINGS *k2settings)
+
+    {
+    return(k2settings->dst_color || k2settings->show_marked_source);
+    }
+
+
+char *k2pdfopt_settings_unit_string(int units)
+
+    {
+    static char *strvals[] = {"","in","cm","s","t","x"};
+
+    if (units==UNITS_INCHES)
+        return(strvals[1]);
+    else if (units==UNITS_CM)
+        return(strvals[2]);
+    else if (units==UNITS_SOURCE)
+        return(strvals[3]);
+    else if (units==UNITS_TRIMMED)
+        return(strvals[4]);
+    else if (units==UNITS_OCRLAYER)
+        return(strvals[5]);
+    else
+        return(strvals[0]);
+    }

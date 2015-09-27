@@ -331,7 +331,7 @@ int k2pdfopt_menu(K2PDFOPT_CONVERSION *k2conv,STRBUF *env,STRBUF *cmdline,STRBUF
                                     k2settings->dst_negative?"y":"n");
             if (status<0)
                 return(status);
-            k2settings->dst_negative=!status;
+            k2settings->dst_negative=!status ? 1 : 0;
             strbuf_sprintf(usermenu,"-neg%s",k2settings->dst_negative?"":"-");
             }
         else if (!stricmp(buf,"co"))
@@ -846,7 +846,7 @@ int k2pdfopt_menu(K2PDFOPT_CONVERSION *k2conv,STRBUF *env,STRBUF *cmdline,STRBUF
             int i,tty_rows;
 
             k2sys_header(NULL);
-            if (!k2pdfopt_usage())
+            if (!k2pdfopt_usage("*",1))
                 return(-1);
             tty_rows = get_ttyrows();
             for (i=0;i<tty_rows-16;i++)

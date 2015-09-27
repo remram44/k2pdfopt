@@ -40,6 +40,8 @@ LRESULT CALLBACK k2mswingui_cbox_process_messages(HWND hwnd,UINT iMsg,WPARAM wPa
 LRESULT CALLBACK k2mswingui_overlay_process_messages(HWND hwnd,UINT iMsg,WPARAM wParam,LPARAM lParam);
 LRESULT CALLBACK k2mswingui_process_messages(HWND hwnd,UINT iMsg,WPARAM wParam,LPARAM lParam);
 #endif
+static int k2gui_osdep_is_dialogbox_message(void *hwnd0,void *msg0);
+static int k2gui_osdep_shiftkey_state(void);
 
 
 short *k2gui_osdep_wide_cmdline(void)
@@ -107,7 +109,8 @@ int k2gui_osdep_window_proc_messages(WILLUSGUIWINDOW *win,void *semaphore,int pr
             }
         else
             {
-            if (!IsDialogMessage((HWND)win->handle,&msg))
+            if (!k2gui_osdep_is_dialogbox_message((void *)win->handle,(void *)&msg))
+            // if (!IsDialogMessage((HWND)win->handle,&msg))
                 {
                 TranslateMessage(&msg);
                 DispatchMessage(&msg);
@@ -117,6 +120,57 @@ int k2gui_osdep_window_proc_messages(WILLUSGUIWINDOW *win,void *semaphore,int pr
     if (semaphore!=NULL)
         return(done);
     return(msg.wParam);
+#else
+    return(0);
+#endif
+    }
+
+
+static int k2gui_osdep_is_dialogbox_message(void *hwnd0,void *msg0)
+
+    {
+#ifdef MSWINGUI
+    HWND hwnd;
+    MSG *msg;
+
+    hwnd=(HWND)hwnd0;
+    msg=(MSG*)msg0;
+    /* Detect special keys to let through */
+    if (msg->message==WM_KEYDOWN)
+        {
+        int shiftstate;
+
+        shiftstate=k2gui_osdep_shiftkey_state();
+/*
+printf("wparam='%c', shiftstate=%X\n",msg->wParam,shiftstate);
+*/
+        if (msg->wParam=='D' && (shiftstate&0xc))
+            SendMessage(hwnd,msg->message,msg->wParam|(shiftstate<<8),msg->lParam);
+/*
+printf("is_dialog:  keydown = %d, %d\n",(int)msg->wParam,(int)msg->lParam);
+printf("   lshift = %d\n",GetKeyState(VK_LSHIFT));
+printf("   rshift = %d\n",GetKeyState(VK_RSHIFT));
+printf("   lctrl = %d\n",GetKeyState(VK_LCONTROL));
+printf("   rctrl = %d\n",GetKeyState(VK_RCONTROL));
+*/
+        }
+    return(IsDialogMessage(hwnd,msg));
+#else
+    return(0);
+#endif
+    }
+
+
+static int k2gui_osdep_shiftkey_state(void)
+
+    {
+#ifdef MSWINGUI
+    return(
+           (GetKeyState(VK_LSHIFT)<0 ? 1 : 0)
+         | (GetKeyState(VK_RSHIFT)<0 ? 2 : 0)
+         | (GetKeyState(VK_LCONTROL)<0 ? 4 : 0)
+         | (GetKeyState(VK_RCONTROL)<0 ? 8 : 0)
+          );
 #else
     return(0);
 #endif
@@ -661,18 +715,16 @@ LRESULT CALLBACK k2mswingui_process_messages(HWND hwnd,UINT iMsg,WPARAM wParam,L
     static int gotmw=0;
 
 /*
+#if (WILLUSDEBUGX & 0x4000)
 if (iMsg!=WM_MOUSEFIRST && iMsg!=WM_SETCURSOR && iMsg!=WM_NCHITTEST 
                         && iMsg!=WM_NCMOUSEMOVE && iMsg!=WM_TIMER)
 printf("MAINWIN: iMsg = 0x%X, wParam=0x%X, lParam=0x%X\n",(int)iMsg,(int)wParam,(int)lParam);
-*/
-#if (WILLUSDEBUGX & 0x4000)
-/*
-if (iMsg!=WM_MOUSEFIRST && iMsg!=WM_SETCURSOR && iMsg!=WM_NCHITTEST 
-                        && iMsg!=WM_NCMOUSEMOVE && iMsg!=WM_TIMER)
-printf("@k2mswingui_proc_messages: iMsg=0x%X\n",iMsg);
-*/
 #endif
-
+#if (WILLUSDEBUGX & 0x4000)
+if (iMsg==WM_CONTEXTMENU)
+printf("ContextMenu.\n");
+#endif
+*/
     message=&_message;
     if (k2gui->mainwin.handle==NULL)
         k2gui->mainwin.handle=hwnd;
@@ -701,6 +753,20 @@ printf("@k2mswingui_proc_messages: iMsg=0x%X\n",iMsg);
         else
             message->control = &k2gui->mainwin;
         }
+    /* Turn special keys into other actions */
+    /* Ctrl-D into Menu selection */
+    if (iMsg==WM_KEYDOWN)
+        {
+        if ((wParam&0xff)=='D' && (wParam&0xc00)>0)
+            {
+            iMsg=WM_COMMAND;
+            wParam=712;
+            lParam=0;
+            }
+        else
+            return(0);
+        }
+        
     switch (iMsg)
         {
 //         case WM_GETICON:
@@ -800,10 +866,12 @@ k2gui->control[controlid].font.handle);
                     strcpy(buttontext,subid==0 ? "_up_" : "_down_");
                 else if (k2gui->control[controlid].type == WILLUSGUICONTROL_TYPE_UPDOWN2)
                     strcpy(buttontext,ud2text[subid]);
-                else if (checkbox)
+                else /* if (checkbox) */
                     strcpy(buttontext,k2gui->control[controlid].label);
+/*
                 else 
                     strcpy(buttontext,k2gui->control[controlid].name);
+*/
 /*
 printf("button_draw: %s\n",buttontext);
 */
