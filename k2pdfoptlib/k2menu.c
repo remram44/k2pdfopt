@@ -1,7 +1,7 @@
 /*
 ** k2menu.c      Interactive user menu for k2pdfopt.c.
 **
-** Copyright (C) 2015  http://willus.com
+** Copyright (C) 2016  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -420,10 +420,10 @@ int k2pdfopt_menu(K2PDFOPT_CONVERSION *k2conv,STRBUF *env,STRBUF *cmdline,STRBUF
                 return(status);
             strbuf_sprintf(usermenu,"-h %g",k2settings->dst_userheight);
             k2settings->dst_userheight_units=UNITS_PIXELS;
-            status=userinput_integer("E-reader display pixels per inch",167,&k2settings->dst_dpi,20,1200);
+            status=userinput_integer("E-reader display pixels per inch",167,&k2settings->dst_userdpi,20,1200);
             if (status<0)
                 return(status);
-            strbuf_sprintf(usermenu,"-dpi %d",k2settings->dst_dpi);
+            strbuf_sprintf(usermenu,"-dpi %d",k2settings->dst_userdpi);
             status=userinput_float("Input/Source file pixels per inch (use -2 if not sure)",k2settings->user_src_dpi,&k2settings->user_src_dpi,1,-10.,1200.,NULL);
             if (status<0)
                 return(status);

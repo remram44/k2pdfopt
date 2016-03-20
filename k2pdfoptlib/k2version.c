@@ -1,8 +1,8 @@
-char *k2pdfopt_version = "v2.33";
+char *k2pdfopt_version = "v2.34";
 /*
 ** k2version.c  K2pdfopt version number and history.
 **
-** Copyright (C) 2015  http://willus.com
+** Copyright (C) 2016  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -19,7 +19,67 @@ char *k2pdfopt_version = "v2.33";
 **
 ** VERSION HISTORY
 **
-** v2.33 27 SEP 2015
+** V2.34 18 MAR 2016
+**           ENHANCEMENTS
+**           - Compiled with the latest versions of MuPDF (1.8), Tesseract (3.04.01),
+**             libpng (1.6.21), freetype (2.6.2), turbo JPEG (1.4.2), and
+**             leptonica (1.72).
+**           NEW FEATURES
+**           - Added an option to scale the output font size to a fixed value:
+**             -fs <fontsize>.  E.g. -fs 12 will scale the median font size
+**             in the source document to be 12 points in the converted document.
+**             See details in the command-line usage help.  Supported in MS Windows
+**             GUI as well (new check box with up/down control next to it).
+**             http://www.mobileread.com/forums/showthread.php?p=3175758#post3175758
+**           - The -o has two new format characters--%b for the base name of the
+**             source file (not including the path).  %f for the folder the source
+**             file is stored in.
+**           - The -mag feature magnifies the text/images in the output file.  It
+**             as the same effect as increasing -odpi.
+**           - New -y option is same as -ow (assumes "yes" on overwriting files).
+**             I just did this for compatibility with other programs that use this
+**             same option the same way (e.g. ffmpeg).
+**           - The -cbox and -ibox options now have a "u" appendix that applies to
+**             any unspecified pages.  E.g. -cbox5-10 <cbox1> -cboxu <cbox2>
+**             This will apply <cbox1> to pages 5 through 10 and <cbox2> to all
+**             other pages.
+**             http://www.mobileread.com/forums/showthread.php?p=3204759#post3204759
+**           - The -ci option can be used to specify an image for a cover page for
+**             the PDF file (doesn't work with native PDF output yet).
+**             http://www.mobileread.com/forums/showthread.php?p=3196307#post3196307
+**           NEW MS WINDOWS GUI FEATURES
+**           - There is now a selection button for the output folder, which uses
+**             the new %b formatting in the -o option.  Requested 6 Jan 2016 via e-mail.
+**           - Fixed several bugs involving the crop box GUI selection.
+**           - Crop box setting prompts for an overriding page range now, and then
+**             reports both the -cbox and the -m dimensions when complete.
+**           - Added code to detect Calibri vs. Arial font, but this didn't have
+**             the effect I wanted, so I commented it back out (in k2gui.c,
+**             search for "fontscale".)
+**           BUG FIXES
+**           - Fixed the documentation of -ocrcol.  Said it was ignored now, but it
+**             is not ignored for documents that don't already have an OCR layer.
+**           - If the folder for the converted file(s) does not exist, it will be
+**             created (6 Jan 2016 e-mail).
+**           - Gets page bounding box from "Pages" object if not available for an
+**             individual page.  (E-mail bug report, 10 Oct 2015).
+**           - Made -bpc / -jpg incompatibility more clear in the command-line usage.
+**           - k2printf correctly uses a semaphore to prevent threads from both using
+**             it at the same time.
+**           - MS Windows GUI:  Fixed issues with multi-threading when starting the
+**             conversion process and starting the process to generate the bitmap for
+**             setting the crop boxes.  Semaphores were not being correctly closed.
+**           - MS Windows GUI:  File opening works more reliably now after multiple
+**             aborted conversions (new willusgui_file_open_ex function).
+**           - Postscript files are correctly processed now.  Because ghostscript
+**             cannot pull specific pages from a PS file, they are now converted to
+**             PDF (using ghostscript) before any further processing by k2pdfopt.
+**
+** V2.33a 3 OCT 2015
+**           BUG FIX
+**           - Fixed MS Windows GUI bug where preview page controls were missing.
+**
+** V2.33 27 SEP 2015
 **           NEW FEATURES
 **           - Compiled with GCC v5.2.0 and MuPDF v1.7a (released May 7, 2015).
 **             The MuPDF upgrade involved modifying a significant amount of the
@@ -204,6 +264,8 @@ char *k2pdfopt_version = "v2.33";
 **             the OCR layer is queried for any words which are within the box).
 **             This should eliminate the need to use the -ocrcol option on PDF
 **             files which already have their own text layer.
+**             [NOTE: The -ocrcol still has impact for documents that don't
+**              already have an OCR layer. 13 Feb 2016.]
 **           - There is a new option optimized for PDFs that have notes in the
 **             left or right margins.  This option (-nl for notes in the left
 **             margin or -nr for notes in the right margin) tells k2pdfopt to
@@ -640,7 +702,7 @@ char *k2pdfopt_version = "v2.33";
 **             logic that breaks the page out into displayable rectangular
 **             regions can be used in other places (e.g. by the OCR fill-in
 **             function).
-**           - Added option -ocrcols which sets the max number of columns for
+**           - Added option -ocrcol which sets the max number of columns for
 **             processing with OCR (if different from the -col value).  You would
 **             use this if you want to OCR a PDF file using -mode copy, but
 **             the file has multiple columns of text.

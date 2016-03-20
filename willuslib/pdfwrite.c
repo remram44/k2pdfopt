@@ -3,7 +3,7 @@
 **
 ** Part of willus.com general purpose C code library.
 **
-** Copyright (C) 2015  http://willus.com
+** Copyright (C) 2016  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -607,7 +607,22 @@ void pdffile_add_bitmap_with_ocrwords(PDFFILE *pdf,WILLUSBITMAP *bmp,double dpi,
     double pw,ph;
     int ptr1,ptr2,ptrlen,showbitmap,nf;
     WILLUSCHARMAPLIST *cmaplist,_cmaplist;
-
+/*
+{
+int i;
+printf("ADDING BITMAP.\n");
+printf("    Words=%d\n",ocrwords->n);
+printf("    dpi=%g\n",dpi);
+printf("    bmp=%dx%d\n",bmp->width,bmp->height);
+for (i=0;i<ocrwords->n;i++)
+printf("    OCR %s: (c=%d,r=%d) (%dx%d)\n",
+ocrwords->word[i].text,
+ocrwords->word[i].c,
+ocrwords->word[i].r,
+ocrwords->word[i].w,
+ocrwords->word[i].h);
+}
+*/
     lastfont=-1;
     lastfontsize=-1;
     showbitmap = (ocr_render_flags&1);

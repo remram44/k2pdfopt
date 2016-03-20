@@ -1,11 +1,10 @@
 #include "mupdf/fitz.h"
 
 #include <jpeglib.h>
-#include <setjmp.h>
 
 #ifndef SHARE_JPEG
 typedef void * backing_store_ptr;
-/* willus.com -- comment out jmemcust include */
+/* willus mod -- comment out jmemcust include */
 /*
 #include "jmemcust.h"
 */
@@ -34,7 +33,7 @@ struct fz_dctd_s
 	unsigned char buffer[4096];
 };
 
-/* willus mod:  make sure SHARE_JPEG is defined */
+/* willus mod: make sure SHARE_JPEG is defined */
 #ifndef SHARE_JPEG
 #define SHARE_JPEG
 #endif

@@ -1,7 +1,7 @@
 /*
 ** pagelist.c    Functions to parse comma-delimited page-list string.
 **
-** Copyright (C) 2015  http://willus.com
+** Copyright (C) 2016  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -51,6 +51,13 @@ int pagelist_includes_page(char *pagelist,int pageno,int maxpages)
     /* Sort of arbitrary */
     if (maxpages < 0)
         maxpages = 99999;
+
+    /* v2.34--see if cover image included */
+    if (pageno<0 && in_string(pagelist,"c")>=0)
+        return(1);
+    if (!stricmp(pagelist,"c") && pageno>0)
+        return(0);
+
     n=pagelist_count(pagelist,maxpages);
 /*
 #ifdef WILLUSDEBUGX

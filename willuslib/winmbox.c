@@ -3,7 +3,7 @@
 **
 ** Part of willus.com general purpose C code library.
 **
-** Copyright (C) 2015  http://willus.com
+** Copyright (C) 2016  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -775,7 +775,7 @@ wmb->msg,wmb->inbuf,wmb->aboutbox.right-wmb->aboutbox.left);
         else
             {
             dx=(int)(wmb->width*.9);
-            dy=(int)(wmb->mfsize*1.2);
+            dy=(int)(wmb->mfsize*1.25);
             flags=WS_CHILD|WS_VISIBLE|WS_BORDER|WS_TABSTOP;
             }
         x1=(wmb->width - dx)/2;

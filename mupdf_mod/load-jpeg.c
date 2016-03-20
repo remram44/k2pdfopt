@@ -1,7 +1,8 @@
 #include "mupdf/fitz.h"
 
 #include <jpeglib.h>
-/* willus mod:  make sure SHARE_JPEG is defined */
+
+/* willus mod: make sure SHARE_JPEG is defined */
 #ifndef SHARE_JPEG
 #define SHARE_JPEG
 #endif

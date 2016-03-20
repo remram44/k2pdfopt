@@ -2,7 +2,7 @@
 ** k2gui_overlay.c  K2pdfopt WILLUSGUI for the overlay dialog box.
 **                  (Non-OS-specific calls.)
 **
-** Copyright (C) 2015  http://willus.com
+** Copyright (C) 2016  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -44,6 +44,11 @@ static void k2gui_overlay_message_box_add_children(char *buttonlabel[],int butto
 
 
 /*
+**
+** MAIN ENTRY FUNCTION FOR OVERLAY SELECTION
+**
+** Goes multithreaded during the creation of the overlay bitmap.
+**
 ** Put up dialog box to show progress and do the conversion.
 ** Does not return until dialog box is closed.
 **
@@ -52,12 +57,17 @@ static void k2gui_overlay_message_box_add_children(char *buttonlabel[],int butto
 **     margins[1] = top
 **     margins[2] = width (v2.33)
 **     margins[3] = height (v2.33)
+**     margins[4] = right margin (v2.34)
+**     margins[5] = bottom margin (v2.34)
 */
 int k2gui_overlay_get_crop_margins(K2GUI *k2gui0,char *filename,char *pagelist,double *margins)
 
     {
     int status,retval,ii;
 
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("@k2gui_overlay_get_crop_margins\n");
+#endif
     k2gui = k2gui0;
     k2gui_overlay=&_k2gui_overlay;
     k2gui_overlay_init();
@@ -66,22 +76,34 @@ int k2gui_overlay_get_crop_margins(K2GUI *k2gui0,char *filename,char *pagelist,d
             k2gui_overlay->margins[ii]=margins[ii];
     else
         for (ii=0;ii<4;ii++)
-            k2gui_overlay->margins[ii]=-1.;
+            k2gui_overlay->margins[ii]=-10.;
         
     /* Launch conversion dialog box and start the conversion thread */
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("    starting dialog window / thread\n");
+#endif
     status=k2gui_overlay_create_dialog_window(filename,pagelist,&k2gui->mainwin,
                                               willusgui_instance());
     retval=0;
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("\nk2gui_overlay_create_dialog_window returns %d\n\n",status);
+#endif
     if (!status)
         {
         /* Disable parent so that convert dialog is modal. */
         willusgui_control_enable(&k2gui->mainwin,0);
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("    waiting for dialog box messages\n");
+#endif
         /* Process messages from conversion dialog box */
         k2gui_overlay_wait_for_conversion_dialog_box_messages();
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("    back from overlay_wait_for_conversion, status=%d\n\n",k2gui_overlay->status);
+#endif
         willusgui_control_enable(&k2gui->mainwin,1);
         if (k2gui_overlay->status==1)
             {
-            for (ii=0;ii<4;ii++)
+            for (ii=0;ii<6;ii++)
                 margins[ii]=k2gui_overlay->margins[ii];
             retval=1;
             }
@@ -132,8 +154,8 @@ static int k2gui_overlay_create_dialog_window(char *filename,char *pagelist,
     static void *data[3];
     static char *blabel[]={"Abort","",""};
 
-#if (WILLUSDEBUGX & 0x2000)
-printf("@k2gui_overlay_create_dialog_window...\n");
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("@k2gui_overlay_create_dialog_window...\n");
 #endif
     if (k2gui_overlay->converting)
         return(-1);
@@ -171,7 +193,7 @@ printf("@k2gui_overlay_create_dialog_window...\n");
     /*
     ** Start new thread to do the conversions
     */
-    k2gui_overlay->semaphore = willusgui_semaphore_create("k2pdfopt_overlay");
+    k2gui_overlay->semaphore = willusgui_semaphore_create_ex("k2pdfopt_overlay",1,1);
     if (k2gui_overlay->semaphore==NULL)
         {
         willusgui_control_enable(&k2gui->mainwin,1);
@@ -180,6 +202,8 @@ printf("@k2gui_overlay_create_dialog_window...\n");
         k2gui_overlay->converting=0;
         return(-3);
         }
+    /* Signal the semaphore */
+    willusgui_semaphore_status_wait(k2gui_overlay->semaphore);
 /*
 printf("k2conv=%p\n",k2conv);
 printf("k2conv->k2settings=%p\n",&k2conv->k2settings);
@@ -190,6 +214,9 @@ printf("k2conv->k2settings=%p\n",&k2conv->k2settings);
     /*
     ** Fork the new thread to k2gui_overlay_start_conversion().
     */
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("   starting separate thread...\n");
+#endif
     k2gui_overlay->pid=willusgui_thread_create(k2gui_overlay_start_conversion,(void *)data);
     if (k2gui_overlay->pid==NULL)
         {
@@ -204,6 +231,9 @@ printf("k2conv->k2settings=%p\n",&k2conv->k2settings);
 ** Test for Franco Vivona (Ittiandro).  Put in delay to see if it helps the
 ** conversion not crash.
 */
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("   continuing from main thread...\n");
+#endif
 #ifdef HAVE_WIN32_API
 win_sleep(500);
 #endif
@@ -236,8 +266,8 @@ void k2gui_overlay_close_buttons(void)
         }
     else
         {
-        strcpy(buf[0],"&Set &Margins");
-        strcpy(buf[1],"&Zero All Margins");
+        strcpy(buf[0],"&Set Crop Region");
+        strcpy(buf[1],"&Reset Region to Entire Page");
         strcpy(buf[2],"&Cancel");
         for (i=0;i<3;i++)
             buttonlabel[i]=&buf[i][0];
@@ -260,6 +290,9 @@ static void k2gui_overlay_start_conversion(void *data)
     char buf[256];
     WILLUSBITMAP *bmp;
 
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("@k2gui_overlay_start_conversion thread.\n");
+#endif
     ptrs=(void **)data;
     filename=(char *)ptrs[0];
     pagelist=(char *)ptrs[1];
@@ -273,7 +306,13 @@ static void k2gui_overlay_start_conversion(void *data)
     sprintf(buf,"Creating overlay for %s...",k2gui_overlay->filename);
     k2gui_overlay_set_pages_completed(0,buf);
     bmp=&k2gui_overlay->bmp;
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("Getting overlay bitmap...\n");
+#endif
     k2file_get_overlay_bitmap(bmp,&k2gui_overlay->dpi,filename,pagelist);
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("   Done overlay bitmap (ecount=%d)...\n",k2gui_overlay->error_count);
+#endif
 /*
 printf(" = %d x %d\n",bmp->width,bmp->height);
 */
@@ -323,7 +362,20 @@ printf("w=%d, h=%d\n",w,h);
         }
     else
         bmp->width=-1;
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("   Done overlay_start_conversion..\n",k2gui_overlay->error_count);
+#endif
     k2gui_overlay_conversion_thread_cleanup();
+    }
+
+
+void k2gui_overlay_reset_margins(void)
+
+    {
+    int i;
+
+    for (i=0;i<6;i++)
+        k2gui_overlay->margins[i]=(i!=2 && i!=3) ? 0. : -1.;
     }
 
 
@@ -336,13 +388,27 @@ void k2gui_overlay_store_margins(WILLUSGUICONTROL *control)
     
     willusgui_window_get_useable_rect(control,&rect0);
     marked=&control->rectmarked;
+    if (marked->left<-9000)
+        {
+        k2gui_overlay_reset_margins();
+        return;
+        }
     k2gui_overlay->margins[0] = (double)(marked->left-rect0.left)/control->dpi_rendered;
     k2gui_overlay->margins[1] = (double)(marked->top-rect0.top)/control->dpi_rendered;
     k2gui_overlay->margins[2] = (double)(marked->right-marked->left)/control->dpi_rendered;
     k2gui_overlay->margins[3] = (double)(marked->bottom-marked->top)/control->dpi_rendered;
-    for (ii=0;ii<4;ii++)
+    k2gui_overlay->margins[4] = (double)(rect0.right-marked->right)/control->dpi_rendered;
+    k2gui_overlay->margins[5] = (double)(rect0.bottom-marked->bottom)/control->dpi_rendered;
+    for (ii=0;ii<6;ii++)
+        {
+        if (ii==2 || ii==3)
+            continue;
         if (k2gui_overlay->margins[ii]<0.)
             k2gui_overlay->margins[ii]=0.;
+/*
+k2printf("k2gui_overlay->margins[%d]=%g\n",ii,k2gui_overlay->margins[ii]);
+*/
+        }
     }
 
 
@@ -351,9 +417,16 @@ void k2gui_overlay_apply_margins(WILLUSGUICONTROL *control)
     {
     WILLUSGUIRECT *marked;
     WILLUSGUIRECT rect0;
-   
-    if (k2gui_overlay->margins[0]<0 || k2gui_overlay->margins[1]<0
-         || k2gui_overlay->margins[2]<0 || k2gui_overlay->margins[3]<0)
+
+/*
+printf("dpi_rendered=%g\n",(double)control->dpi_rendered);
+printf("rect = %d x %d\n",rect0.right,rect0.bottom);
+{int i;
+for (i=0;i<4;i++)
+printf("k2margins[%d]=%g\n",i,k2gui_overlay->margins[i]);   
+}
+*/
+    if (k2gui_overlay->margins[0]<0 || k2gui_overlay->margins[1]<0)
         return;
     willusgui_window_get_useable_rect(control,&rect0);
     marked=&control->rectmarked;
@@ -367,8 +440,17 @@ void k2gui_overlay_apply_margins(WILLUSGUICONTROL *control)
     marked->right=rect0.right-k2gui_overlay->margins[2]*control->dpi_rendered;
     marked->bottom=rect0.bottom-k2gui_overlay->margins[3]*control->dpi_rendered;
 */
-    marked->right=rect0.left+k2gui_overlay->margins[2]*control->dpi_rendered;
-    marked->bottom=rect0.top+k2gui_overlay->margins[3]*control->dpi_rendered;
+    if (k2gui_overlay->margins[2]<0)
+        marked->right=rect0.right;
+    else
+        marked->right=marked->left+k2gui_overlay->margins[2]*control->dpi_rendered;
+    if (k2gui_overlay->margins[3]<0)
+        marked->bottom=rect0.bottom;
+    else
+        marked->bottom=marked->top+k2gui_overlay->margins[3]*control->dpi_rendered;
+/*
+printf("marked=%d,%d,%d,%d\n",marked->left,marked->top,marked->right,marked->bottom);
+*/
     }
 
 
@@ -402,7 +484,7 @@ void k2gui_overlay_open_bitmap(WILLUSBITMAP *bmp)
     wfile_abstmpnam(tempfile);
     wfile_newext(tempfile,NULL,"png");
     bmp_write(bmp,tempfile,NULL,100);
-    willusgui_open_file(tempfile);
+    willusgui_open_file_ex(tempfile);
     }
 
 
@@ -422,16 +504,31 @@ static int k2gui_overlay_wait_for_conversion_dialog_box_messages(void)
     {
     int done;
 
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("@k2gui_overlay_wait_for_conversion_dialog_box_messages, converting=%d\n",k2gui_overlay->converting);
+#endif
     done=k2gui_osdep_window_proc_messages(&k2gui_overlay->mainwin,k2gui_overlay->semaphore,2,
                                           &k2gui_overlay->control[1]);
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("    back from osdep_window_proc_messages, converting=%d\n",k2gui_overlay->converting);
+#endif
     k2gui_overlay->converting=0;
     /* If conversion aborted, terminate thread and cleanup */
     if (!done)
         {
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("    terminating thread to create overlay.\n");
+#endif
         willusgui_thread_terminate(k2gui_overlay->pid,0);
         k2gui_overlay_conversion_thread_cleanup();
-        willusgui_semaphore_close(k2gui_overlay->semaphore);
         }
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("    closing semaphore.\n");
+#endif
+    willusgui_semaphore_close(k2gui_overlay->semaphore);
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("    Done k2gui_overlay_wait_for_conversion_dialog_box_messages\n");
+#endif
     return((k2gui_overlay->status==1 ? 1 : 0) | (done ? 2 : 0));
     }
 
@@ -441,6 +538,9 @@ static void k2gui_overlay_conversion_thread_cleanup(void)
     {
     /* Release and close semaphore */
     willusgui_semaphore_release(k2gui_overlay->semaphore);
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("thread clean-up complete.  Semaphore released.\n");
+#endif
     }
 
 
@@ -758,6 +858,9 @@ void k2gui_overlay_draw_defbutton_border(int status)
     WILLUSGUIRECT rect;
     int i,color;
 
+#if (WILLUSDEBUGX & 0x2000000)
+willusgui_dprintf(ANSI_YELLOW "@k2gui_overlay_draw_defbutton_border\n");
+#endif
     rect=k2gui_overlay->control[1].rect;
     color = status ? 0 : k2gui_overlay->rgbcolor;
     for (i=0;i<4;i++)

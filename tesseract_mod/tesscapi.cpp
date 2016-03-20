@@ -1,3 +1,4 @@
+#include "config_auto.h"
 /*
 ** tesscapi.cpp    willus.com attempt at C wrapper for tesseract.
 **                 (Butchered from tesseractmain.cpp)
@@ -21,7 +22,9 @@
 */
 
 #include "config_auto.h"
+/*
 #include "mfcpch.h"
+*/
 // #define USE_VLD //Uncomment for Visual Leak Detector.
 #if (defined _MSC_VER && defined USE_VLD)
 #include <vld.h>
@@ -44,7 +47,9 @@
 #include "strngs.h"
 #include "params.h"
 #include "blobs.h"
+/*
 #include "notdll.h"
+*/
 
 /* C Wrappers */
 #include "tesseract.h"
@@ -166,8 +171,7 @@ int tess_capi_init(char *datapath,char *language,int ocr_type,FILE *out,
 int tess_capi_get_ocr(PIX *pix,char *outstr,int maxlen,FILE *out)
 
     {
-    STRING text_out;
-    if (!api.ProcessPage(pix,0,NULL,NULL,0,&text_out))
+    if (!api.ProcessPage(pix,0,NULL,NULL,0,NULL))
         {
         /* pixDestroy(&pix); */
         if (out!=NULL)
@@ -175,7 +179,7 @@ int tess_capi_get_ocr(PIX *pix,char *outstr,int maxlen,FILE *out)
         api.Clear();
         return(-1);
         }
-    strncpy(outstr,text_out.string(),maxlen-1);
+    strncpy(outstr,api.GetUTF8Text(),maxlen-1);
     outstr[maxlen-1]='\0';
     api.Clear();
     return(0);

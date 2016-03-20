@@ -1,7 +1,7 @@
 /*
 ** k2pdfopt.h   Main include file for k2pdfopt source modules.
 **
-** Copyright (C) 2014  http://willus.com
+** Copyright (C) 2016  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -46,13 +46,15 @@
 ** 0x200000 = OCR layer bbox
 ** 0x400000 = page region sorting
 ** 0x800000 = page break marks
+** 0x1000000 = font size debug
+** 0x2000000 = font size debug
 **
 ** 0x80000000 = Fake Mupdf
 **
 */
 
 /*
-#define WILLUSDEBUGX 0x014000
+#define WILLUSDEBUGX 0x0004000
 #define WILLUSDEBUGX 0x400f
 #define WILLUSDEBUG
 #define WILLUSDEBUGX 0x100000
@@ -70,7 +72,7 @@
 #include <willus.h>
 
 /* Uncomment below if compiling for Kindle PDF Viewer */
-/* #define K2PDFOPT_KINDLEPDFVIEWER  */
+/* #define K2PDFOPT_KINDLEPDFVIEWER */
 
 /*
 ** The HAVE_..._LIB defines should now be carried over from willus.h,
@@ -143,7 +145,7 @@
 #define UNITS_OCRLAYER    5
 
 #define DEFAULT_WIDTH 560
-#define DEFAULT_HEIGHT 735
+#define DEFAULT_HEIGHT 745
 #define MIN_REGION_WIDTH_INCHES 1.0
 #define SRCROT_AUTO     -999.
 #define SRCROT_AUTOEP   -998.
@@ -275,7 +277,8 @@ typedef struct
     int sort_ocr_text;
 #endif
 
-    int dst_dpi;
+    int dst_userdpi; /* Specified device DPI, not including magnification */
+    int dst_dpi; /* Device virtual DPI--takes magnification/fontsize into account */
     int dst_dither;
     int dst_break_pages;
     int render_dpi;
@@ -292,6 +295,7 @@ typedef struct
     int dst_height; /* pixels */
     double dst_userwidth; /* pixels */
     double dst_userheight; /* pixels */
+    double dst_magnification; /* Was dst_display_resolution before v2.34 */
     double dst_display_resolution;
     int dst_userwidth_units;
     int dst_userheight_units;
@@ -305,7 +309,7 @@ typedef struct
     int dst_bpc;
     int dst_landscape;
     char dst_landscape_pages[1024];
-    char dst_opname_format[128];
+    char dst_opname_format[MAXFILENAMELEN];
     int src_autostraighten;
     /*
     double dst_mar;
@@ -397,17 +401,47 @@ typedef struct
     int pagebreakmark_nobreak_color;    /* v2.33, #RRGGBB, 0 = no mark */
     char dst_author[256];
     char dst_title[256];
+    /* v2.34 */
+    double dst_fontsize_pts; /* 0=not used */
+    int assume_yes; /* 1 = assume yes to overwrite */
+    char dst_coverimage[256];
     } K2PDFOPT_SETTINGS;
 
 
-/* Mostly for GUI */
+/* Mostly for GUI--controls what to do with file list */
+#define K2PDFOPT_FILELIST_PROCESS_MODE_CONVERT_FILES  1
+#define K2PDFOPT_FILELIST_PROCESS_MODE_GET_FILECOUNT  2
 typedef struct
     {
+    int mode;
     int filecount;
-    WILLUSBITMAP *bmp;
+    WILLUSBITMAP *bmp; /* Returns preview bitmap */
     char *outname;
     int status; /* 0 = success, otherwise, status code */
-    } K2PDFOPT_OUTPUT;
+    } K2PDFOPT_FILELIST_PROCESS;
+
+
+typedef struct
+    {
+    int n,na;
+    int sorted;
+    double *fontsize_pts;
+    } FONTSIZE_HISTOGRAM;
+
+/* Controls what is done with a single file */
+#define K2PDFOPT_FILE_PROCESS_MODE_GET_ROTATION   1
+#define K2PDFOPT_FILE_PROCESS_MODE_GET_FONTSIZE   2
+#define K2PDFOPT_FILE_PROCESS_MODE_CONVERT_FILE   3
+typedef struct
+    {
+    int mode;
+    int status;
+    int count; /* Increments for each call */
+    WILLUSBITMAP *bmp; /* Returns preview bitmap */
+    char *outname; /* Output file name */
+    FONTSIZE_HISTOGRAM fsh;
+    double rotation_deg;
+    } K2PDFOPT_FILE_PROCESS;
 
 
 /* List of files to be processed by k2pdfopt */
@@ -606,6 +640,7 @@ typedef struct
     WRECTMAPS rectmaps;   /* KOReader add to hold WRECTMAPs of the output bitmap */
 #endif
     WPDFPAGEINFO pageinfo;  /* Holds crop boxes for native PDF output */
+    WILLUSBITMAP cover_image;  /* Holds cover image for native PDF output (v2.34) */
     /* v2.32:  Maintained by masterinfo_new_source_page_init() */
     int landscape;
     int landscape_next;
@@ -693,8 +728,8 @@ typedef struct
 */
 
 /* k2file.c */
-void k2pdfopt_proc_wildarg(K2PDFOPT_SETTINGS *k2settings,char *arg,int process,
-                           K2PDFOPT_OUTPUT *k2out);
+void k2pdfopt_proc_wildarg(K2PDFOPT_SETTINGS *k2settings,char *arg,
+                           K2PDFOPT_FILELIST_PROCESS *k2listproc);
 void wpdfboxes_echo(WPDFBOXES *boxes,FILE *out);
 void overwrite_set(int status);
 void k2file_get_overlay_bitmap(WILLUSBITMAP *bmp,double *dpi,char *filename,char *pagelist);
@@ -709,6 +744,7 @@ void k2sys_header(char *s);
 void k2sys_exit(K2PDFOPT_SETTINGS *k2settings,int val);
 void k2sys_enter_to_exit(K2PDFOPT_SETTINGS *k2settings);
 int  k2printf(char *fmt,...);
+#define k2dprintf willusgui_dprintf
 void k2gets(char *buf,int maxlen,char *def);
 
 /* k2usage.c */
@@ -824,6 +860,11 @@ void textrow_scale(TEXTROW *textrow,double scalew,double scaleh,int c2max,int r2
 #if (WILLUSDEBUGX & 6)
 void textrows_echo(TEXTROWS *textrows,char *name);
 #endif
+void fontsize_histogram_init(FONTSIZE_HISTOGRAM *fsh);
+void fontsize_histogram_add_fontsize(FONTSIZE_HISTOGRAM *fsh,double fontsize_pts);
+void fontsize_histogram_free(FONTSIZE_HISTOGRAM *fsh);
+double fontsize_histogram_median(FONTSIZE_HISTOGRAM *fsh,int starting_index);
+
 
 /* textwords.c */
 void textwords_compute_col_gaps(TEXTWORDS *textwords,int c2);
@@ -843,6 +884,10 @@ void textwords_add_word_gaps(TEXTWORDS *textwords,int lcheight,double *median_ga
 
 /* k2proc.c */
 void k2proc_init_one_document(void);
+void k2proc_get_fontsize_histogram(BMPREGION *region,MASTERINFO *masterinfo,
+                                   K2PDFOPT_SETTINGS *k2settings,FONTSIZE_HISTOGRAM *fsh);
+void bmpregion_add_cover_image(BMPREGION *coverimage,K2PDFOPT_SETTINGS *k2settings,
+                               MASTERINFO *masterinfo);
 void bmpregion_source_page_add(BMPREGION *region,K2PDFOPT_SETTINGS *k2settings,
                                MASTERINFO *masterinfo,int level,int pages_done);
 void pageregions_find_columns(PAGEREGIONS *pageregions_sorted,BMPREGION *srcregion,
@@ -861,7 +906,6 @@ void k2pdfopt_conversion_close(K2PDFOPT_CONVERSION *k2conv);
 void k2pdfopt_settings_copy(K2PDFOPT_SETTINGS *dst,K2PDFOPT_SETTINGS *src);
 int  k2pdfopt_settings_set_to_device(K2PDFOPT_SETTINGS *k2settings,DEVPROFILE *dp);
 void k2pdfopt_settings_quick_sanity_check(K2PDFOPT_SETTINGS *k2settings);
-void k2pdfopt_settings_sanity_check(K2PDFOPT_SETTINGS *k2settings);
 double k2pdfopt_settings_gamma(K2PDFOPT_SETTINGS *k2settings);
 void k2pdfopt_settings_new_source_document_init(K2PDFOPT_SETTINGS *k2settings);
 void k2pdfopt_settings_dst_viewable(K2PDFOPT_SETTINGS *k2settings,MASTERINFO *masterinfo,
@@ -872,7 +916,8 @@ void k2pdfopt_settings_fit_column_to_screen(K2PDFOPT_SETTINGS *k2settings,
 void k2pdfopt_settings_set_region_widths(K2PDFOPT_SETTINGS *k2settings);
 int k2settings_gap_override(K2PDFOPT_SETTINGS *k2settings);
 void k2pdfopt_settings_set_margins_and_devsize(K2PDFOPT_SETTINGS *k2settings,
-                         BMPREGION *region,MASTERINFO *masterinfo,int trimmed);
+                         BMPREGION *region,MASTERINFO *masterinfo,
+                         double src_fontsize_pts,int trimmed);
 char *k2pdfopt_settings_unit_string(int units);
 void k2pdfopt_settings_clear_cropboxes(K2PDFOPT_SETTINGS *k2settings,int flagmask,int flagtype);
 void k2cropboxes_init(K2CROPBOXES *cropboxes);
@@ -1013,8 +1058,8 @@ void k2pdfopt_files_remove_file(K2PDFOPT_FILES *k2files,char *filename);
 #endif
 
 #define K2WIN_MINWIDTH   600
-#define K2WIN_MINHEIGHT  440
-#define MAXGUICONTROLS   84
+#define K2WIN_MINHEIGHT  496
+#define MAXGUICONTROLS   88
 
 /*
 ** K2GUI contains the parameters related to the functioning of
@@ -1046,6 +1091,7 @@ typedef struct
     int sel_index; /* If text is selected in a control, this is the index */
     int sel_start; /* Starting letter */
     int sel_end;   /* Ending letter */
+    double opfontsize;
     } K2GUI;
 
 /*
@@ -1079,7 +1125,7 @@ typedef struct
     char *filelist; /* Double '\0' terminated string */
     int filelist_na;
     double dpi;
-    double margins[4];
+    double margins[6];
     WILLUSBITMAP bmp;
     } K2CONVBOX;
 
@@ -1157,6 +1203,7 @@ int  k2gui_overlay_get_crop_margins(K2GUI *k2gui0,char *filename,char *pagelist,
 void k2gui_overlay_final_print(void);
 void k2gui_overlay_terminate_conversion(void);
 int  k2gui_overlay_conversion_successful(void);
+void k2gui_overlay_reset_margins(void);
 void k2gui_overlay_store_margins(WILLUSGUICONTROL *control);
 void k2gui_overlay_apply_margins(WILLUSGUICONTROL *control);
 void  k2gui_overlay_error(char *filename,int pagenum,int statuscode);

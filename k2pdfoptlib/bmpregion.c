@@ -3,7 +3,7 @@
 **                are more-or-less generic functions that don't depend
 **                heavily on k2pdfopt settings.
 **
-** Copyright (C) 2015  http://willus.com
+** Copyright (C) 2016  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -270,11 +270,6 @@ void bmpregion_trim_to_crop_margins(BMPREGION *region,MASTERINFO *masterinfo,
         bmpregion_trim_margins(region,k2settings,0xf);
     masterinfo_get_margins(k2settings,margins_inches,&k2settings->srccropmargins,
                            masterinfo,region);
-    /*
-    for (i=0;i<4;i++)
-        if (cbox->box[i]<0.)
-            k2pdfopt_settings_sanity_check(k2settings);
-    */
     n=(int)(0.5+margins_inches[0]*region->dpi);
     if (n>region->bmp->width)
         n=region->bmp->width;
@@ -2195,6 +2190,8 @@ void bmpregion_local_pagebreakmarkers(BMPREGION *region,int left_to_right,int wh
     {
     int i,c1,c2;
 
+    if (region->k2pagebreakmarks==NULL)
+        return;
     c1=region->c1;
     c2=region->c2;
     if (left_to_right)

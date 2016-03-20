@@ -1,7 +1,7 @@
 /*
 ** textrows.c   Functions to handle TEXTROWS structure.
 **
-** Copyright (C) 2015  http://willus.com
+** Copyright (C) 2016  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -958,4 +958,76 @@ static int maxval(int *x,int n,int n0,int dx,int *index,int index0)
     if (index!=NULL)
         (*index)=imax+n0;
     return(x[imax]);
+    }
+
+
+void fontsize_histogram_init(FONTSIZE_HISTOGRAM *fsh)
+
+    {
+    fsh->n=fsh->na=0;
+    fsh->sorted=0;
+    fsh->fontsize_pts=NULL;
+    }
+
+
+void fontsize_histogram_add_fontsize(FONTSIZE_HISTOGRAM *fsh,double fontsize_pts)
+
+    {
+    static char *funcname="fontsize_histogram_add_fontsize";
+
+    if (fsh->fontsize_pts==NULL || fsh->n>=fsh->na)
+        {
+        if (fsh->n==0 || fsh->fontsize_pts==NULL)
+            {
+            fsh->na=1000;
+            willus_dmem_alloc_warn(45,(void **)&fsh->fontsize_pts,fsh->na*sizeof(double),
+                                   funcname,10);
+            }
+        else
+            {
+            int newsize;
+            newsize=fsh->na*2;
+            willus_mem_realloc_robust_warn((void **)&fsh->fontsize_pts,newsize*sizeof(double),
+                                           fsh->na*sizeof(double),funcname,10);
+            fsh->na=newsize;
+            }
+        }
+    fsh->fontsize_pts[fsh->n++]=fontsize_pts;
+    fsh->sorted=0;
+    }
+
+
+void fontsize_histogram_free(FONTSIZE_HISTOGRAM *fsh)
+
+    {
+    static char *funcname="fontsize_histogram_free";
+
+    willus_dmem_free(45,(double **)&fsh->fontsize_pts,funcname);
+    }
+
+
+double fontsize_histogram_median(FONTSIZE_HISTOGRAM *fsh,int starting_index)
+
+    {
+    if (fsh->n<1)
+        return(-1.0);
+    if (starting_index==0 || fsh->n-starting_index<1 || (fsh->n-starting_index<5 && fsh->n>100))
+        {
+        if (fsh->n>1 && !fsh->sorted)
+            {
+            sortd(fsh->fontsize_pts,fsh->n);
+            fsh->sorted=1;
+            }
+        return(fsh->fontsize_pts[fsh->n/2]);
+        }
+    sortd(&fsh->fontsize_pts[starting_index],fsh->n-starting_index);
+    fsh->sorted=0;
+    return(fsh->fontsize_pts[(fsh->n+starting_index)/2]);
+    }
+
+
+void fontsize_histogram_clear(FONTSIZE_HISTOGRAM *fsh)
+
+    {
+    fsh->n=0;
     }

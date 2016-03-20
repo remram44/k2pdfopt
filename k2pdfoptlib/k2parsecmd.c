@@ -1,7 +1,7 @@
 /*
 ** k2cmdparse.c   Parse command-line options for k2pdfopt.
 **
-** Copyright (C) 2015  http://willus.com
+** Copyright (C) 2016  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -98,13 +98,36 @@ static int next_is_integer(CMDLINEINPUT *cl,int setvals,int quiet,int *good,int 
                 k2settings->y=(cl->cmdarg[strlen(cl->cmdarg)-1]=='-' ? 0 : 1); \
             continue; \
             }
-#define NEEDS_STRING(x,y,maxlen) if (!stricmp(cl->cmdarg,x)) { \
+#define NEEDS_STRING(x,y,maxlen,minus_clears) if (!stricmp(cl->cmdarg,x)) { \
             if (cmdlineinput_next(cl)==NULL) \
                 break; \
             if (setvals==1) \
                 { \
                 strncpy(k2settings->y,cl->cmdarg,maxlen); \
                 k2settings->y[maxlen]='\0'; \
+                } \
+            continue; \
+            } \
+            if (minus_clears && !stricmp(cl->cmdarg,x "-")) { \
+            if (setvals==1) \
+                k2settings->y[0]='\0'; \
+            continue; \
+            }
+#define NEEDS_VALUE_PLUS(x,y) if (!stricmp(cl->cmdarg,x)) { \
+            if (cmdlineinput_next(cl)==NULL) \
+                break; \
+            if (setvals==1) \
+                { \
+                char buf[64]; \
+                strncpy(buf,cl->cmdarg,63);\
+                buf[63]='\0'; \
+                if (strlen(buf)>1 && buf[strlen(buf)-1]=='+') \
+                    { \
+                    buf[strlen(buf)-1]='\0'; \
+                    k2settings->y=-atof(buf); \
+                    } \
+                else \
+                    k2settings->y=atof(buf); \
                 } \
             continue; \
             } 
@@ -209,6 +232,7 @@ int parse_cmd_args(K2PDFOPT_CONVERSION *k2conv,STRBUF *env,STRBUF *cmdline,
         MINUS_OPTION("-to",text_only,1)
         MINUS_OPTION("-ac",autocrop,1)
         MINUS_OPTION("-fr",dst_figure_rotate,1)
+        MINUS_OPTION("-y",assume_yes,1)
 #ifdef HAVE_GHOSTSCRIPT
         MINUS_OPTION("-ppgs",ppgs,1)
 #endif
@@ -447,7 +471,8 @@ int parse_cmd_args(K2PDFOPT_CONVERSION *k2conv,STRBUF *env,STRBUF *cmdline,
                     k2settings->dst_userwidth_units=(tm||crop) ? UNITS_TRIMMED : UNITS_SOURCE;
                     k2settings->dst_userheight=1.0;
                     k2settings->dst_userheight_units=(tm||crop) ? UNITS_TRIMMED : UNITS_SOURCE;
-                    k2settings->dst_dpi=150;
+                    k2settings->dst_dpi=k2settings->dst_userdpi=150;
+                    k2settings->dst_fontsize_pts=0.;
                     k2settings->src_rot=0.;
                     k2settings->dst_color=1;
                     k2settings->src_trim=tm ? 1 : 0;
@@ -1255,7 +1280,7 @@ printf("units=%d\n",k2settings->srccropmargins.units[0]);
                 continue;
             if (cl->cmdarg[3]=='-')
                 {
-                k2settings->dst_dpi=167;
+                k2settings->dst_dpi=k2settings->dst_userdpi=167;
                 k2settings->user_src_dpi = -2.0;
                 k2settings->dst_userwidth=DEFAULT_WIDTH;
                 k2settings->dst_userwidth_units=UNITS_PIXELS;
@@ -1264,7 +1289,7 @@ printf("units=%d\n",k2settings->srccropmargins.units[0]);
                 }
             else
                 {
-                k2settings->dst_dpi=333;
+                k2settings->dst_dpi=k2settings->dst_userdpi=333;
                 k2settings->user_src_dpi = -2.0;
                 k2settings->dst_userwidth=DEFAULT_WIDTH*2;
                 k2settings->dst_userheight=DEFAULT_HEIGHT*2;
@@ -1288,21 +1313,23 @@ printf("units=%d\n",k2settings->srccropmargins.units[0]);
                 readnext=0;
             continue;
             }
-        NEEDS_STRING("-colorbg",dst_bgcolor,11);
-        NEEDS_STRING("-colorfg",dst_fgcolor,11);
-        NEEDS_STRING("-toclist",toclist,2047);
-        NEEDS_STRING("-tocsave",tocsavefile,MAXFILENAMELEN-1);
-        NEEDS_STRING("-bpl",bpl,2047);
-        NEEDS_STRING("-p",pagelist,1023)
-        NEEDS_STRING("-px",pagexlist,1023)
-        NEEDS_STRING("-author",dst_author,255)
-        NEEDS_STRING("-title",dst_title,255)
+        NEEDS_STRING("-colorbg",dst_bgcolor,11,0);
+        NEEDS_STRING("-colorfg",dst_fgcolor,11,0);
+        NEEDS_STRING("-toclist",toclist,2047,0);
+        NEEDS_STRING("-tocsave",tocsavefile,MAXFILENAMELEN-1,0);
+        NEEDS_STRING("-bpl",bpl,2047,0);
+        NEEDS_STRING("-p",pagelist,1023,0)
+        NEEDS_STRING("-px",pagexlist,1023,0)
+        NEEDS_STRING("-author",dst_author,255,0)
+        NEEDS_STRING("-title",dst_title,255,0)
 #ifdef HAVE_OCR_LIB
-        NEEDS_STRING("-ocrout",ocrout,127)
+        NEEDS_STRING("-ocrout",ocrout,127,0)
 #endif
-        NEEDS_STRING("-o",dst_opname_format,127)
+        NEEDS_STRING("-o",dst_opname_format,127,0)
+        NEEDS_STRING("-ci",dst_coverimage,255,1)
         NEEDS_INTEGER("-evl",erase_vertical_lines)
         NEEDS_INTEGER("-ehl",erase_horizontal_lines)
+        NEEDS_VALUE_PLUS("-fs",dst_fontsize_pts)
         NEEDS_VALUE("-vls",vertical_line_spacing)
         NEEDS_VALUE("-vs",max_vertical_gap_inches)
         NEEDS_VALUE("-de",defect_size_pts)
@@ -1313,8 +1340,10 @@ printf("units=%d\n",k2settings->srccropmargins.units[0]);
         NEEDS_VALUE("-cmax",contrast_max)
         NEEDS_VALUE("-ch",min_column_height_inches)
         NEEDS_VALUE("-dr",dst_display_resolution)
-        NEEDS_INTEGER("-odpi",dst_dpi)
-        NEEDS_INTEGER("-dpi",dst_dpi)
+        NEEDS_VALUE("-mag",dst_magnification)
+        NEEDS_INTEGER("-odpi",dst_userdpi)
+        NEEDS_INTEGER("-dpi",dst_userdpi)
+        k2settings->dst_dpi=k2settings->dst_userdpi;
         NEEDS_VALUE("-ws",word_spacing)
         CBOXVAL("-oml",k2settings->dstmargins,0,UNITS_INCHES,0)
         CBOXVAL("-omt",k2settings->dstmargins,1,UNITS_INCHES,0)

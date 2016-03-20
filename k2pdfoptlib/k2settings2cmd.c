@@ -2,7 +2,7 @@
 ** k2settings2cmd.c    Convert changes in settings structure to equivalent
 **                     command-line arguments.
 **
-** Copyright (C) 2015  http://willus.com
+** Copyright (C) 2016  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -29,8 +29,11 @@ static void minus_inverse(STRBUF *cmdline,STRBUF *nongui,char *optname,int *srcv
 static void plus_minus_check(STRBUF *cmdline,STRBUF *nongui,char *optname,int *srcval,int dstval);
 static void integer_check(STRBUF *cmdline,STRBUF *nongui,char *optname,int *srcval,int dstval);
 static void double_check(STRBUF *cmdline,STRBUF *nongui,char *optname,double *srcval,double dstval);
+static void double_plus_check(STRBUF *cmdline,STRBUF *nongui,char *optname,double *srcval,double dstval);
 static void help_check(STRBUF *cmdline,STRBUF *nongui,char *optname,char *srcval,char *dstval);
 static void string_check(STRBUF *cmdline,STRBUF *nongui,char *optname,char *srcval,char *dstval);
+static void string_check_minus(STRBUF *cmdline,STRBUF *nongui,char *optname,char *srcval,
+                               char *dstval);
 static void cropbox_check(STRBUF *cmdline,STRBUF *nongui,char *opt,K2CROPBOX *src,K2CROPBOX *dst);
 static void notesets_check(STRBUF *cmdline,STRBUF *nongui,K2NOTESET *src,K2NOTESET *dst);
 static void cropboxes_check(STRBUF *cmdline,STRBUF *nongui,K2CROPBOXES *src,K2CROPBOXES *dst,
@@ -258,6 +261,7 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
                   &src->erase_vertical_lines,dst->erase_vertical_lines); 
     integer_check(cmdline,dst->erase_horizontal_lines==2?nongui:NULL,"-ehl",
                   &src->erase_horizontal_lines,dst->erase_horizontal_lines);    
+    double_plus_check(cmdline,NULL,"-fs",&src->dst_fontsize_pts,dst->dst_fontsize_pts);
     double_check(cmdline,nongui,"-vls",&src->vertical_line_spacing,dst->vertical_line_spacing);
     double_check(cmdline,nongui,"-vm",&src->vertical_multiplier,dst->vertical_multiplier);
     double_check(cmdline,nongui,"-vs",&src->max_vertical_gap_inches,dst->max_vertical_gap_inches);
@@ -319,7 +323,7 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
 #ifdef HAVE_GHOSTSCRIPT
     minus_check(cmdline,NULL,"-ppgs",&src->ppgs,dst->ppgs);
 #endif
-    string_check(cmdline,nongui,"-o",src->dst_opname_format,dst->dst_opname_format);
+    string_check(cmdline,NULL,"-o",src->dst_opname_format,dst->dst_opname_format);
 #ifdef HAVE_OCR_LIB
     string_check(cmdline,nongui,"-ocrout",src->ocrout,dst->ocrout);
 #endif
@@ -375,6 +379,7 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
     minus_check(cmdline,NULL,"-ac",&src->autocrop,dst->autocrop);
     minus_check(cmdline,nongui,"-v",&src->verbose,dst->verbose);
     minus_check(cmdline,nongui,"-fr",&src->dst_figure_rotate,dst->dst_figure_rotate);
+    minus_check(cmdline,nongui,"-y",&src->assume_yes,dst->assume_yes);
     if (src->jpeg_quality != dst->jpeg_quality)
         {
         if (dst->jpeg_quality <= 0)
@@ -471,6 +476,7 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
     string_check(cmdline,nongui,"-bpl",src->bpl,dst->bpl);
     string_check(cmdline,nongui,"-toclist",src->toclist,dst->toclist);
     string_check(cmdline,nongui,"-tocsave",src->tocsavefile,dst->tocsavefile);
+    string_check_minus(cmdline,nongui,"-ci",src->dst_coverimage,dst->dst_coverimage);
     integer_check(cmdline,nongui,"-bpc",&src->dst_bpc,dst->dst_bpc);
     double_check(cmdline,nongui,"-g",&src->dst_gamma,dst->dst_gamma);
     double_check(cmdline,nongui,"-cg",&src->min_column_gap_inches,dst->min_column_gap_inches);
@@ -482,7 +488,7 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
     double_check(cmdline,nongui,"-ch",&src->min_column_height_inches,dst->min_column_height_inches);
     double_check(cmdline,nongui,"-ds",&src->document_scale_factor,dst->document_scale_factor);
     double_check(cmdline,nongui,"-idpi",&src->user_src_dpi,dst->user_src_dpi);
-    integer_check(cmdline,NULL,"-odpi",&src->dst_dpi,dst->dst_dpi);
+    integer_check(cmdline,NULL,"-odpi",&src->dst_userdpi,dst->dst_userdpi);
     cropbox_check(cmdline,nongui,"-m",&src->srccropmargins,&dst->srccropmargins);
     cropbox_check(cmdline,nongui,"-om",&src->dstmargins,&dst->dstmargins);
     /* 3 = max GUI boxes */
@@ -507,6 +513,7 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
         src->dst_fulljustify = dst->dst_fulljustify;
         }
     double_check(cmdline,NULL,"-dr",&src->dst_display_resolution,dst->dst_display_resolution);
+    double_check(cmdline,NULL,"-mag",&src->dst_magnification,dst->dst_magnification);
     if (src->dst_userheight!=dst->dst_userheight
             || src->dst_userheight_units!=dst->dst_userheight_units)
         {
@@ -594,6 +601,21 @@ static void integer_check(STRBUF *cmdline,STRBUF *nongui,char *optname,int *srcv
     }
 
 
+static void double_plus_check(STRBUF *cmdline,STRBUF *nongui,char *optname,double *srcval,
+                              double dstval)
+
+    {
+/*
+printf("dcheck: '%s' srcval=%g, dstval=%g\n",optname,(*srcval),dstval);
+*/
+    if ((*srcval) != dstval)
+        {
+        strbuf_dsprintf(cmdline,nongui,"%s %g%s",optname,fabs(dstval),dstval<0.?"+":"");
+        (*srcval)=dstval;
+        }
+    }
+
+
 static void double_check(STRBUF *cmdline,STRBUF *nongui,char *optname,double *srcval,double dstval)
 
     {
@@ -628,6 +650,23 @@ static void string_check(STRBUF *cmdline,STRBUF *nongui,char *optname,char *srcv
     if (strcmp(srcval,dstval))
         {
         if (in_string(dstval," ")>=0)
+            strbuf_dsprintf(cmdline,nongui,"%s \"%s\"",optname,dstval);
+        else
+            strbuf_dsprintf(cmdline,nongui,"%s %s",optname,dstval);
+        strcpy(srcval,dstval);
+        }
+    }
+
+
+static void string_check_minus(STRBUF *cmdline,STRBUF *nongui,char *optname,char *srcval,
+                               char *dstval)
+
+    {
+    if (strcmp(srcval,dstval))
+        {
+        if (dstval[0]=='\0')
+            strbuf_dsprintf(cmdline,nongui,"%s-",optname);
+        else if (in_string(dstval," ")>=0)
             strbuf_dsprintf(cmdline,nongui,"%s \"%s\"",optname,dstval);
         else
             strbuf_dsprintf(cmdline,nongui,"%s %s",optname,dstval);

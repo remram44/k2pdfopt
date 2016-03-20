@@ -3,7 +3,7 @@
 **              are mostly generic bitmap functions, but there are some
 **              k2pdfopt-specific settings for some.
 **
-** Copyright (C) 2015  http://willus.com
+** Copyright (C) 2016  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -46,14 +46,16 @@ int bmp_get_one_document_page(WILLUSBITMAP *src,K2PDFOPT_SETTINGS *k2settings,
                               int pageno,double dpi,int bpp,FILE *out)
 
     {
-    if (src_type==SRC_TYPE_PDF)
+    int status;
+
+    /* v2.34--read PS file correctly */
+    if (src_type==SRC_TYPE_PDF || src_type==SRC_TYPE_PS)
         {
-        int status;
 #ifdef HAVE_MUPDF_LIB
         static char *mupdferr_trygs=TTEXT_WARN "\a\n ** ERROR reading from " TTEXT_BOLD2 "%s" TTEXT_WARN "using MuPDF.  Trying Ghostscript...\n\n" TTEXT_NORMAL;
 
         status=0;
-        if (k2settings->usegs<=0)
+        if (src_type==SRC_TYPE_PDF && k2settings->usegs<=0)
             {
 #if (WILLUSDEBUGX & 0x80000000)
 printf("\a\a\n\n\n\n\n\n\n\n\n   ****** FAKING MUPDF--IGNORING SOURCE DOCUMENT!!  *****\n\n\n\n\n\n\n");
@@ -68,7 +70,7 @@ return(status);
 #endif
             }
         /* Switch to Postscript since MuPDF failed */
-        if (k2settings->usegs==0)
+        if (src_type!=SRC_TYPE_PS && k2settings->usegs==0)
             {
             k2printf(mupdferr_trygs,filename);
             k2settings->usegs=1;
@@ -99,7 +101,11 @@ return(status);
         return(bmpdjvu_djvufile_to_bmp(src,filename,pageno,dpi*k2settings->document_scale_factor,bpp,out));
     else
 #endif
-    return(-1);
+    /* v2.34--read bitmap correctly */
+    status=bmp_read(src,filename,NULL);
+    if (!status && bpp==8)
+        bmp_convert_to_greyscale(src);
+    return(status);
     }
 
 
@@ -1425,6 +1431,8 @@ for (j=0;j<n;j++)
 printf("    color[%d]=0x%0X\n",j,color[j]);
 printf("    type[%d]=%d\n",j,type[j]);
 #endif
+    if (k2pagebreakmarks==NULL)
+        return;
     if (bmp==NULL || bmp->bpp<24 || (bmpgrey!=NULL && bmpgrey->bpp!=8))
         {
         printf("Internal Error--Bit-per-pixel mismatch in k2pagebreaks_find_pagebreak_marks.  Contact Author.\n");
@@ -1525,6 +1533,8 @@ static void k2pagebreakmarks_add_mark(K2PAGEBREAKMARKS *k2pagebreakmarks,int mar
     static int warned=0;
     K2PAGEBREAKMARK *breakmark;
 
+    if (k2pagebreakmarks==NULL)
+        return;
     if (k2pagebreakmarks_too_close_to_others(k2pagebreakmarks,markcol,markrow,dpi))
 /*
 {
@@ -1558,6 +1568,8 @@ static int k2pagebreakmarks_too_close_to_others(K2PAGEBREAKMARKS *k2pagebreakmar
     {
     int i;
 
+    if (k2pagebreakmarks==NULL)
+        return(0);
     for (i=0;i<k2pagebreakmarks->n;i++)
         {
         K2PAGEBREAKMARK *mark;

@@ -1,7 +1,7 @@
 /*
 ** k2settings.c     Handles k2pdfopt settings (K2PDFOPT_SETTINGS structure)
 **
-** Copyright (C) 2015  http://willus.com
+** Copyright (C) 2016  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -21,6 +21,8 @@
 #include "k2pdfopt.h"
 
 static int k2settings_color_type(char *s);
+static void k2settings_apply_odpi_magnification(K2PDFOPT_SETTINGS *k2settings,double dispres,
+                                                double mag);
 
 
 void k2pdfopt_settings_init(K2PDFOPT_SETTINGS *k2settings)
@@ -79,6 +81,7 @@ void k2pdfopt_settings_init(K2PDFOPT_SETTINGS *k2settings)
     k2settings->query_user=-1;
     k2settings->query_user_explicit=0;
     k2settings->jpeg_quality=-1;
+    k2settings->dst_magnification=1.0;
     k2settings->dst_display_resolution=1.0;
     k2settings->dst_justify=-1; // 0 = left, 1 = center
     k2settings->dst_figure_justify=-1; // -1 = same as dst_justify.  0=left 1=center 2=right
@@ -202,6 +205,11 @@ void k2pdfopt_settings_init(K2PDFOPT_SETTINGS *k2settings)
     k2settings->pagexlist[0]='\0';
     k2settings->dst_author[0]='\0';
     k2settings->dst_title[0]='\0';
+
+    /* v2.34 */
+    k2settings->dst_fontsize_pts=0.; /* 0 = not used */
+    k2settings->assume_yes=0;
+    k2settings->dst_coverimage[0]='\0'; /* empty string = not used */
     }
 
 
@@ -280,7 +288,7 @@ int k2pdfopt_settings_set_to_device(K2PDFOPT_SETTINGS *k2settings,DEVPROFILE *dp
     k2settings->dst_userwidth_units=UNITS_PIXELS;
     k2settings->dst_userheight=dp->height;
     k2settings->dst_userheight_units=UNITS_PIXELS;
-    k2settings->dst_dpi=dp->dpi;
+    k2settings->dst_userdpi=k2settings->dst_dpi=dp->dpi;
     k2settings->mark_corners=dp->mark_corners;
     k2settings->pad_left=dp->padding[0];
     k2settings->pad_top=dp->padding[1];
@@ -294,7 +302,7 @@ int k2pdfopt_settings_set_to_device(K2PDFOPT_SETTINGS *k2settings,DEVPROFILE *dp
 void k2pdfopt_settings_quick_sanity_check(K2PDFOPT_SETTINGS *k2settings)
 
     {
-/* printf("@k2pdfopt_settings_sanity_check, k2settings=%p.\n",k2settings); */
+/* printf("@k2pdfopt_settings_quick_sanity_check, k2settings=%p.\n",k2settings); */
     /*
     ** Check compatibility between various settings
     */
@@ -348,22 +356,21 @@ double k2pdfopt_settings_gamma(K2PDFOPT_SETTINGS *k2settings)
 /*
 ** Check / adjust k2pdfopt user input settings.
 **
-** This function is called before beginning the conversion of each new document...?
+** This function is called ONLY ONCE per document before beginning the conversion
+** of each new document.
 **
 */
-void k2pdfopt_settings_sanity_check(K2PDFOPT_SETTINGS *k2settings)
+void k2pdfopt_settings_new_source_document_init(K2PDFOPT_SETTINGS *k2settings)
 
     {
     k2pdfopt_settings_quick_sanity_check(k2settings);
 
-    /*
-    ** Apply display resolution
-    */
-    k2settings->dst_dpi *= k2settings->dst_display_resolution;
-    if (k2settings->dst_userwidth_units==UNITS_PIXELS && k2settings->dst_userwidth>0)
-        k2settings->dst_userwidth *= k2settings->dst_display_resolution;
-    if (k2settings->dst_userheight_units==UNITS_PIXELS && k2settings->dst_userheight>0)
-        k2settings->dst_userheight *= k2settings->dst_display_resolution;
+    {
+    double mag,dr;
+    mag = fabs(k2settings->dst_fontsize_pts)>1.0e-8 ? 1. : k2settings->dst_magnification;
+    dr = k2settings->dst_display_resolution;
+    k2settings_apply_odpi_magnification(k2settings,dr,mag);
+    }
 
     /*
     ** With all parameters set, adjust output DPI so viewable region
@@ -371,7 +378,7 @@ void k2pdfopt_settings_sanity_check(K2PDFOPT_SETTINGS *k2settings)
     ** NULL = first call, before any source page dimensions are known.
     ** Otherwise, bitmap region with source page dimensions set.
     */
-    k2pdfopt_settings_set_margins_and_devsize(k2settings,NULL,NULL,0);
+    k2pdfopt_settings_set_margins_and_devsize(k2settings,NULL,NULL,-1.0,0);
     /*
     ** Set source DPI
     */
@@ -381,15 +388,9 @@ void k2pdfopt_settings_sanity_check(K2PDFOPT_SETTINGS *k2settings)
     if (k2settings->src_dpi < 50.)
         k2settings->src_dpi = 50.;
     /* k2cropbox_set_default_values(&k2settings->srccropmargins,0.,UNITS_INCHES); */
-    }
 
 
-/*
-** Call this before each new document is processed.
-*/
-void k2pdfopt_settings_new_source_document_init(K2PDFOPT_SETTINGS *k2settings)
-
-    {
+    /* This part used to be called k2pdfopt_settings_new_source_document_init() before v2.34 */
     /* Reset usegs for each document */
     k2settings->usegs=k2settings->user_usegs;
     /* Init document word spacing history */
@@ -403,6 +404,21 @@ void k2pdfopt_settings_new_source_document_init(K2PDFOPT_SETTINGS *k2settings)
         }
 #endif
     k2proc_init_one_document();
+    }
+
+
+/*
+** Apply DPI magnification
+*/
+static void k2settings_apply_odpi_magnification(K2PDFOPT_SETTINGS *k2settings,double dispres,
+                                                double mag)
+
+    {
+    k2settings->dst_dpi = k2settings->dst_userdpi*mag*dispres;
+    if (k2settings->dst_userwidth_units==UNITS_PIXELS && k2settings->dst_userwidth>0)
+        k2settings->dst_userwidth *= dispres;
+    if (k2settings->dst_userheight_units==UNITS_PIXELS && k2settings->dst_userheight>0)
+        k2settings->dst_userheight *= dispres;
     }
 
 
@@ -473,7 +489,8 @@ void k2pdfopt_settings_fit_column_to_screen(K2PDFOPT_SETTINGS *k2settings,
 ** Set device width and height in pixels.
 */
 void k2pdfopt_settings_set_margins_and_devsize(K2PDFOPT_SETTINGS *k2settings,
-                                       BMPREGION *region,MASTERINFO *masterinfo,int trimmed)
+                                       BMPREGION *region,MASTERINFO *masterinfo,
+                                       double src_fontsize_pts,int trimmed)
 
     {
     int new_width,new_height,zeroarea,pageno,maxpages;
@@ -486,6 +503,13 @@ void k2pdfopt_settings_set_margins_and_devsize(K2PDFOPT_SETTINGS *k2settings,
 #ifdef WILLUSDEBUG
 printf("@k2pdfopt_settings_set_margins_and_devsize(region=%p,trimmed=%d)\n",region,trimmed);
 #endif
+    if (src_fontsize_pts>0. && fabs(k2settings->dst_fontsize_pts)>1.0e-8)
+        {
+        double mag,dres;
+        dres = k2settings->dst_display_resolution;
+        mag = fabs(k2settings->dst_fontsize_pts) / src_fontsize_pts;
+        k2settings_apply_odpi_magnification(k2settings,dres,mag);
+        }
     zeroarea=0;
     pageinfo=masterinfo!=NULL ? &masterinfo->pageinfo : NULL;
     if (region==NULL)
@@ -548,6 +572,7 @@ printf("wu=%g, hu=%g\n",wu,hu);
 #if (WILLUSDEBUGX & 0x20000)
 printf("@setmargins\n");
 printf("    dpi = %g\n",(double)k2settings->dst_dpi);
+printf("    dst_fontsize = %g pts\n",k2settings->dst_fontsize_pts);
 printf("    userrect = %g,%g - %g,%g\n",userrect.p[0].x,userrect.p[0].y,userrect.p[1].x,userrect.p[1].y);
 printf("    units = %d,%d,%d,%d\n",units[0],units[1],units[2],units[3]);
 printf("    page = %g x %g in\n",pagedims_inches.x,pagedims_inches.y);

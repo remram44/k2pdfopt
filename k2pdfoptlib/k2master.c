@@ -1,7 +1,7 @@
 /*
 ** k2master.c    Functions to handle the main (master) k2pdfopt output bitmap.
 **
-** Copyright (C) 2015  http://willus.com
+** Copyright (C) 2016  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -262,8 +262,10 @@ printf("22\n");
     masterinfo->bgcolor=white;
     /* dst_fit_to_page == -2 if gridding */
     masterinfo->fit_to_page = k2settings->dst_fit_to_page;
-    /* Set destination size (flush output bitmap if it changes) */
+    /* v2.34: moved k2pdfopt_settings_set_margins_and_devsize() to calling function */
+    /*
     k2pdfopt_settings_set_margins_and_devsize(k2settings,region,masterinfo,0);
+    */
     return(1);
     }
 
@@ -291,6 +293,9 @@ static int masterinfo_detecting_orientation(MASTERINFO *masterinfo,K2PDFOPT_SETT
                                  char *rotstr,double rot_deg,double *bormean,int pageno)
 
     {
+#if (WILLUSDEBUGX & 0x1000000)
+printf("OR_DETECT(%g)=%d\n",rot_deg,OR_DETECT(rot_deg));
+#endif
     if (rotstr!=NULL)
         rotstr[0]='\0';
     if (OR_DETECT(rot_deg) || OREP_DETECT(k2settings))
@@ -518,6 +523,14 @@ printf("gap_start=%d\n\n",gap_start);
         words=&_words;
         ocrwords_init(words);
         k2ocr_ocrwords_fill_in_ex(masterinfo,words,&region,k2settings);
+/*
+{
+int i;
+printf("\nwordcount=%d\n",words->n);
+for (i=0;i<words->n;i++)
+printf("word[%d]='%s'\n",i,words->word[i].text);
+}
+*/
         }
 #endif
     bmpregion_free(&region);
@@ -2235,6 +2248,8 @@ textrow_echo(&region.textrows.textrow[j],stdout);
 ** margins_pixels[1] = top side
 ** margins_pixels[2] = right side
 ** margins_pixels[3] = bottom side
+**
+** dpi should be physical device DPI (not including any document magnification)
 */
 void get_dest_margins(int *margins_pixels,K2PDFOPT_SETTINGS *k2settings,
                       double dpi,int width_pixels,int height_pixels)

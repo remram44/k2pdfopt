@@ -4,7 +4,7 @@
 **
 ** Part of willus.com general purpose C code library.
 **
-** Copyright (C) 2015  http://willus.com
+** Copyright (C) 2016  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -33,14 +33,15 @@ void pdf_install_load_system_font_funcs(fz_context *ctx);
 
 static void info_update(fz_context *ctx,pdf_document *xref,char *producer,char *author,char *title);
 static void dict_put_string(fz_context *ctx,pdf_document *doc,pdf_obj *dict,char *key,char *string);
-static void wmupdf_page_bbox(fz_context *ctx,pdf_obj *srcpage,double *bbox_array);
+static void wmupdf_object_bbox(fz_context *ctx,pdf_obj *srcpage,double *bbox_array,double *defbbox);
 static int wmupdf_pdfdoc_newpages(pdf_document *xref,fz_context *ctx,WPDFPAGEINFO *pageinfo,
                                   int use_forms,WPDFOUTLINE *wpdfoutline,FILE *out);
 static void set_clip_array(double *xclip,double *yclip,double rot_deg,double width,double height);
 static void cat_pdf_double(char *buf,double x);
-static void wmupdf_convert_pages_to_forms(pdf_document *xref,fz_context *ctx,int *srcpageused);
+static void wmupdf_convert_pages_to_forms(pdf_document *xref,fz_context *ctx,int *srcpageused,
+                                          double *defaultbbox);
 static void wmupdf_convert_single_page_to_form(pdf_document *xref,fz_context *ctx,
-                                               pdf_obj *srcpageref,int pageno);
+                                               pdf_obj *srcpageref,int pageno,double *defaultbbox);
 static int stream_deflate(pdf_document *xref,fz_context *ctx,int pageref,int pagegen,int *length);
 static int add_to_srcpage_stream(pdf_document *xref,fz_context *ctx,int pageref,
                                  int pagegen,pdf_obj *dict);
@@ -172,7 +173,7 @@ int wmupdf_info_field(char *infile,char *label,char *buf,int maxlen)
 ** use_forms==1:  New-style where pages are turned into XObject forms.
 */
 int wmupdf_remake_pdf(char *infile,char *outfile,WPDFPAGEINFO *pageinfo,int use_forms,
-                      WPDFOUTLINE *wpdfoutline,FILE *out)
+                      WPDFOUTLINE *wpdfoutline,WILLUSBITMAP *coverimage,FILE *out)
 
     {
     pdf_document *xref;
@@ -303,8 +304,9 @@ static void dict_put_string(fz_context *ctx,pdf_document *doc,pdf_obj *dict,char
 
 /*
 ** Look at CropBox and MediaBox entries to determine visible page origin.
+** Use bbox_def[] if no bbox found (and if not NULL)
 */
-static void wmupdf_page_bbox(fz_context *ctx,pdf_obj *srcpage,double *bbox_array)
+static void wmupdf_object_bbox(fz_context *ctx,pdf_obj *srcpage,double *bbox_array,double *bbox_def)
 
     {
     int i;
@@ -336,13 +338,13 @@ static void wmupdf_page_bbox(fz_context *ctx,pdf_obj *srcpage,double *bbox_array
             }
         }
     if (bbox_array[0] < -9e9)
-        bbox_array[0] = 0.;
+        bbox_array[0] = ((bbox_def!=NULL && bbox_def[0]>-9e9) ? bbox_def[0] : 0.);
     if (bbox_array[1] < -9e9)
-        bbox_array[1] = 0.;
+        bbox_array[1] = ((bbox_def!=NULL && bbox_def[1]>-9e9) ? bbox_def[1] : 0.);
     if (bbox_array[2] > 9e9)
-        bbox_array[2] = 612.;
+        bbox_array[2] = ((bbox_def!=NULL && bbox_def[2]<9e9) ? bbox_def[2] : 612.);
     if (bbox_array[3] > 9e9)
-        bbox_array[3] = 792.;
+        bbox_array[3] = ((bbox_def!=NULL && bbox_def[3]<9e9) ? bbox_def[3] : 792.);
     }
 
 
@@ -354,7 +356,7 @@ static int wmupdf_pdfdoc_newpages(pdf_document *xref,fz_context *ctx,WPDFPAGEINF
     pdf_obj *root,*oldroot,*pages,*kids,*countobj,*parent,*olddests;
     pdf_obj *srcpageobj,*srcpagecontents;
     pdf_obj *destpageobj,*destpagecontents,*destpageresources;
-    double srcx0,srcy0;
+    double srcx0,srcy0,defaultbbox[4];
     int qref,i,i0,pagecount,srccount,destpageref,nbb,numpages;
     int *srcpageused;
     char *bigbuf;
@@ -382,6 +384,7 @@ static int wmupdf_pdfdoc_newpages(pdf_document *xref,fz_context *ctx,WPDFPAGEINF
     ** Has:  /Type /Pages, /Count <numpages>, /Kids [ obj obj obj obj ]
     */
     pages = pdf_dict_gets(ctx,oldroot,"Pages");
+    wmupdf_object_bbox(ctx,pages,defaultbbox,NULL);
     olddests = pdf_load_name_tree(ctx,xref,pdf_dict_gets(ctx,pdf_dict_gets(ctx,oldroot,"Names"),"Dests"));
 
     /*
@@ -535,7 +538,7 @@ printf("        (STARTING NEW DEST. PAGE)\n");
             /* srcpageobj = xref->page_objs[box->srcbox.pageno-1]; */
             /* pageno, or pageno-1?? */
             srcpageobj = pdf_resolve_indirect(ctx,pdf_lookup_page_obj(ctx,xref,box->srcbox.pageno-1));
-            wmupdf_page_bbox(ctx,srcpageobj,v);
+            wmupdf_object_bbox(ctx,srcpageobj,v,defaultbbox);
             srcx0=v[0];
             srcy0=v[1];
 /*
@@ -723,7 +726,7 @@ printf("Clip path:\n    %7.2f %7.2f\n    %7.2f,%7.2f\n    %7.2f,%7.2f\n"
 
     /* For forms, convert all original source pages to XObject Forms */
     if (use_forms)
-        wmupdf_convert_pages_to_forms(xref,ctx,srcpageused);
+        wmupdf_convert_pages_to_forms(xref,ctx,srcpageused,defaultbbox);
 
     /* Update page count and kids array */
     numpages = pdf_array_len(ctx,kids);
@@ -832,7 +835,8 @@ static void cat_pdf_double(char *buf,double x)
     }
 
 
-static void wmupdf_convert_pages_to_forms(pdf_document *xref,fz_context *ctx,int *srcpageused)
+static void wmupdf_convert_pages_to_forms(pdf_document *xref,fz_context *ctx,int *srcpageused,
+                                          double *defaultbbox)
 
     {
     int i,pagecount;
@@ -850,13 +854,13 @@ static void wmupdf_convert_pages_to_forms(pdf_document *xref,fz_context *ctx,int
             srcpage[i-1] = pdf_lookup_page_obj(ctx,xref,i-1);
     for (i=1;i<=pagecount;i++)
         if (srcpageused[i])
-            wmupdf_convert_single_page_to_form(xref,ctx,srcpage[i-1],i);
+            wmupdf_convert_single_page_to_form(xref,ctx,srcpage[i-1],i,defaultbbox);
     willus_mem_free((double **)&srcpage,funcname);
     }
 
 
 static void wmupdf_convert_single_page_to_form(pdf_document *xref,fz_context *ctx,
-                                               pdf_obj *srcpageref,int pageno)
+                                               pdf_obj *srcpageref,int pageno,double *defaultbbox)
 
     {
     pdf_obj *array,*srcpageobj,*srcpagecontents;
@@ -867,7 +871,7 @@ static void wmupdf_convert_single_page_to_form(pdf_document *xref,fz_context *ct
     srcpageobj = pdf_resolve_indirect(ctx,srcpageref);
     pageref=pdf_to_num(ctx,srcpageref);
     pagegen=pdf_to_gen(ctx,srcpageref);
-    wmupdf_page_bbox(ctx,srcpageobj,bbox_array);
+    wmupdf_object_bbox(ctx,srcpageobj,bbox_array,defaultbbox);
     for (i=0;i<6;i++)
         matrix[i]=0.;
     matrix[0]=matrix[3]=1.;

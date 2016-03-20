@@ -4,7 +4,7 @@
 **
 ** Part of willus.com general purpose C code library.
 **
-** Copyright (C) 2015  http://willus.com
+** Copyright (C) 2016  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -73,6 +73,62 @@ static int  winhandlepairs_find_control_index(WINHANDLEPAIRS *pairs,void *oshand
 static void winhandlepairs_sort(WINHANDLEPAIRS *pairs);
 
 
+static int ime_notify_status=0;
+void willusgui_set_ime_notify(int status)
+
+    {
+    if (status==0)
+        ime_notify_status=status;
+    else
+        ime_notify_status++;
+    }
+
+
+int willusgui_dprintf(char *fmt,...)
+
+    {
+    static int count=0;
+    va_list args;
+    int     status;
+    static int tids[16];
+    static int ntids=0;
+    static char *colors[]={ANSI_CYAN,ANSI_MAGENTA,ANSI_YELLOW,ANSI_GREEN};
+    int i,tid;
+    static void *willusgui_dprintf_sem;
+
+    if (count==0)
+        {
+        willusgui_dprintf_sem = willusgui_semaphore_create_ex("willusgui_dprintf",1,1);
+        if (willusgui_dprintf_sem==NULL)
+            printf("\a\nOuch!  Cannot create willusgui_dprintf semaphore.\n\n");
+        }
+    count++;
+    willusgui_semaphore_status_wait(willusgui_dprintf_sem);
+#ifdef HAVE_WIN32_API
+    tid=(int)GetCurrentThreadId();
+    for (i=0;i<ntids;i++)
+        if (tids[i]==tid)
+            break;
+    if (i>=ntids && i<16)
+        {
+        tids[i]=tid;
+        ntids++;
+        }
+#else
+    tid=1;
+    i=0;
+#endif
+    aprintf("%s",colors[i%4]);
+    aprintf("[THREAD=%d] ",tid);
+    va_start(args,fmt);
+    status=avprintf(stdout,fmt,args);
+    va_end(args);
+    aprintf(ANSI_NORMAL);
+    willusgui_semaphore_release(willusgui_dprintf_sem);
+    return(status);
+    }
+
+
 void willusgui_init(void)
 
     {
@@ -139,7 +195,11 @@ void willusgui_set_cursor(int type)
     }
 
 
-void willusgui_open_file(char *filename)
+/*
+** If the file is opened by another process, this function may fail.
+** In that case, try using willusgui_open_file_ex() in winshellwapi.c.
+*/
+int willusgui_open_file(char *filename)
 
     {
 #ifdef MSWINGUI
@@ -161,7 +221,7 @@ void willusgui_open_file(char *filename)
         willusgui_message_box(NULL,"Error",message,"*&OK",NULL,NULL,
                            NULL,0,24,640,0xe0e0e0,bcolors,NULL,1);
         willus_mem_free((double **)&message,funcname);
-        return;
+        return(0);
         }
     sprintf(cmd,"cmd");
     sprintf(cmdopts,"/c start \"\" \"%s\"",filename);
@@ -171,6 +231,15 @@ void willusgui_open_file(char *filename)
     if (pwd[0]=='\\' && pwd[1]=='\\')
         strcpy(pwd,"C:\\");
     process_launch_ex(cmd,cmdopts,1,1,pwd,6,&procnum);
+    if (procnum>=0)
+        {
+        int status,exitcode;
+        while ((status=process_done_ex(procnum,&exitcode))==0)
+            win_sleep(10);
+        if (exitcode==0)
+            return(1);
+        }
+    return(-1);
     /*
     sprintf(cmd,"start \"\" \"%s\"",filename);
     system(cmd);
@@ -608,9 +677,11 @@ void willusgui_control_create(WILLUSGUICONTROL *control)
         case WILLUSGUICONTROL_TYPE_BUTTON:
         case WILLUSGUICONTROL_TYPE_CHECKBOX:
             {
+            /*
             int checkbox;
 
             checkbox = (control->type == WILLUSGUICONTROL_TYPE_CHECKBOX);
+            */
             flags = WS_CHILD | WS_VISIBLE | BS_OWNERDRAW;
             if (!(control->attrib & WILLUSGUICONTROL_ATTRIB_NOKEYS))
                 flags |= WS_TABSTOP;
@@ -1700,6 +1771,17 @@ void *willusgui_semaphore_create(char *name)
     }
 
 
+void *willusgui_semaphore_create_ex(char *name,int initialcount,int maxcount)
+
+    {
+#ifdef MSWINGUI
+    return(CreateSemaphore(NULL,initialcount,maxcount,name));
+#else
+    return(NULL);
+#endif
+    }
+
+
 void willusgui_semaphore_release(void *semaphore)
 
     {
@@ -1714,6 +1796,23 @@ void willusgui_semaphore_close(void *semaphore)
     {
 #ifdef MSWINGUI
     CloseHandle((HANDLE)semaphore);
+#endif
+    }
+
+
+/*
+** 0 = not released
+** 1 = released
+*/
+int willusgui_semaphore_status_wait(void *semaphore)
+
+    {
+#ifdef MSWINGUI
+    int status;
+    status=WaitForSingleObject(semaphore,INFINITE);
+    return(status==WAIT_OBJECT_0 ? 1 : 0);
+#else
+    return(1);
 #endif
     }
 
@@ -2037,6 +2136,27 @@ void willusgui_sbitmap_proc(void *handle,int message,int wparam,void *lparam)
 #endif
     }
 
+/*
+** UTF-8
+** Returns 0 if no folder (user cancels or GUI not available)
+*/
+int willusgui_folder_select(char *foldername,int maxlen)
+
+    {
+#ifdef MSWINGUI
+    int status;
+    short fnamew[MAXFILENAMELEN];
+    status=winshell_get_foldernamew(fnamew,"Select a folder");
+    if (!status)
+        return(status);
+    utf16_to_utf8(foldername,fnamew,maxlen);
+    return(status);
+#else
+    foldername[0]='\0';
+    return(0);
+#endif
+    }
+
 
 /*
 ** Custom / Subclass callback functions for MS-Windows
@@ -2086,6 +2206,9 @@ printf("@willusgui_sbitmap_proc...message=0x%04x\n",message);
 
     hscroll = control->bmp.width > control->rect.right-control->rect.left-1;
     vscroll = control->bmp.height > control->rect.bottom-control->rect.top-1;
+/*
+willusgui_dprintf("willusgui_sbitmap: message=%04X, wParam=%d, lParam=%d\n",message,(int)wParam,(int)lParam);
+*/
 /*
 printf("hscroll=%d, vscroll=%d\n",hscroll,vscroll);
 */
@@ -2820,16 +2943,6 @@ LRESULT CALLBACK willusgui_edit2_proc(HWND hWnd,UINT message,WPARAM wParam,LPARA
     return(wndproc(hWnd,message,wParam,lParam));
     }
 
-
-static int ime_notify_status=0;
-void willusgui_set_ime_notify(int status)
-
-    {
-    if (status==0)
-        ime_notify_status=status;
-    else
-        ime_notify_status++;
-    }
 
 
 /*

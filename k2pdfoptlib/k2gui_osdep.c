@@ -1,7 +1,7 @@
 /*
 ** k2gui_osdep.c    K2pdfopt O/S-Dependent WILLUSGUI functions
 **
-** Copyright (C) 2015  http://willus.com
+** Copyright (C) 2016  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -63,7 +63,22 @@ void k2gui_osdep_init(K2GUI *k2gui0) /* ,void *hinst,void *hprevinst) */
 
 
 /*
+** This function is the main thread which handles messages from either the
+** conversion dialog box (including the buttons) or the overlay dialog box.
+**
+** If "converting", the dialog box is in the converting state, otherwise
+** it has a different set of buttons and is in the "final" state.
+**
+** The translated message gets sent to the dialog box for all but the
+** bitmap control.  The dialog box processing functions are:
+**     1. k2mswingui_overlay_process_messages() (overlay)
+**     2. k2mswingui_cbox_process_messages() (conversion)
+**
+** The bitmap control messages to that control are processed by the library
+** function:  willusgui_sbitmap_proc_internal().
+**
 ** procid==1 for conversion, 2 for overlay.
+**
 */
 int k2gui_osdep_window_proc_messages(WILLUSGUIWINDOW *win,void *semaphore,int procid,
                                      WILLUSGUICONTROL *closebutton)
@@ -72,19 +87,35 @@ int k2gui_osdep_window_proc_messages(WILLUSGUIWINDOW *win,void *semaphore,int pr
 #ifdef MSWINGUI
     MSG msg;
     int done;
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("@k2gui_osdep_window_proc_messages, win=%p, winhand=%p\n",win,win->handle);
+#endif
+
 
     done=0;
     while (win->handle!=NULL && GetMessage(&msg,NULL,0,0))
         {
+#if (WILLUSDEBUGX & 0x2000000)
+if (msg.message!=0x113)
+k2dprintf("k2gui_o_w_p_m: hwnd=%p, imsg=%04X, wparam=%d, conv=%d\n",msg.hwnd,msg.message,msg.wParam);
+if (procid==2)
+k2dprintf("    converting=%d\n",k2gui_overlay->converting);
+#endif
         if (!done && semaphore!=NULL)
             {
             /* Is conversion complete? */
             if (willusgui_semaphore_status(semaphore)==1)
                 {
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("k2gui_o_w_p_m:  DONE CREATING OVERLAY.  procid=%d\n",procid);
+#endif
                 done=1;
                 /* Final print */
                 if (procid==1)
                     {
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("k2gui_o_w_p_m:  CHANGING CONV BOX TO FINAL CONFIG.\n");
+#endif
                     k2gui_cbox_final_print();
                     /* Change button to "Close" */
                     if (closebutton!=NULL)
@@ -92,6 +123,9 @@ int k2gui_osdep_window_proc_messages(WILLUSGUIWINDOW *win,void *semaphore,int pr
                     }
                 else
                     {
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("k2gui_o_w_p_m:  CHANGING OVERLAY BOX TO FINAL CONFIG.\n");
+#endif
                     k2gui_overlay_final_print();
                     /* Change button to "Close" */
                     if (closebutton!=NULL)
@@ -104,8 +138,12 @@ int k2gui_osdep_window_proc_messages(WILLUSGUIWINDOW *win,void *semaphore,int pr
         /* This gets tab-stops to work */
         if (procid==2) /* Don't want tab stops if overlay window */
             {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
+            if (k2gui_overlay->converting!=1
+                  || !k2gui_osdep_is_dialogbox_message((void *)win->handle,(void *)&msg))
+                {
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+                }
             }
         else
             {
@@ -117,6 +155,12 @@ int k2gui_osdep_window_proc_messages(WILLUSGUIWINDOW *win,void *semaphore,int pr
                 }
             }
         }
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("k2gui_o_w_p_m: EXITING\n"
+          "               semaphore=%p, win->handle=%p\n",semaphore,win->handle);
+k2dprintf("               done=%d\n",done);
+k2dprintf("               msg.wParam=%d\n",msg.wParam);
+#endif
     if (semaphore!=NULL)
         return(done);
     return(msg.wParam);
@@ -403,10 +447,10 @@ void k2gui_osdep_main_repaint(int changing)
 LRESULT CALLBACK k2mswingui_cbox_process_messages(HWND hwnd,UINT iMsg,WPARAM wParam,LPARAM lParam)
 
     {
-#if (WILLUSDEBUGX & 0x2000)
+#if (WILLUSDEBUGX & 0x2000000)
 if (iMsg!=WM_MOUSEFIRST && iMsg!=WM_SETCURSOR && iMsg!=WM_NCHITTEST 
                         && iMsg!=WM_NCMOUSEMOVE && iMsg!=WM_TIMER)
-printf("CONVERT iMsg = 0x%X, wParam=0x%X, lParam=0x%X\n",(int)iMsg,(int)wParam,(int)lParam);
+k2dprintf("CONVERT hwnd=%p, iMsg = 0x%X, wParam=0x%X, lParam=0x%X\n",(void *)hwnd,(int)iMsg,(int)wParam,(int)lParam);
 #endif
     if (k2gui_cbox->mainwin.handle==NULL)
         k2gui_cbox->mainwin.handle=hwnd;
@@ -456,7 +500,7 @@ printf("CONVERT iMsg = 0x%X, wParam=0x%X, lParam=0x%X\n",(int)iMsg,(int)wParam,(
             }
         case WM_COMMAND:
 /*
-printf("CONVERT WM_COMMAND: iMsg=%d, wParam=%d,%d, lParam=%d\n",(int)iMsg,(int)LOWORD(wParam),(int)HIWORD(wParam),(int)lParam);
+willusgui_dprintf(ANSI_WHITE "CONVERT WM_COMMAND: iMsg=%d, wParam=%d(lo),%d(hi), lParam=%d\n",(int)iMsg,(int)LOWORD(wParam),(int)HIWORD(wParam),(int)lParam);
 */
             /* Focus moved to "convert" button? */
             if (LOWORD(wParam)==10 && HIWORD(wParam)==EN_SETFOCUS)
@@ -502,8 +546,8 @@ printf("CONVERT WM_COMMAND: iMsg=%d, wParam=%d,%d, lParam=%d\n",(int)iMsg,(int)L
                 else
                     /* Button press.  Status = button index pressed. */
                     k2gui_cbox->status -= 2;
-#if (WILLUSDEBUGX & 0x2000)
-printf("\nk2gui_cbox->status=%d\n\n",k2gui_cbox->status);
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("\nCONVERT MSG: k2gui_cbox->status=%d\n\n",k2gui_cbox->status);
 #endif
                 if (k2gui_cbox->status!=2 && k2gui_cbox->status!=3)
                     {
@@ -531,14 +575,18 @@ printf("\nk2gui_cbox->status=%d\n\n",k2gui_cbox->status);
     return(DefWindowProc(hwnd,iMsg,wParam,lParam));
     }
 
-
+/*
+** Handle keystrokes / button presses to the overlay window.
+** Bitmap stuff is handled by the BITMAP_CONTROL in wgui.c
+**
+*/
 LRESULT CALLBACK k2mswingui_overlay_process_messages(HWND hwnd,UINT iMsg,WPARAM wParam,LPARAM lParam)
 
     {
-#if (WILLUSDEBUGX & 0x2000)
+#if (WILLUSDEBUGX & 0x2000000)
 if (iMsg!=WM_MOUSEFIRST && iMsg!=WM_SETCURSOR && iMsg!=WM_NCHITTEST 
                         && iMsg!=WM_NCMOUSEMOVE && iMsg!=WM_TIMER)
-printf("OVERLAY iMsg = 0x%X, wParam=0x%X, lParam=0x%X\n",(int)iMsg,(int)wParam,(int)lParam);
+willusgui_dprintf("OVERLAY: hwnd=%p, iMsg = 0x%X, wParam=0x%X, lParam=0x%X\n",(void*)hwnd,(int)iMsg,(int)wParam,(int)lParam);
 #endif
 /*
 if (iMsg!=WM_MOUSEFIRST && iMsg!=WM_SETCURSOR && iMsg!=WM_NCHITTEST 
@@ -578,33 +626,43 @@ printf("OVERLAY iMsg = 0x%X, wParam=0x%X, lParam=0x%X\n",(int)iMsg,(int)wParam,(
                 }
             break;
         case WM_CHAR:
-/*
-printf("Overlay WM_CHAR: %d\n",(int)wParam);
-*/
+            /* NOTE: ESC or ENTER during overlay bitmap creation generate WM_COMMAND */
             if (wParam==0x1b) /* ESC */
-                k2gui_overlay->status = -1;
-            else if (wParam==0xd || wParam=='s' || wParam=='S' || wParam=='M' || wParam=='m')
-                k2gui_overlay->status=1;
-            else if (wParam=='z' || wParam=='Z')
-                k2gui_overlay->status=2;
-            else if (wParam=='c' || wParam=='C')
-                k2gui_overlay->status=3;
-            else
-                k2gui_overlay->status=0;
-            if (k2gui_overlay->status)
                 {
-                if (k2gui_overlay->status==1)
-                    k2gui_overlay_store_margins(&k2gui_overlay->control[0]);
-                else if (k2gui_overlay->status==2)
+                /* Need to see if rectangle is drawn...if so, send ESC to bitmap window */
+                if (k2gui_overlay->control[0].rectmarked.left > -9000)
                     {
-                    int ii;
-                    for (ii=0;ii<4;ii++)
-                        k2gui_overlay->margins[ii]=0.;
-                    k2gui_overlay->status=1;
+                    /* Send ESC to bitmap control */
+                    k2gui_overlay->status=0;
+                    SendMessage((HWND)k2gui_overlay->control[0].handle,WM_CHAR,0x1b,0);
+                    return(0);
                     }
+                k2gui_overlay->status=-1;
                 SendMessage(hwnd,WM_CLOSE,0,0);
                 return(0);
                 }
+            else if (wParam==0xd || wParam=='s' || wParam=='S' || wParam=='M' || wParam=='m')
+                {
+                k2gui_overlay_store_margins(&k2gui_overlay->control[0]);
+                k2gui_overlay->status=1;
+                SendMessage(hwnd,WM_CLOSE,0,0);
+                return(0);
+                }
+            else if (wParam=='r' || wParam=='R')
+                {
+                k2gui_overlay_reset_margins();
+                k2gui_overlay->status=1;
+                SendMessage(hwnd,WM_CLOSE,0,0);
+                return(0);
+                }
+            else if (wParam=='c' || wParam=='C')
+                {
+                k2gui_overlay->status=-1;
+                SendMessage(hwnd,WM_CLOSE,0,0);
+                return(0);
+                }
+            else
+                k2gui_overlay->status=0;
             if (k2gui_overlay->control[0].rectmarked.left > -9000)
                 {
                 SendMessage((HWND)k2gui_overlay->control[0].handle,iMsg,wParam,lParam);
@@ -634,59 +692,65 @@ printf("Overlay WM_CHAR: %d\n",(int)wParam);
             return(1);
             }
         case WM_COMMAND:
-/*
-printf("OVERLAY WM_COMMAND: iMsg=%d, wParam=%d,%d, lParam=%d\n",(int)iMsg,(int)LOWORD(wParam),(int)HIWORD(wParam),(int)lParam);
-*/
+#if (WILLUSDEBUGX & 0x2000000)
+willusgui_dprintf(ANSI_WHITE "OVERLAY WM_COMMAND: wParam=%d(LoWord),%d(HiWord), lParam=%d\n",(int)LOWORD(wParam),(int)HIWORD(wParam),(int)lParam);
+#endif
+            /*
+            ** Don't really need to move button focus because
+            ** (1) During overlay bitmap creation, there is only one button (abort), and
+            ** (2) During rectangle drawing, the tab button is disabled.
+            */
             /* Focus moved to "convert" button? */
+            /*
             if (LOWORD(wParam)==10 && HIWORD(wParam)==EN_SETFOCUS)
                 {
                 k2gui_overlay_draw_defbutton_border(1);
                 break;
                 }
+            */
             /* Focus moved away from "convert" button? */
+            /*
             if (LOWORD(wParam)==10 && HIWORD(wParam)==EN_KILLFOCUS)
                 {
                 k2gui_overlay_draw_defbutton_border(0);
                 break;
                 }
+            */
+            /* If converting, there is only one option: Abort */
+            if (k2gui_overlay->converting==1)
+                {
+                k2gui_overlay->status=0;
+                SendMessage(hwnd,WM_CLOSE,0,0);
+                return(0);
+                }
+            /*
+            ** 3 = Select
+            ** 4 = Reset Margins
+            ** 5 = Cancel
+            */
             if (LOWORD(wParam)>=0 && LOWORD(wParam)<=5)
                 {
                 k2gui_overlay->status=LOWORD(wParam);
-                /* ESC press?  If so, status = -1 */
-                if (k2gui_overlay->status==2)
+                /* Store */
+                if (k2gui_overlay->status==3)
                     {
-                    /* Need to see if rectangle is drawn...if so, send ESC to bitmap window */
-                    if (k2gui_overlay->control[0].rectmarked.left > -9000)
-                        {
-                        SendMessage((HWND)k2gui_overlay->control[0].handle,WM_CHAR,0x1b,0);
-                        return(0);
-                        }
-                    k2gui_overlay->status=-1;
+                    k2gui_overlay->status=1;
+                    k2gui_overlay_store_margins(&k2gui_overlay->control[0]);
+                    SendMessage(hwnd,WM_CLOSE,0,0);
+                    return(0);
                     }
-                /* Set Margins or Zero Margins */
-                else if (k2gui_overlay->status==3 || k2gui_overlay->status==4)
+                /* Reset margins */
+                if (k2gui_overlay->status==4)
                     {
-                    if (k2gui_overlay->status==3)
-                        k2gui_overlay_store_margins(&k2gui_overlay->control[0]);
-                    else
-                        {
-                        int ii;
-                        for (ii=0;ii<4;ii++)
-                            k2gui_overlay->margins[ii]=0.;
-                        }
+                    k2gui_overlay_reset_margins();
                     k2gui_overlay->status=1;
                     SendMessage(hwnd,WM_CLOSE,0,0);
                     return(0);
                     }
-                else
-                    /* Button press.  Status = button index pressed. */
-                    k2gui_overlay->status -= 2;
-#if (WILLUSDEBUGX & 0x2000)
-printf("\nk2gui_overlay->status=%d\n\n",k2gui_overlay->status);
-#endif
-                if (k2gui_overlay->status==1 || k2gui_overlay->status==2
-                         || k2gui_overlay->status<0)
+                /* Cancel */
+                if (k2gui_overlay->status==5)
                     {
+                    k2gui_overlay->status=-1;
                     SendMessage(hwnd,WM_CLOSE,0,0);
                     return(0);
                     }
@@ -704,6 +768,9 @@ printf("\nk2gui_overlay->status=%d\n\n",k2gui_overlay->status);
         case WM_DESTROY:
             return(0);
         }
+#if (WILLUSDEBUGX & 0x2000000)
+willusgui_dprintf("OVERLAY:  k2gui_overlay->status=%d\n",k2gui_overlay->status);
+#endif
     return(DefWindowProc(hwnd,iMsg,wParam,lParam));
     }
 
@@ -714,12 +781,12 @@ LRESULT CALLBACK k2mswingui_process_messages(HWND hwnd,UINT iMsg,WPARAM wParam,L
     WILLUSGUIMESSAGE *message,_message;
     static int gotmw=0;
 
-/*
-#if (WILLUSDEBUGX & 0x4000)
+#if (WILLUSDEBUGX & 0x2000000)
 if (iMsg!=WM_MOUSEFIRST && iMsg!=WM_SETCURSOR && iMsg!=WM_NCHITTEST 
                         && iMsg!=WM_NCMOUSEMOVE && iMsg!=WM_TIMER)
-printf("MAINWIN: iMsg = 0x%X, wParam=0x%X, lParam=0x%X\n",(int)iMsg,(int)wParam,(int)lParam);
+k2dprintf(ANSI_CYAN "MAINWIN: hwnd=%p, iMsg = 0x%X, wParam=0x%X, lParam=0x%X" ANSI_NORMAL "\n",(void *)hwnd,(int)iMsg,(int)wParam,(int)lParam);
 #endif
+/*
 #if (WILLUSDEBUGX & 0x4000)
 if (iMsg==WM_CONTEXTMENU)
 printf("ContextMenu.\n");
@@ -1153,10 +1220,16 @@ printf("WM_PAINT...\n");
         ** the messaging thread.
         */
         case WM_CLOSE:
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("    WM_CLOSE\n");
+#endif
             message->guiaction = WILLUSGUIACTION_CLOSE;
             k2gui_process_message(message);
             return(0);
         case WM_DESTROY:
+#if (WILLUSDEBUGX & 0x2000000)
+k2dprintf("    WM_DESTROY\n");
+#endif
             message->guiaction = WILLUSGUIACTION_DESTROY;
             k2gui_process_message(message);
             return(0);

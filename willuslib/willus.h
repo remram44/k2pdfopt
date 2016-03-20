@@ -990,6 +990,11 @@ int winshell_get_foldername(char *foldername,char *title);
 int winshell_get_foldernamew(short *foldername,char *title);
 #endif
 
+/* winshellwapi.c */
+#if (defined(HAVE_WIN32_API) && (!defined(__GNUC__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)))
+int willusgui_open_file_ex(char *filename);
+#endif
+
 /* winmbox.c */
 #ifdef HAVE_WIN32_API
 int winmbox_message_box(void *parent,char *title,char *message,char *button1,
@@ -1308,7 +1313,7 @@ char  *willuslibversion (void);
 /* wgs.c */
 #ifdef HAVE_GHOSTSCRIPT
 int willusgs_read_pdf_or_ps_bmp(WILLUSBITMAP *bmp,char *filename,int pageno,double dpi,FILE *out);
-int willusgs_ps_to_pdf(char *dstfile,char *srcfile,int firstpage,int lastpage,FILE *out);
+int willusgs_ps_to_pdf(char *dstfile,char *srcfile,FILE *out);
 int willusgs_init(FILE *out);
 int willusgs_exec(int argc,char *argv[],FILE *out);
 void willusgs_close(void);
@@ -1543,7 +1548,7 @@ int bmpmupdf_pdffile_width_and_height(char *filename,int pageno,double *width_in
 int  wmupdf_numpages(char *filename);
 int  wmupdf_info_field(char *infile,char *label,char *buf,int maxlen);
 int  wmupdf_remake_pdf(char *infile,char *outfile,WPDFPAGEINFO *pageinfo,int use_forms,
-                       WPDFOUTLINE *wpdfoutline,FILE *out);
+                       WPDFOUTLINE *wpdfoutline,WILLUSBITMAP *coverimage,FILE *out);
 /* Character position map */
 int  wtextchars_fill_from_page(WTEXTCHARS *wtc,char *filename,int pageno,char *password);
 int  wtextchars_fill_from_page_ex(WTEXTCHARS *wtc,char *filename,int pageno,char *password,
@@ -1693,10 +1698,11 @@ typedef struct
 
 typedef WILLUSGUICONTROL WILLUSGUIWINDOW;
 
+int  willusgui_dprintf(char *fmt,...);
 void willusgui_init(void);
 void willusgui_close(void);
 void willusgui_set_cursor(int type);
-void willusgui_open_file(char *filename);
+int  willusgui_open_file(char *filename);
 WILLUSGUIWINDOW *willusgui_window_find(void *oshandle);
 void willusgui_window_text_render(WILLUSGUIWINDOW *win,WILLUSGUIFONT *font,char *text,int x0,int y0,
                                    int fgcolor,int bgcolor,int justification,WILLUSGUIRECT *rect);
@@ -1768,9 +1774,11 @@ int willusgui_file_select_dialogw(short *buf,int maxlen,char *allowedfiles,
                                char *prompt,char *defext,int for_writing);
 void willusgui_background_bitmap_blit(WILLUSGUIWINDOW *win,WILLUSBITMAP *bmp);
 void *willusgui_semaphore_create(char *name);
+void *willusgui_semaphore_create_ex(char *name,int initialcout,int maxcount);
 void willusgui_semaphore_release(void *semaphore);
 void willusgui_semaphore_close(void *semaphore);
 int  willusgui_semaphore_status(void *semaphore);
+int willusgui_semaphore_status_wait(void *semaphore);
 void *willusgui_thread_create(void *funcptr,void *data);
 void willusgui_thread_terminate(void *pid,int exitcode);
 void willusgui_thread_exit(int exitcode);
@@ -1778,6 +1786,7 @@ void willusgui_sbitmap_resample_original(WILLUSGUICONTROL *control);
 void willusgui_sbitmap_change_size(WILLUSGUICONTROL *control,int delsize);
 void willusgui_sbitmap_proc(void *handle,int message,int wparam,void *lparam);
 void willusgui_set_ime_notify(int status);
+int  willusgui_folder_select(char *foldername,int maxlen);
 
 
 #ifdef PI
