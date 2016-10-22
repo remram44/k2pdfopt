@@ -1,7 +1,7 @@
 K2pdfopt build help.
 http://willus.com
 Original: 7 September 2012
-Last updated: 18 Mar 2016 (v2.34)
+Last updated: 22 Oct 2016 (v2.35)
 
 This "read me" file describes the source code distribution for k2pdfopt.
 
@@ -37,14 +37,14 @@ NOTE 4 below).
     REQUIRED
     --------
     1.  Z-lib 1.2.8 (zlib.net)
-    2.  libpng 1.6.21 (www.libpng.org)
-    3.  Turbo JPEG lib 1.4.2 (sourceforge.net/projects/libjpeg-turbo/)
+    2.  libpng 1.6.25 (www.libpng.org)
+    3.  Turbo JPEG lib 1.5.1 (sourceforge.net/projects/libjpeg-turbo/)
 
     TO INCLUDE MuPDF LIBRARY (search for HAVE_MUPDF in k2pdfopt.c)
     --------------------------------------------------------------
     4.  JBIG2Dec 0.11 (jbig2dec.sourceforge.net)
     5.  OpenJPEG 2.1.0 (www.openjpeg.org)
-    6.  FreeType 2.6.2 (freetype.sourceforge.net/index2.html)
+    6.  FreeType 2.7.0 (freetype.sourceforge.net/index2.html)
     7.  Mupdf 1.8 (mupdf.com) -- SEE NOTE 1.
 
     TO INCLUDE DjVuLibre LIBRARY (search for HAVE_DJVU in k2pdfopt.c)
@@ -97,7 +97,7 @@ Notes
    to build the project without using these files (I do not use them).
    
 
-Build Steps for k2pdfopt on Windows (gcc 5.3.0)
+Build Steps for k2pdfopt on Windows (gcc 6.2.0)
 -----------------------------------------------
 My compile steps with gcc (MinGW) are as follows (assuming all the libraries are built
 to libxxx.a files in d:\3rdparty_lib and headers are in d:\3rdparty_include):
@@ -124,15 +124,15 @@ to libxxx.a files in d:\3rdparty_lib and headers are in d:\3rdparty_include):
     4. g++ -Ofast -m32 -Wall -o k2pdfopt.exe k2pdfopt.o resfile.o -static-libgcc -static-libstdc++ d:\mingw\i386\lib\crt_noglob.o -Ld:\3rdparty_lib -lk2pdfopt -lwillus -lgocr -ltesseract -lleptonica -ldjvu -lmupdf -lfreetype -ljbig2 -ljpeglib -lopenjpeg -lpng -lzlib -lgdi32 -luuid -lole32 -lcomdlg32 -lshlwapi
 
 
-Build Steps on Linux (64-bit, gcc 4.7.2)
-----------------------------------------
+Build Steps on Linux (64-bit, gcc 4.8.5, compiled on CentOS 7.2)
+----------------------------------------------------------------
 1. gcc -Wall -Ofast -m64 -o k2pdfopt.o -c k2pdfopt.c
 
-2. g++ -Ofast -m64 -o k2pdfopt k2pdfopt.o -static -static-libgcc -static-libstdc++ -lk2pdfopt -lwillus -lgocr -ltesseract -lleptonica -ldjvu -lmupdf -lfreetype -ljbig2 -ljpeglib -lopenjpeg -lpng -lzlib -lpthread
+2. g++ -Ofast -m64 -o k2pdfopt k2pdfopt.o -static -static-libgcc -static-libstdc++ -lk2pdfopt -lwillus -lgocr -ltesseract -lleptonica -ldjvu -lmupdf -lfreetype -ljbig2 -ljpeglib -lopenjpeg -lpng -lzlib -lpthread -lstdc++ -lc -lm
 
 
-Build Steps on OS/X (64-bit, gcc 4.2.1)
----------------------------------------
-1. gcc -Wall -O3 -ffast-math -m64 -o k2pdfopt.o -c k2pdfopt.c
+Build Steps on OS/X (64-bit, gcc 6.2.0, compiled on OSX 10.12 Sierra)
+----------------------------------------------------------------------
+1. gcc -Ofast -Wall -m64 -o k2pdfopt.o -c k2pdfopt.c
 
-2. g++ -O3 -ffast-math -m64 -o k2pdfopt k2pdfopt.o -static-libgcc -static-libstdc++ -lk2pdfopt -lwillus -lgocr -ltesseract -lleptonica -ldjvu -lmupdf -lfreetype -ljbig2 -ljpeglib -lopenjpeg -lpng -lzlib -lpthread
+2. g++ -Ofast -m64 -o k2pdfopt k2pdfopt.o -static-libgcc -static-libstdc++ -lk2pdfopt -lwillus -lgocr -ltesseract -lleptonica -ldjvu -lmupdf -lfreetype -ljbig2 -ljpeglib -lopenjpeg -lpng -lzlib -lpthread

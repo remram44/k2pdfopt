@@ -114,11 +114,19 @@ DEVPROFILE *devprofile_get(char *name)
     int i,i0,c;
 
     for (i0=i=c=0;devprof[i].width>0;i++)
+        {
+        if (!stricmp(devprof[i].name,name) || !stricmp(devprof[i].alias,name))
+            {
+            c=1;
+            i0=i;
+            break;
+            }
         if (in_string(devprof[i].name,name)>=0 || in_string(devprof[i].alias,name)>=0)
             {
             c++;
             i0=i;
             }
+        }
     if (c==1)
         return(&devprof[i0]);
     return(NULL);

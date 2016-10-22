@@ -20,6 +20,7 @@
 
 #include "k2pdfopt.h"
 
+static void k2settings_warn(char *message);
 static int k2settings_color_type(char *s);
 static void k2settings_apply_odpi_magnification(K2PDFOPT_SETTINGS *k2settings,double dispres,
                                                 double mag);
@@ -140,7 +141,7 @@ void k2pdfopt_settings_init(K2PDFOPT_SETTINGS *k2settings)
     k2settings->dst_fit_to_page=0;
     k2settings->src_grid_rows=-1;
     k2settings->src_grid_cols=-1;
-    k2settings->src_grid_overlap_percentage=2;
+    k2settings->src_grid_overlap_percentage=2.;
     k2settings->src_grid_order=0; /* 0=down then across, 1=across then down */
     k2settings->preview_page=0; /* 0 = no preview */
     k2settings->echo_source_page_count=0;
@@ -210,6 +211,10 @@ void k2pdfopt_settings_init(K2PDFOPT_SETTINGS *k2settings)
     k2settings->dst_fontsize_pts=0.; /* 0 = not used */
     k2settings->assume_yes=0;
     k2settings->dst_coverimage[0]='\0'; /* empty string = not used */
+
+    /* v2.35 */
+    k2settings->user_mag=0; /* No magnification adjustment */
+    k2settings->join_figure_captions=1;  /* Default: join captions with figures */
     }
 
 
@@ -295,7 +300,55 @@ int k2pdfopt_settings_set_to_device(K2PDFOPT_SETTINGS *k2settings,DEVPROFILE *dp
     k2settings->pad_right=dp->padding[2];
     k2settings->pad_bottom=dp->padding[3];
     k2settings->dst_color=dp->color;
+#if (WILLUSDEBUGX&1)
+printf("Set to device: dst_dpi=%d\n",k2settings->dst_dpi);
+#endif
     return(1);
+    }
+
+/*
+** Warn if some command-line options are not consistent (added in v2.35).
+*/
+void k2settings_check_and_warn(K2PDFOPT_SETTINGS *k2settings)
+
+    {
+    char buf[256];
+
+    if (k2settings->assume_yes)
+        return;
+    if (k2settings->fit_columns && k2settings->user_mag)
+        {
+        sprintf(buf,"You have specified -odpi, -mag, or -fs.  This may not "
+                    "work as expected unless you also turn off the \"fit-column-to-device\" "
+                    "option by specifying -fc-");
+#ifdef HAVE_K2GUI
+        if (k2gui_active())
+            strcat(buf," in the \"Additional Options\" box");
+#endif
+        strcat(buf,".");
+        k2settings_warn(buf);
+        }
+    }
+
+
+static void k2settings_warn(char *message)
+
+    {
+    char msg2[512];
+
+    strcpy(msg2,message);
+    strcat(msg2,"  (You can disable this message by specifying -y");
+#ifdef HAVE_K2GUI
+        if (k2gui_active())
+            strcat(msg2," in the \"Additional Options\" box");
+#endif
+        strcat(msg2,".)");
+#ifdef HAVE_K2GUI
+    if (k2gui_active())
+        k2gui_alertbox(0,"Warning",msg2);
+    else
+#endif
+    k2printf(TTEXT_WARN "\n** %s **\n\n" TTEXT_NORMAL,msg2);
     }
 
 
@@ -419,6 +472,9 @@ static void k2settings_apply_odpi_magnification(K2PDFOPT_SETTINGS *k2settings,do
         k2settings->dst_userwidth *= dispres;
     if (k2settings->dst_userheight_units==UNITS_PIXELS && k2settings->dst_userheight>0)
         k2settings->dst_userheight *= dispres;
+#if (WILLUSDEBUGX & 1)
+printf("odpi mag:  dst_dpi=%d\n",k2settings->dst_dpi);
+#endif
     }
 
 
@@ -458,6 +514,9 @@ void k2pdfopt_settings_restore_output_dpi(K2PDFOPT_SETTINGS *k2settings)
         k2pdfopt_settings_set_region_widths(k2settings);
         }
     k2settings->column_fitted=0;
+#if (WILLUSDEBUGX & 1)
+printf("restore:  dst_dpi=%d\n",k2settings->dst_dpi);
+#endif
     }
 
 
@@ -480,6 +539,9 @@ void k2pdfopt_settings_fit_column_to_screen(K2PDFOPT_SETTINGS *k2settings,
              || k2settings->dstmargins.units[i]==UNITS_CM)
             k2settings->dstmargins.box[i] *= (double)k2settings->dst_dpi/new_dpi;
     k2settings->dst_dpi=new_dpi;
+#if (WILLUSDEBUGX&1)
+printf("fit_column_to_screen: dst_dpi=%d\n",k2settings->dst_dpi);
+#endif
     k2pdfopt_settings_set_region_widths(k2settings);
     k2settings->column_fitted=1;
     }
@@ -643,12 +705,19 @@ printf("dstmargins (pixels)=%d,%d,%d,%d\n",dstmar_pixels[0],dstmar_pixels[1],
 dstmar_pixels[2],dstmar_pixels[3]);
 */
         k2settings->dst_dpi = (int)(k2settings->dst_width/(MIN_REGION_WIDTH_INCHES+dx_inches));
+#if (WILLUSDEBUGX & 1)
+printf("dst_width = %d\n",k2settings->dst_width);
+printf("dst_dpi set to %d\n",k2settings->dst_dpi);
+#endif
         if (!zeroarea)
             k2printf(TTEXT_BOLD2 "Output DPI reduced from %d to %d ... " TTEXT_NORMAL,
                 olddpi,k2settings->dst_dpi);
         }
     }
     k2pdfopt_settings_set_region_widths(k2settings);
+#if (WILLUSDEBUGX & 1)
+printf("After set_margins_and_devsize: dst_dpi=%d\n",k2settings->dst_dpi);
+#endif
     }  
 
 

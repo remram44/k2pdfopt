@@ -1,4 +1,4 @@
-char *k2pdfopt_version = "v2.34";
+char *k2pdfopt_version = "v2.35";
 /*
 ** k2version.c  K2pdfopt version number and history.
 **
@@ -18,6 +18,72 @@ char *k2pdfopt_version = "v2.34";
 ** along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **
 ** VERSION HISTORY
+**
+** V2.35 22 OCT 2016 
+**           ENHANCEMENTS
+**           - Mac OSX version compiled on new machine running Sierra with GCC 6.2.0.
+**             Also, the binaries are compressed with a newer version of UPX which
+**             is compatible with Mac OSX 10.12 Sierra.
+**           - Linux binaries compiled on CentOS 7.2 with GCC 4.8.5.
+**           - Windows binaries compiled with GCC 6.2.0 (MinGW).
+**           - Compiled with the latest versions of libpng (1.6.25), freetype (2.7),
+**             turbo JPEG (1.5.1).
+**           - I tried newer versions of MuPDF (v1.9a and v1.10 pre-release), but
+**             they broke more things than I was comfortable with, so I've stayed
+**             with MuPDF v1.8 for this release.
+**           NEW FEATURES
+**           - Added -jfc- option to prevent trying to join figure captions to the
+**             figures.
+**             http://www.mobileread.com/forums/showthread.php?p=3342105#post3342105
+**           - Added new conversion mode, -mode concat, which keeps the output at
+**             the same dimensions as the source file and concatenates crop-boxes
+**             (red boxes) together--as many as can fit on each page without breaking
+**             them apart.
+**           - Added option -f2p -3 to support -mode concat.
+**           BUG FIXES
+**           - No longer crashes in native PDF output mode if there is no output.
+**           - Writes more informative message to screen if output file not written.
+**           - Makes sure output file can be opened for writing before proceeding
+**             with the conversion.  Warns user if file cannot be opened.
+**             http://www.mobileread.com/forums/showthread.php?p=3343367#post3343367
+**           - Correctly processes blank/empty pages in .djvu files.
+**             http://www.mobileread.com/forums/showthread.php?p=3350691#post3350691
+**           - The -title option now substitutes the file name for %s or %b, like
+**             the -o option.
+**             http://www.mobileread.com/forums/showthread.php?p=3389292#post3389292
+**           - The -grid overlap percentage is more precise now.
+**           - Warning message to use -fc- with -odpi, -fs, or -mag.  Not sure this
+**             is the best way--should I just turn off -fc if those are specified?
+**             Reported in 22 April 2016 e-mail.
+**             Also: http://www.mobileread.com/forums/showthread.php?p=3354548#post3354548
+**           - Wide-char (UTF-8) DJVU file names now work.
+**             http://www.mobileread.com/forums/showthread.php?p=3351085#post3351085
+**           - Blank pages no longer cause an improper conversion with -mode trim.
+**             E-mail from 17 Mar 2016.
+**           - Clarified usage of -mode copy, explaining about gamma and contrast
+**             settings (how they are not reset to 1 with -mode copy).
+**           - In the function where the 2-column divider is detected, a special
+**             call is made to find_textrows() so that figure caption joining is
+**             disabled unless -jfc+ is specified.  This helps 2-column detection
+**             work more reliably.
+**             http://www.mobileread.com/forums/showthread.php?p=3351808#post3351808
+**             http://www.mobileread.com/forums/showthread.php?p=3342105#post3342105
+**           MS WINDOWS GUI BUG FIXES
+**           - The GUI now correctly selects the "crop" conversion mode.
+**
+** V2.34b 21 MAR 2016
+**           MS WINDOWS BUG FIXES
+**           - Native conversions correctly generate unicode file names
+**             http://www.mobileread.com/forums/showthread.php?p=3284264#post3284264
+**           - GUI correctly provides right-click help on the output folder widgets
+**
+** V2.34a 19 MAR 2016
+**           BUG FIX
+**           - Device "Kobo H2O" can now be correctly assigned. (E-mail 3-17-16)
+**           MS WINDOWS GUI BUG FIX
+**           - Fixed "Additional Options" and "Command-line Options" read-only issue.
+**           - Fixed file list box overlapping the output folder box.
+**           - Fixed "Add File" selection of .pdf and .djvu files.
 **
 ** V2.34 18 MAR 2016
 **           ENHANCEMENTS

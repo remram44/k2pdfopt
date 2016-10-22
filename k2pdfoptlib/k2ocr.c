@@ -186,7 +186,7 @@ printf("Call #1. k2ocr_ocrwords_fill_in\n");
 printf("\nwrectmaps->n=%d, dst_ocr='%c'\n",region->wrectmaps->n,k2settings->dst_ocr);
 #endif
         if (k2settings->dst_ocr!='m' || region->wrectmaps->n!=1)
-            bmpregion_find_textrows(&pageregions->pageregion[i].bmpregion,k2settings,0,1);
+            bmpregion_find_textrows(&pageregions->pageregion[i].bmpregion,k2settings,0,1,0);
         pageregions->pageregion[i].bmpregion.wrectmaps = region->wrectmaps;
 #if (WILLUSDEBUGX & 32)
 printf("Call #2. k2ocr_ocrwords_fill_in, pr = %d of %d\n",i+1,pageregions->n);
@@ -501,12 +501,19 @@ printf("@k2ocr_ocrwords_get_from_ocrlayer.\n");
 #if (WILLUSDEBUGX & 0x10000)
 {
 int i;
-for (i=0;i<wtcs->n && i<30;i++)
+for (i=0;i<wtcs->n;i++)
 printf("Char[%2d]:  ucs='%c'(%d), xp=%7.3f, yp=%7.3f, x1=%7.3f, x2=%7.3f\n",i,wtcs->wtextchar[i].ucs,wtcs->wtextchar[i].ucs,wtcs->wtextchar[i].xp,wtcs->wtextchar[i].yp,wtcs->wtextchar[i].x1,wtcs->wtextchar[i].x2);
 }
 #endif
         wtextchars_rotate_clockwise(wtcs,360-(int)masterinfo->pageinfo.srcpage_rot_deg);
         wtextchars_group_by_words(wtcs,words,k2settings);
+#if (WILLUSDEBUGX & 0x10000)
+{
+int i;
+for (i=0;i<words->n;i++)
+printf("Word[%4d]: (%6.2f,%6.2f) %6.2f x %6.2f '%s'\n",i,words->word[i].x0,words->word[i].y0,words->word[i].w0,words->word[i].h0,words->word[i].text);
+}
+#endif
         pageno=masterinfo->pageinfo.srcpage;
         strncpy(pdffile,masterinfo->srcfilename,511);
         pdffile[511]='\0';
@@ -562,6 +569,9 @@ printf("words->n=%d\n",words->n);
         {
         int index,i2;
 
+#if (WILLUSDEBUGX & 0x10000)
+printf("**Word[%4d] = '%s'!\n",i,words->word[i].text);
+#endif
         for (i2=-1,index=0;1;index++)
             {
             OCRWORD _word,*word;
@@ -572,6 +582,9 @@ printf("words->n=%d\n",words->n);
             */
             word=&_word;
             ocrword_copy(word,&words->word[i]); /* Allocates new memory */
+#if (WILLUSDEBUGX & 0x10000)
+printf("   (word = '%s')\n",word->text);
+#endif
             if (i2>=0)
                 {
                 ocrword_truncate(word,i2+1,word->n-1);

@@ -70,7 +70,7 @@ void k2pdfopt_settings_get_cmdline(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
     STRBUF *shortest,_shortest;
     STRBUF *shortestng,_shortestng;
     K2PDFOPT_SETTINGS _src0,*src0;
-    static char *modelabel[]={"def","fw","fp","crop","2col","tm","copy",""};
+    static char *modelabel[]={"def","fw","fp","crop","2col","tm","copy","concat",""};
     int i,j,nd;
 #if (WILLUSDEBUGX & 0x80000)
 {
@@ -357,6 +357,7 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
     double_check(cmdline,nongui,"-vb",&src->vertical_break_threshold,dst->vertical_break_threshold);
     minus_check(cmdline,NULL,"-sm",&src->show_marked_source,dst->show_marked_source);
     minus_check(cmdline,nongui,"-toc",&src->use_toc,dst->use_toc);
+    plus_minus_check(cmdline,nongui,"-jfc",&src->use_toc,dst->use_toc);
     if (src->dst_break_pages != dst->dst_break_pages)
         {
         if (dst->dst_break_pages==0)

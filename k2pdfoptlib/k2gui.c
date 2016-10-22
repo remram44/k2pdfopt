@@ -121,7 +121,7 @@ printf("@k2gui_main, k2conv=%p, k2settings=%p\n",k2conv0,&k2conv0->k2settings);
     /*
     ** v2.20
     ** Capture non-gui part of command-line options to k2gui->cmdxtra and 
-    ** change k2gui->k2conv->k2settings to that only the GUI cmd-line params
+    ** change k2gui->k2conv->k2settings so that only the GUI cmd-line params
     ** take effect... a bit kludgey.
     */
     {
@@ -2058,7 +2058,8 @@ static void k2gui_add_files(void)
     {
     static char *funcname="k2gui_add_files";
     char *filename;
-    static char *allowed_files="PDF files\0*.pdf\0DJVU files\0*.djvu\0"
+    static char *allowed_files="PDF files\0*.pdf\0"
+                               "DJVU files\0*.djvu\0"
                                "All files\0*\0\0\0";
     int size,status;
 
@@ -2183,8 +2184,6 @@ printf("@k2gui_add_children(already_drawn=%d)\n",already_drawn);
     /*
     wh = crect->bottom-crect->top;
     */
-    nr=(crect->bottom*.3-crect->top)/k2gui->font.size-3;
-    fs=k2gui->font.size;
     /* fontscale calculation:  For Calibri = 1.1, for Arial = 1.0 */
     /*
     if (fontscale<0.1)
@@ -2207,8 +2206,12 @@ printf("@k2gui_add_children(already_drawn=%d)\n",already_drawn);
         if (fontscale < 0.8 || fontscale > 1.25)
             fontscale = 1.0;
         }
-    */
     k2gui->font.size=fs;
+    */
+    nr=(crect->bottom*.3-crect->top)/k2gui->font.size-3.;
+    /* Windows weirdness--works best if nr is even */
+    nr=nr&(~1);
+    fs=k2gui->font.size;
     f2=fs/2;
     f4=fs/4;
     xmar = f2;
@@ -2222,14 +2225,12 @@ printf("@k2gui_add_children(already_drawn=%d)\n",already_drawn);
     */
     for (i=0;i<1;i++)
         {
-        double xl;
         int recreate;
 
-        xl = 1.00;
         x1 = x0;
         w = wmax;
         y1 = y0;
-        h = (k2gui->font.size+2)*nr+4;
+        h = k2gui->font.size*(nr+1);
         control=&k2gui->control[k2gui->ncontrols];
         control->index=100+k2gui->ncontrols;
         k2gui->ncontrols++;
@@ -2241,7 +2242,7 @@ printf("@k2gui_add_children(already_drawn=%d)\n",already_drawn);
             control->rect.top=y1;
             control->rect.right=x1+w-1;
             control->rect.bottom=y1+h-1;
-            control->font.size = k2gui->font.size*xl;
+            control->font.size = k2gui->font.size;
             willusgui_font_get(&control->font);
             strcpy(control->name,"File list");
             control->type=WILLUSGUICONTROL_TYPE_LISTBOX;
@@ -2254,9 +2255,8 @@ printf("@k2gui_add_children(already_drawn=%d)\n",already_drawn);
             willusgui_control_create(control);
             filebox_populate();
             /* Windows Weirdness */
-            h=k2gui->font.size*nr+2;
             control->rect.right++;
-            control->rect.bottom=control->rect.top+h;
+            control->rect.bottom=control->rect.top+k2gui->font.size*nr+2;
             }
         else
             willusgui_control_redraw(control,0);
@@ -2549,7 +2549,7 @@ printf("dst_userwidth_units = %d\n",k2settings->dst_userwidth_units);
     ** Mode select menu
     */
     {
-    static char *modes[]={"default","copy","trim","fitwidth","fitpage","2-column","crop",""};
+    static char *modes[]={"default","copy","trim","fitwidth","fitpage","2-column","crop","concat",""};
     int nmodes;
 
     for (nmodes=0;modes[nmodes][0]!='\0';nmodes++);
@@ -2589,7 +2589,7 @@ printf("dst_userwidth_units = %d\n",k2settings->dst_userwidth_units);
         }
     else
         willusgui_control_redraw(control,0);
-    /* Determine selected device */
+    /* Determine selected mode */
 /*
 printf("settings->s='%s'\n",settings->s);
 */
@@ -2600,6 +2600,11 @@ printf("settings->s='%s'\n",settings->s);
         /* Kludge to correctly select "fitpage", v2.15 */
         if (!strnicmp(&settings->s[i+6],"fp",2) || !strnicmp(&settings->s[i+6],"fitp",4))
             j=4;
+        /* v2.35--correctly set mode to "crop" */
+        else if (!strnicmp(&settings->s[i+6],"cr",2))
+            j=6;
+        else if (!strnicmp(&settings->s[i+6],"cc",2) || !strnicmp(&settings->s[i+6],"con",3))
+            j=7;
         else
             {
             for (j=0;j<nmodes;j++)
@@ -2826,7 +2831,7 @@ printf("    control->handle=%p\n",control->handle);
             willusgui_control_init(control);
             if (i==0)
                 control->attrib |= WILLUSGUICONTROL_ATTRIB_READONLY;
-            else if (i==2)
+            else if (i==3)
                 control->attrib |= (WILLUSGUICONTROL_ATTRIB_MULTILINE | WILLUSGUICONTROL_ATTRIB_READONLY);
             strcpy(control->label,label[i]);
             control->labelx=x1;
@@ -3905,7 +3910,8 @@ printf("@k2gui_preview_make_bitmap...\n");
     strbuf_init(cmdline);
     k2gui_settings_to_cmdline(cmdline,&k2gui->k2conv->k2settings);
     parse_cmd_args(k2conv,k2gui->env,cmdline,&k2gui->cmdxtra,1,1);
-    parse_cmd_args(k2conv,k2gui->env,cmdline,&k2gui->cmdxtra,1,1);
+    /* v2.35--remove duplicate line */
+    /* parse_cmd_args(k2conv,k2gui->env,cmdline,&k2gui->cmdxtra,1,1); */
 
     /* Clear the files and only process the first file */
     willusgui_control_listbox_get_item_text(filelistbox,index,buf);
@@ -4259,9 +4265,6 @@ static void k2gui_contextmenu_by_control(WILLUSGUICONTROL *control)
         "_magminus_",
             "Decrease Preview Magnification",
             "Decreases the magnification in the preview window.",
-        "opselect",
-            "Output Folder Select",
-            "Selects the output folder for the converted PDF files.",
         "Restore Defaults",
             "Restore Default Settings",
             "The \"Restore Defaults\" button returns all settings "
@@ -4374,6 +4377,21 @@ static void k2gui_contextmenu_by_control(WILLUSGUICONTROL *control)
             "increase or decrease the resolution of "
             "the converted document.  For example, set this to 2 to double "
             "the default output document resolution.",
+        "opfolder",
+            "Output Folder",
+            "The \"Output Folder\" text box shows the name of the folder "
+            "where the converted files will be saved.  You can choose "
+            "this folder by clicking the \"Select\" button next to it.",
+        "opselect",
+            "Output Folder Select",
+            "The \"Select\" button next to the Output Folder text box "
+            "selects the output folder where the converted files will be saved.",
+        "opclear",
+            "Output Folder Clear",
+            "The \"Clear\" button next to the Output Folder text box "
+            "clears the output folder.  With no output folder selected, the "
+            "converted files are saved into the same folder as their associated "
+            "source files.",
         "env",
             "Environment Variable",
             "The \"Environment Variable\" text box shows the value "

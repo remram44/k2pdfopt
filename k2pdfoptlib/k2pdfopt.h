@@ -54,8 +54,8 @@
 */
 
 /*
-#define WILLUSDEBUGX 0x0004000
-#define WILLUSDEBUGX 0x400f
+#define WILLUSDEBUGX 0x82
+#define WILLUSDEBUGX 512
 #define WILLUSDEBUG
 #define WILLUSDEBUGX 0x100000
 #define WILLUSDEBUGX 32
@@ -373,7 +373,8 @@ typedef struct
     int dst_fit_to_page;
     int src_grid_rows;
     int src_grid_cols;
-    int src_grid_overlap_percentage;
+    /* v2.35--change overlap from int to double */
+    double src_grid_overlap_percentage;
     int src_grid_order; /* 0=down then across, 1=across then down */
     K2CROPBOXES cropboxes; /* Crop boxes */
     K2NOTESET noteset;
@@ -405,6 +406,10 @@ typedef struct
     double dst_fontsize_pts; /* 0=not used */
     int assume_yes; /* 1 = assume yes to overwrite */
     char dst_coverimage[256];
+    /* v2.35 */
+    int user_mag; /* User has adjusted mag level with -odpi(1) or -fs(2) */
+    int join_figure_captions; /* 1=try not to separate captions from figures */
+                              /* 2=do it even for multi-column */
     } K2PDFOPT_SETTINGS;
 
 
@@ -793,7 +798,7 @@ int  bmpregion_textheight(BMPREGION *region,K2PDFOPT_SETTINGS *k2settings,int i1
 int  bmpregion_is_centered(BMPREGION *region,K2PDFOPT_SETTINGS *k2settings,int i1,int i2);
 void bmpregion_get_white_margins(BMPREGION *region);
 void bmpregion_find_textrows(BMPREGION *region,K2PDFOPT_SETTINGS *k2settings,
-                             int dynamic_aperture,int remove_small_rows);
+                             int dynamic_aperture,int remove_small_rows,int join_figure_captions);
 void bmpregion_fill_row_threshold_array(BMPREGION *region,K2PDFOPT_SETTINGS *k2settings,
                                         int dynamic_aperture,int *rowthresh,int *rhmean_pixels);
 void bmpregion_one_row_find_textwords(BMPREGION *region,K2PDFOPT_SETTINGS *k2settings,
@@ -905,6 +910,7 @@ void k2pdfopt_conversion_init(K2PDFOPT_CONVERSION *k2conv);
 void k2pdfopt_conversion_close(K2PDFOPT_CONVERSION *k2conv);
 void k2pdfopt_settings_copy(K2PDFOPT_SETTINGS *dst,K2PDFOPT_SETTINGS *src);
 int  k2pdfopt_settings_set_to_device(K2PDFOPT_SETTINGS *k2settings,DEVPROFILE *dp);
+void k2settings_check_and_warn(K2PDFOPT_SETTINGS *k2settings);
 void k2pdfopt_settings_quick_sanity_check(K2PDFOPT_SETTINGS *k2settings);
 double k2pdfopt_settings_gamma(K2PDFOPT_SETTINGS *k2settings);
 void k2pdfopt_settings_new_source_document_init(K2PDFOPT_SETTINGS *k2settings);
@@ -969,6 +975,8 @@ void masterinfo_add_gap_src_pixels(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2s
 void masterinfo_add_gap(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings,double inches);
 */
 void masterinfo_remove_top_rows(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings,int rows);
+int masterinfo_fits_on_existing_page(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings,
+                                     int bmpheight_pixels);
 int masterinfo_get_next_output_page(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings,
                                     int flushall,WILLUSBITMAP *bmp,double *bmpdpi,
                                     int *size_reduction,void *ocrwords);

@@ -63,14 +63,15 @@ void k2gui_cbox_do_conversion(K2GUI *k2gui0)
 
     {
     int status;
-STRBUF *cmdline,_cmdline;
-cmdline=&_cmdline;
-strbuf_init(cmdline);
+    STRBUF *cmdline,_cmdline;
+    cmdline=&_cmdline;
+    strbuf_init(cmdline);
 
     k2gui = k2gui0;
     k2gui_cbox=&_k2gui_cbox;
     k2gui_cbox_init();
     /* Launch conversion dialog box and start the conversion thread */
+    /* This will fork a thread that starts k2gui_cbox_start_conversion() */
     status=k2gui_cbox_create_dialog_window(k2gui->k2conv,k2gui->env,cmdline,/* k2gui->cmdline, */
                                            &k2gui->mainwin,willusgui_instance());
     if (!status)
@@ -85,7 +86,7 @@ strbuf_init(cmdline);
         willusgui_window_set_focus(&k2gui->mainwin);
         }
 
-strbuf_free(cmdline);
+    strbuf_free(cmdline);
     }
 
 

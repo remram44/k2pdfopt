@@ -100,7 +100,7 @@ void k2proc_get_fontsize_histogram(BMPREGION *srcregion,MASTERINFO *masterinfo,
     int i,maxlevels;
 
 #if (WILLUSDEBUGX & 0x10000)
-bmpregion_write(region,"fontsize_bmpregion_major.png");
+bmpregion_write(srcregion,"fontsize_bmpregion_major.png");
 #endif
 /*
 printf("@k2proc_determine_median_font_size\n");
@@ -125,7 +125,8 @@ printf("@k2proc_determine_median_font_size\n");
         int j;
 
         region1=&pageregions->pageregion[i].bmpregion;
-        bmpregion_find_textrows(region1,k2settings,0,1);
+        bmpregion_find_textrows(region1,k2settings,0,1,
+                                k2settings->join_figure_captions==2 ? 1 : 0);
         for (j=0;j<region1->textrows.n;j++)
             if (region1->textrows.textrow[j].type==REGION_TYPE_TEXTLINE)
                 fontsize_histogram_add_fontsize(fsh,
@@ -342,7 +343,8 @@ static void bmpregion_source_box_process(BMPREGION *region,K2PDFOPT_SETTINGS *k2
             {
             /* Find text rows in each region--required for good sorting. */
             for (ipr=0;ipr<pageregions->n;ipr++)
-                bmpregion_find_textrows(&pageregions->pageregion[ipr].bmpregion,k2settings,1,1);
+                bmpregion_find_textrows(&pageregions->pageregion[ipr].bmpregion,k2settings,1,1,
+                                        k2settings->join_figure_captions);
             pageregions_sort(pageregions,k2settings->src_dpi,k2settings->src_left_to_right,
                                          k2settings->column_offset_max,
                                          k2settings->column_row_gap_height_in,
@@ -373,9 +375,12 @@ static void bmpregion_source_box_process(BMPREGION *region,K2PDFOPT_SETTINGS *k2
         ** to the output page is turned on.
         */
 
+        
         /* Check for dynamic adjustment of output page to trimmed source region */
         /* Set device width/height to trimmed size if requested */
-        if (trim_regions)
+        /* v2.35--only call if region has finite size */
+        if (trim_regions && main_text_region->r1<main_text_region->r2
+                         && main_text_region->c1<main_text_region->c2)
             k2pdfopt_settings_set_margins_and_devsize(k2settings,main_text_region,
                                                       masterinfo,-1.0,1);
 
@@ -412,6 +417,10 @@ count++;
         ** If this region is a "notes" region, then the next region should be
         ** the main text that goes with the notes.  Pass both to the function.
         */
+#if (WILLUSDEBUGX & 1)
+printf("k2settings->fit_columns=%d\n",k2settings->fit_columns);
+printf("fitcols=%d\n",fitcols);
+#endif
         bmpregion_vertically_break(main_text_region,k2settings,masterinfo,
                                    fitcols?-2.0:-1.0,pages_done,level,notes_region);
 
@@ -442,8 +451,9 @@ static void pageregions_grid(PAGEREGIONS *pageregions,BMPREGION *region,
         srcregion=&_srcregion;
         bmpregion_init(srcregion);
         bmpregion_copy(srcregion,region,0);
-        gwo=(k2settings->src_grid_overlap_percentage*region->bmp8->width+region->bmp8->width/2)/100;
-        gho=(k2settings->src_grid_overlap_percentage*region->bmp8->height+region->bmp8->height/2)/100;
+        /* Modified in v2.35--more precise */
+        gwo=k2settings->src_grid_overlap_percentage*region->bmp8->width/100.+.5;
+        gho=k2settings->src_grid_overlap_percentage*region->bmp8->height/100.+.5;
         gw=region->bmp8->width/k2settings->src_grid_cols+gwo;
         gh=region->bmp8->height/k2settings->src_grid_rows+gho;
         if (k2settings->src_grid_order==0)
@@ -1009,6 +1019,7 @@ k2printf("@bmpregion_add (%d,%d) - (%d,%d)\n",region->c1,region->r1,region->c2,r
 k2printf("    trimflags = %X\n",added_region->trim_flags);
 k2printf("    allow_text_wrapping = %d\n",added_region->allow_text_wrapping);
 k2printf("    allow_vert_breaks = %d\n",added_region->allow_vertical_breaks);
+k2printf("    dst_dpi=%d\n",k2settings->dst_dpi);
 #endif
     if (k2settings->debug)
         {
@@ -1210,6 +1221,11 @@ k2printf("tw=%d, region_width_inches=%g, max_region_width_inches=%g\n",added_reg
     tall_region = region_height_inches >= k2settings->dst_min_figure_height_in;
 #if (WILLUSDEBUGX & 1)
 printf("atomic region:  nrows=%d, type=%d\n",newregion->textrows.n,newregion->textrows.n>0?newregion->textrows.textrow[0].type:-1);
+printf("                region width = %g in\n",region_width_inches);
+#endif
+#if (WILLUSDEBUGX & 512)
+if (newregion->k2pagebreakmarks!=NULL)
+aprintf(ANSI_CYAN "\nATOMIC REGION HAS PAGEBREAKMARKS.\n\n" ANSI_NORMAL);
 #endif
     if (newregion->textrows.n<=0)
         is_figure = region_is_figure(k2settings,region_width_inches,region_height_inches);
@@ -1249,7 +1265,7 @@ printf("atomic region:  nrows=%d, type=%d\n",newregion->textrows.n,newregion->te
             region_height_inches = (double)(newregion->r2-newregion->r1+1)/newregion->dpi;
             }
         }
-#if (WILLUSDEBUGX & 0x000001)
+#if (WILLUSDEBUGX & 1)
 if (added_region->caller_id!=2)
 {
 char buf[MAXFILENAMELEN];
@@ -1400,7 +1416,8 @@ printf("Atomic region:  is_figure=%d, k2settings->dst_figure_rotate=%d\n",is_fig
             w=wmax;
         }
     /* Special processing for tall regions (likely figures) */
-    if (tall_region && w < wmax && k2settings->dst_fit_to_page!=0)
+    if (tall_region && w < wmax && k2settings->dst_fit_to_page!=0 
+                                && k2settings->dst_fit_to_page!=-3)
         {
         if (k2settings->dst_fit_to_page<0)
             {
@@ -1422,6 +1439,12 @@ printf("Atomic region:  is_figure=%d, k2settings->dst_figure_rotate=%d\n",is_fig
             }
         }
     h=(int)(((double)w/bmp->width)*bmp->height+.5);
+#if (WILLUSDEBUGX & 1)
+printf("dst_dpi = %d\n",(int)k2settings->dst_dpi);
+printf("max_region_width = %g in\n",k2settings->max_region_width_inches);
+printf("forced_scale = %g\n",added_region->force_scale);
+printf("Scaled bitmap:  w=%d, h=%d\n",w,h);
+#endif
 
     /*
     ** If scaled dimensions are finite, add to master bitmap.
@@ -1458,6 +1481,9 @@ printf("Atomic region:  is_figure=%d, k2settings->dst_figure_rotate=%d\n",is_fig
             nocr=1;
         tmp=&_tmp;
         bmp_init(tmp);
+#if (WILLUSDEBUGX & 1)
+printf("Resampling:  nocr=%d, %d x %d --> %d x %d\n",nocr,bmp->width,bmp->height,w,h);
+#endif
         bmp_resample_optimum_performance(tmp,bmp,(double)0.,(double)0.,
                                           (double)bmp->width,(double)bmp->height,w,h);
         /*
@@ -1559,6 +1585,11 @@ static int add_crop_boxes(BMPREGION *region,K2PDFOPT_SETTINGS *k2settings,MASTER
     int i,pn,status;
     double rot,finerot;
 
+#if WILLUSDEBUGX & 64
+printf("@add_crop_boxes()\n");
+printf("   wrectmaps=%p\n",region->wrectmaps);
+printf("   region->c1,r1=%d,%d, c2,r2=%d,%d\n",region->c1,region->r1,region->c2,region->r2);
+#endif
     wrectmaps=region->wrectmaps;
     if (wrectmaps==NULL)
         return(add_crop_box(region,k2settings,masterinfo,bmp_rotation_deg));
@@ -1704,7 +1735,7 @@ printf("Notes=%p, notesleft=%g, notesright=%g\n",notes,notes->left,notes->right)
         notesleft = (notes->left+notes->right)/2. <= 0.5;
     else
         notesleft = 0;
-    bmpregion_find_textrows(region,k2settings,0,0);
+    bmpregion_find_textrows(region,k2settings,0,0,k2settings->join_figure_captions==2 ? 1 : 0);
     textrows=&region->textrows;
     textrow=textrows->textrow;
     /* v2.33:  Join any rows with spacing less than column_row_gap_height_in */
@@ -2176,7 +2207,7 @@ k2printf("    notes=%p\n",notes);
     added_region.justification_flags=0x8f; 
     added_region.rowbase_delta=-1;
     /* Use dynamic aperture and remove small rows */
-    bmpregion_find_textrows(region,k2settings,1,1);
+    bmpregion_find_textrows(region,k2settings,1,1,k2settings->join_figure_captions);
     textrows=&region->textrows;
     textrow=textrows->textrow;
     n=textrows->n;
@@ -2187,7 +2218,7 @@ printf("text row count=%d\n",n);
     lastrow=&firstrow[n];
     if (notes)
         {
-        bmpregion_find_textrows(notes,k2settings,1,1);
+        bmpregion_find_textrows(notes,k2settings,1,1,k2settings->join_figure_captions);
         notesrows=&notes->textrows;
         willus_dmem_alloc_warn(43,(void **)&nfirstrow,notesrows->n*2*sizeof(int),funcname,10);
         nlastrow=&nfirstrow[notesrows->n];
@@ -2338,6 +2369,9 @@ region_width_inches,
 region_width_inches / k2settings->max_region_width_inches,
 region_height_inches);
 */
+#if (WILLUSDEBUGX & 1)
+printf("Added_region.force_scale = %g\n",added_region.force_scale);
+#endif
     if (added_region.force_scale < -1.5 && region_width_inches > MIN_REGION_WIDTH_INCHES
                          && region_width_inches/k2settings->max_region_width_inches < 1.25
                          && region_height_inches > 0.5)

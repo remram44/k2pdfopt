@@ -393,6 +393,8 @@ typedef struct
     int     size_allocated;
     int     type;  /* See defines above for WILLUSBITMAP_TYPE_... */
     } WILLUSBITMAP;
+double bmp_get_dpi(void);
+void bmp_set_dpi(double dpi);
 double bmp_last_read_dpi(void);
 void bmp_set_pdf_dpi(double dpi);
 double bmp_get_pdf_dpi(void);
@@ -660,6 +662,7 @@ int wide_strlen(short *s);
 void wide_strcpy(short *d,short *s);
 char  *wide_to_char(char *d,short *s);
 short *char_to_wide(short *d,char *s);
+short *char_to_wide_list(short *d,char *s);
 int utf8_to_unicode(int *d,char *s,int maxlen);
 int utf8_length(int *s,int n);
 char *unicode_to_utf8(char *d,int *s,int n);
@@ -1788,6 +1791,7 @@ void willusgui_sbitmap_proc(void *handle,int message,int wparam,void *lparam);
 void willusgui_set_ime_notify(int status);
 int  willusgui_folder_select(char *foldername,int maxlen);
 
+/* Generic (cross-platform) message box functions */
 
 #ifdef PI
 #undef PI

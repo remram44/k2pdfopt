@@ -1477,9 +1477,13 @@ printf("    type[%d]=%d\n",j,type[j]);
             /* Paint over mark if it matches a color */
             if (jbest>=0)
                 {
-                p[0]=p[1]=p[2]=255;
+                int paintover;
+
+                /* paintover = (type[jbest]==K2PAGEBREAKMARK_TYPE_NOBREAK ? 0 : 255); */
+                paintover=255;
+                p[0]=p[1]=p[2]=paintover;
                 if (pg!=NULL)
-                    pg[col]=255;
+                    pg[col]=paintover;
                 }
 /*
 if (jbest>=0)

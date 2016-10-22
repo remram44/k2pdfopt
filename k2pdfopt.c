@@ -232,17 +232,18 @@ int main(int argc,char *argv[])
     /*
     ** Process files
     */
-    for (i=0;i<k2conv->k2files.n;i++)
-        {
-        K2PDFOPT_FILELIST_PROCESS k2listproc;
+    {
+    K2PDFOPT_FILELIST_PROCESS k2listproc;
 
+    for (i=k2listproc.filecount=0;i<k2conv->k2files.n;i++)
+        {
         k2listproc.outname=NULL;
-        k2listproc.filecount=0;
         k2listproc.bmp=NULL;
         k2listproc.mode=K2PDFOPT_FILELIST_PROCESS_MODE_CONVERT_FILES;
         k2pdfopt_proc_wildarg(k2settings,k2conv->k2files.file[i],&k2listproc);
         willus_mem_free((double **)&k2listproc.outname,funcname);
         }
+    }
 
     /*
     ** All done.

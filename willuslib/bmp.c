@@ -5,7 +5,7 @@
 **
 ** Part of willus.com general purpose C code library.
 **
-** Copyright (C) 2015  http://willus.com
+** Copyright (C) 2016  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -150,10 +150,24 @@ static int pixval_dither(int pv,int n,int maxsrc,int maxdst,int x0,int y0);
 static int dither_rec(int bits,int x0,int y0);
 
 
+double bmp_get_dpi(void)
+
+    {
+    return(bmp_dpi);
+    }
+
+
 double bmp_last_read_dpi(void)
 
     {
     return(bmp_dpi);
+    }
+
+
+void bmp_set_dpi(double dpi)
+
+    {
+    bmp_dpi=dpi;
     }
 
 
@@ -848,6 +862,8 @@ int bmp_write_png_stream(WILLUSBITMAP *bmp,FILE *f,FILE *out)
             }
         png_set_PLTE(png_ptr,info_ptr,pngpal,256);
         }
+    png_set_pHYs(png_ptr,info_ptr,(int)(bmp_dpi/.0254+.5),(int)(bmp_dpi/.0254+.5),
+                 PNG_RESOLUTION_METER);
     png_write_info(png_ptr,info_ptr);
     if (bmp->type==WILLUSBITMAP_TYPE_WIN32)
         png_set_bgr(png_ptr);

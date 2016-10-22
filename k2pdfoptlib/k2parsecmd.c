@@ -138,12 +138,12 @@ static int next_is_integer(CMDLINEINPUT *cl,int setvals,int quiet,int *good,int 
 ** setvals==1 to set all values based on options
 **        ==2 to set only ansi, user interface, exit on complete
 **            (also still sets and counts files.)
+**        ==3 to test if should restore last settings.
+**            returns 0 if there are cmd args (do not restore last settings, GUI only)
 **
 ** OLD BEHAVIOR (PRE v1.65):
 ** setvals==1 to set all values based on options
 **        ==2 to set only ansi, user interface, exit on complete
-**        ==3 to test if should restore last settings.
-**            returns 0 if there are cmd args (do not restore last settings, GUI only)
 **        ==0 to not set any values
 ** procfiles == 1 to process files
 **           == 0 to count files only
@@ -215,6 +215,7 @@ int parse_cmd_args(K2PDFOPT_CONVERSION *k2conv,STRBUF *env,STRBUF *cmdline,
         /* v2.20 */
         argcheck=1;
 #endif
+        PLUS_MINUS_OPTION("-jfc",join_figure_captions,1,2,0,1)
         MINUS_OPTION("-i",info,1)
         MINUS_OPTION("-toc",use_toc,1)
         MINUS_OPTION("-sp",echo_source_page_count,1)
@@ -490,6 +491,43 @@ int parse_cmd_args(K2PDFOPT_CONVERSION *k2conv,STRBUF *env,STRBUF *cmdline,
                     k2settings->pad_left=k2settings->pad_top=k2settings->pad_bottom=k2settings->pad_right=0;
                     k2settings->mark_corners=0;
                     }
+                else if (!stricmp(cl->cmdarg,"cc") 
+                          || !stricmp(cl->cmdarg,"concat"))
+                    {
+#ifdef HAVE_OCR_LIB
+                    k2settings->dst_ocr=0; /* -ocr- */
+#endif
+                    k2settings->use_crop_boxes=1; /* -n */
+                    k2settings->text_wrap=0; /* -wrap- */
+                    k2settings->max_columns=1; /* -col 1 */
+                    k2settings->vertical_break_threshold=-2; /* -vb -2 */
+                    k2settings->src_trim=0; /* -t- */
+                    k2settings->dst_fit_to_page=-3; /* -f2p -3 */
+                    k2settings->dst_userwidth=1.0;
+                    k2settings->dst_userwidth_units=UNITS_SOURCE; /* -w 1s */
+                    k2settings->dst_userheight=1.0;
+                    k2settings->dst_userheight_units=UNITS_SOURCE; /* -h 1s */
+                    k2settings->fit_columns=0; /* -fc- */
+                    k2settings->dst_dpi=k2settings->dst_userdpi=150;
+                    /* Reset other stuff */
+                    k2settings->dst_landscape=0;
+                    k2settings->dst_landscape_pages[0]='\0';
+                    k2settings->dst_fontsize_pts=0.;
+                    k2settings->src_rot=0.;
+                    k2settings->dst_color=1;
+                    k2settings->pad_left=k2settings->pad_top=k2settings->pad_bottom=k2settings->pad_right=0;
+                    k2settings->mark_corners=0;
+                    {
+                    int ii;
+                    for (ii=0;ii<4;ii++)
+                        {
+                        k2settings->srccropmargins.box[ii]=0.;
+                        k2settings->srccropmargins.units[ii]=UNITS_INCHES;
+                        k2settings->dstmargins.box[ii]=0.;
+                        k2settings->dstmargins.units[ii]=UNITS_INCHES;
+                        }
+                    }
+                    }
                 else if (!stricmp(cl->cmdarg,"fw") 
                           || !stricmp(cl->cmdarg,"sopdf")
                           || !stricmp(cl->cmdarg,"fitwidth")
@@ -607,8 +645,9 @@ int parse_cmd_args(K2PDFOPT_CONVERSION *k2conv,STRBUF *env,STRBUF *cmdline,
                     {
                     k2settings->src_grid_cols=(int)(v[0]+.5);
                     k2settings->src_grid_rows=(int)(v[1]+.5);
+                    /* v2.35--no more rounding--double precision */
                     if (na>2)
-                        k2settings->src_grid_overlap_percentage=(int)(v[2]+.5);
+                        k2settings->src_grid_overlap_percentage=v[2];
                     }
                 else
                     k2settings->src_grid_cols = k2settings->src_grid_rows = -1;
@@ -1329,6 +1368,8 @@ printf("units=%d\n",k2settings->srccropmargins.units[0]);
         NEEDS_STRING("-ci",dst_coverimage,255,1)
         NEEDS_INTEGER("-evl",erase_vertical_lines)
         NEEDS_INTEGER("-ehl",erase_horizontal_lines)
+        if (!stricmp(cl->cmdarg,"-fs") && setvals==1)
+            k2settings->user_mag |= 2;
         NEEDS_VALUE_PLUS("-fs",dst_fontsize_pts)
         NEEDS_VALUE("-vls",vertical_line_spacing)
         NEEDS_VALUE("-vs",max_vertical_gap_inches)
@@ -1340,10 +1381,17 @@ printf("units=%d\n",k2settings->srccropmargins.units[0]);
         NEEDS_VALUE("-cmax",contrast_max)
         NEEDS_VALUE("-ch",min_column_height_inches)
         NEEDS_VALUE("-dr",dst_display_resolution)
+        if (!stricmp(cl->cmdarg,"-mag") && setvals==1)
+            k2settings->user_mag |= 4;
         NEEDS_VALUE("-mag",dst_magnification)
+        if ((!stricmp(cl->cmdarg,"-odpi") || !stricmp(cl->cmdarg,"-dpi")) && setvals==1)
+            k2settings->user_mag |= 1;
         NEEDS_INTEGER("-odpi",dst_userdpi)
         NEEDS_INTEGER("-dpi",dst_userdpi)
         k2settings->dst_dpi=k2settings->dst_userdpi;
+#if (WILLUSDEBUX & 1)
+printf("dst_dpi = %g\n",k2settings->dst_dpi);
+#endif
         NEEDS_VALUE("-ws",word_spacing)
         CBOXVAL("-oml",k2settings->dstmargins,0,UNITS_INCHES,0)
         CBOXVAL("-omt",k2settings->dstmargins,1,UNITS_INCHES,0)

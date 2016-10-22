@@ -82,7 +82,10 @@ printf("@k2pdfopt_proc_wildarg(%s)\n",arg);
     /* Init width to -1 */
     if (k2settings->preview_page!=0 && k2listproc->bmp!=NULL)
         k2listproc->bmp->width = -1;
-    k2listproc->filecount=0;
+    /* Converting first file in command line?  If so, check/warn about settings. */
+    if (k2listproc->filecount==0 
+           && k2listproc->mode==K2PDFOPT_FILELIST_PROCESS_MODE_CONVERT_FILES)
+        k2settings_check_and_warn(k2settings);
     if (wfile_status(arg)==0)
         {
         FILELIST *fl,_fl;
@@ -1025,8 +1028,12 @@ willus_mem_debug_update("End");
         author[0]=title[0]=cdate[0]='\0';
     if (k2settings->dst_author[0]!='\0')
         strcpy(author,k2settings->dst_author);
+    /* v2.35--title can have file name */
     if (k2settings->dst_title[0]!='\0')
+        filename_substitute(title,k2settings->dst_title,filename,k2fileproc->count,"pdf");
+/*
         strcpy(title,k2settings->dst_title);
+*/
     if (!k2settings->use_crop_boxes)
         {
         if (masterinfo->outline!=NULL)
@@ -1040,25 +1047,30 @@ willus_mem_debug_update("End");
         }
     else
         {
-        /* Native PDF output:  Re-write PDF file using crop boxes */
+#ifdef HAVE_MUPDF_LIB
+        if (masterinfo->pageinfo.boxes.n>0)
+            {
+            /* Native PDF output:  Re-write PDF file using crop boxes */
 #if (WILLUSDEBUGX & 64)
 wpdfboxes_echo(&masterinfo->pageinfo.boxes,stdout);
 #endif
-#ifdef HAVE_MUPDF_LIB
 #if (WILLUSDEBUGX & 64)
 printf("Calling wpdfpageinfo_scale_source_boxes()...\n");
 #endif
-        if (k2settings->dst_author[0]!='\0')
-            strcpy(masterinfo->pageinfo.author,k2settings->dst_author);
-        if (k2settings->dst_title[0]!='\0')
-            strcpy(masterinfo->pageinfo.title,k2settings->dst_title);
-        /* v2.20 bug fix -- need to compensate for document_scale_factor if its not 1.0 */
-        wpdfpageinfo_scale_source_boxes(&masterinfo->pageinfo,1./k2settings->document_scale_factor);
+            if (k2settings->dst_author[0]!='\0')
+                strcpy(masterinfo->pageinfo.author,k2settings->dst_author);
+            if (k2settings->dst_title[0]!='\0')
+                strcpy(masterinfo->pageinfo.title,title);
+            /* v2.20 bug fix -- need to compensate for document_scale_factor if its not 1.0 */
+            wpdfpageinfo_scale_source_boxes(&masterinfo->pageinfo,1./k2settings->document_scale_factor);
 #if (WILLUSDEBUGX & 64)
 printf("Calling wmupdf_remake_pdf()...\n");
 #endif
-        wmupdf_remake_pdf(mupdffilename,dstfile,&masterinfo->pageinfo,1,masterinfo->outline,
-                          masterinfo->cover_image.width==0?NULL:&masterinfo->cover_image,stdout);
+            wmupdf_remake_pdf(mupdffilename,dstfile,&masterinfo->pageinfo,1,masterinfo->outline,
+                              masterinfo->cover_image.width==0?NULL:&masterinfo->cover_image,stdout);
+            }
+        else
+            k2printf(TTEXT_WARN "\nNo PDF output for file %s." TTEXT_NORMAL "\n",dstfile);
 #endif
         }
     if (k2settings->show_marked_source)
@@ -1076,11 +1088,18 @@ printf("Calling wmupdf_remake_pdf()...\n");
         k2printf("Processing on " TTEXT_BOLD2 "file %s" TTEXT_NORMAL " complete.  Total %d pages.\n\n",filename,masterinfo->published_pages);
     */
     size=wfile_size(dstfile);
-    k2printf("\n" TTEXT_BOLD "%d pages" TTEXT_NORMAL,masterinfo->published_pages);
-    if (masterinfo->wordcount>0)
-        k2printf(" (%d words)",masterinfo->wordcount);
-    k2printf(" written to " TTEXT_MAGENTA "%s" TTEXT_NORMAL " (%.1f MB).\n\n",
-            dstfile,size/1024./1024.);
+    if (wfile_status(dstfile)==0)
+        k2printf("\n" TTEXT_WARN "File %s not written." TTEXT_NORMAL "\n\n",dstfile);
+    else if (size<.5)
+        k2printf("\n" TTEXT_WARN "File %s is empty (0 bytes)." TTEXT_NORMAL "\n\n",dstfile);
+    else
+        {
+        k2printf("\n" TTEXT_BOLD "%d pages" TTEXT_NORMAL,masterinfo->published_pages);
+        if (masterinfo->wordcount>0)
+            k2printf(" (%d words)",masterinfo->wordcount);
+        k2printf(" written to " TTEXT_MAGENTA "%s" TTEXT_NORMAL " (%.1f MB).\n\n",
+                dstfile,fabs(size)/1024./1024.);
+        }
 #ifdef HAVE_GHOSTSCRIPT
     if (k2settings->ppgs)
         gs_postprocess(dstfile);
@@ -2021,22 +2040,23 @@ static int k2file_setup_output_file_names(K2PDFOPT_SETTINGS *k2settings,char *fi
             fclose(f1);
             wfile_remove_utf8(dstfile);
             }
-        if (!can_write)
-            {
-            k2printf(TTEXT_WARN "\n\aCannot open PDF file %s for output!" TTEXT_NORMAL "\n\n",dstfile);
+        }
+    if (!can_write)
+        {
+        k2printf(TTEXT_WARN "\n\aCannot open PDF file %s for output!" TTEXT_NORMAL "\n\n",dstfile);
 #ifdef HAVE_K2GUI
-            if (k2gui_active())
-                {
-                k2gui_okay("Failed to open output file",
-                           "Cannot open PDF file %s for output!\n"
-                           "Maybe another application has it open already?\n"
-                           "Conversion failed!",dstfile);
-                k2fileproc->status=4;
-                return(0);
-                }
-#endif
-            k2sys_exit(k2settings,30);
+        if (k2gui_active())
+            {
+            k2gui_okay("Failed to open output file",
+                       "Cannot open PDF file %s for output!\n"
+                       "Maybe another application has it open already?\n"
+                       "Or does the output folder have write permission?\n"
+                       "Conversion failed!",dstfile);
+            k2fileproc->status=4;
+            return(0);
             }
+#endif
+        k2sys_exit(k2settings,30);
         }
     /* Return output file name in k2fileproc for GUI */
     willus_mem_alloc((double **)&k2fileproc->outname,(long)(strlen(dstfile)+1),funcname);
