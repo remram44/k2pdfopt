@@ -1,9 +1,9 @@
 /*
-** ocrjocr.c   Routine to interface with GOCR/JOCR v0.49.
+** ocrgocr.c   Routine to interface with GOCR v0.50.
 **
 ** Part of willus.com general purpose C code library.
 **
-** Copyright (C) 2012  http://willus.com
+** Copyright (C) 2016  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -33,7 +33,7 @@
 ** bmp8 must be grayscale
 ** (x1,y1) and (x2,y2) from top left of bitmap
 */
-void jocr_single_word_from_bmp8(char *text,int maxlen,WILLUSBITMAP *bmp8,
+void gocr_single_word_from_bmp8(char *text,int maxlen,WILLUSBITMAP *bmp8,
                                 int x1,int y1,int x2,int y2,int allow_spaces,
                                 int std_proc)
 
@@ -41,10 +41,7 @@ void jocr_single_word_from_bmp8(char *text,int maxlen,WILLUSBITMAP *bmp8,
     job_t *job,_job;
     int i,w,h,dw,dh,bw;
     unsigned char *src,*dst;
-    // static char *funcname="jocr_single_word_from_bmp8";
     char *buf;
-    int pgm2asc(job_t *job);
-    char *getTextLine(int);
 
     if (x1>x2)
         {
@@ -80,7 +77,7 @@ void jocr_single_word_from_bmp8(char *text,int maxlen,WILLUSBITMAP *bmp8,
     for (i=y1;i<=y2;i++,dst+=dw,src+=bmp8->width)
         memcpy(dst,src,w);
     pgm2asc(job);
-    buf=getTextLine(0);
+    buf=getTextLine(&(job->res.linelist),0);
     if (buf)
         {
         strncpy(text,buf,maxlen-1);

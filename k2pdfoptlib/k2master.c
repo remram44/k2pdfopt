@@ -46,6 +46,8 @@ static void find_word_gaps_using_textrow(WILLUSBITMAP *src,K2PDFOPT_SETTINGS *k2
 static int masterinfo_break_point(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings,int maxsize);
 static int masterinfo_break_point_1(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings,int maxsize);
 static int ocrlayer_bounding_box_inches(MASTERINFO *masterinfo,LINE2D *rect);
+static void k2master_rows_color(WILLUSBITMAP *bmp,MASTERINFO *masterinfo,
+                                K2PDFOPT_SETTINGS *k2settings);
 
 
 void masterinfo_init(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings)
@@ -65,6 +67,7 @@ void masterinfo_init(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings)
     masterinfo->landscape = -1;
     masterinfo->landscape_next = -1;
     masterinfo->wordcount=0;
+    masterinfo->rcindex=0;
     masterinfo->debugfolder[0]='\0';
     bmp_init(&masterinfo->bmp);
     masterinfo->bmp.height=masterinfo->bmp.width=0;
@@ -545,6 +548,11 @@ printf("\n");
 */
         }
 #endif
+/*
+    if ((k2settings->dst_fgtype==4 || k2settings->dst_bgtype==4) && region.textrows.n>0)
+        k2master_rows_color(masterinfo,&region,k2settings);
+*/
+
     bmpregion_free(&region);
     if (src1->bpp!=8)
         bmp_free(gray);
@@ -1111,6 +1119,9 @@ printf("k2pp=%d, published_pages=%d ==> skippage=%d\n",k2settings->preview_page,
     rr= flushall ? 0 : maxsize;
     if (k2settings->verbose)
         k2printf("rows=%d, maxsize=%d, rr=%d\n",masterinfo->rows,maxsize,rr);
+#if (WILLUSDEBUGX & 0x200)
+printf("@next_output_page: rows=%d, maxsize=%d, rr=%d\n",masterinfo->rows,maxsize,rr);
+#endif
 #if (WILLUSDEBUGX & 64)
 k2printf("start:  mi->rows=%d, rr=%d\n",masterinfo->rows,rr);
 #endif
@@ -1122,7 +1133,7 @@ k2printf("start:  mi->rows=%d, rr=%d\n",masterinfo->rows,rr);
     bp=masterinfo_break_point(masterinfo,k2settings,maxsize);
     if (k2settings->verbose)
         k2printf("bp: maxsize=%d, bp=%d, r0=%d\n",maxsize,bp,r0);
-#if (WILLUSDEBUGX & 64)
+#if (WILLUSDEBUGX & (64|0x200))
 k2printf("bp: maxsize=%d, bp=%d, r0=%d\n",maxsize,bp,r0);
 #endif
     bmp1->bpp=masterinfo->bmp.bpp;
@@ -1136,7 +1147,7 @@ k2printf("bp: maxsize=%d, bp=%d, r0=%d\n",maxsize,bp,r0);
     ** (swapped if -ls)
     */
     /* If too tall, shrink to fit */
-#if (WILLUSDEBUGX & 64)
+#if (WILLUSDEBUGX & (64|0x200))
 k2printf("masterinfo->rows=%d\n",masterinfo->rows);
 k2printf("bp=%d, maxsize=%d\n",bp,maxsize);
 k2printf("dst_width=%g\n",(double)k2settings->dst_width);
@@ -1171,7 +1182,7 @@ k2printf("dst_height=%g\n",(double)k2settings->dst_height);
     r0=dstmar_pixels[1];
     bmp1->width=lwidth;
     bmp1->height=lheight;
-#if (WILLUSDEBUGX & 64)
+#if (WILLUSDEBUGX & (64|0x200))
 k2printf("bmp1 wxh = %d x %d\n",bmp1->width,bmp1->height);
 k2printf("mi->published_pages=%d\n",masterinfo->published_pages);
 #endif
@@ -1298,10 +1309,21 @@ exit(10);
         bmp_invert(bmp);
 
     /* Fix colors */
+/*
+    if ((k2settings->dst_fgtype!=4 && k2settings->dst_bgtype!=4)
+          && (k2settings->dst_fgtype!=0 || k2settings->dst_bgtype!=0))
+*/
     if (k2settings->dst_fgtype!=0 || k2settings->dst_bgtype!=0)
         {
-        bmp_change_colors(bmp,k2settings->dst_fgcolor,k2settings->dst_fgtype,
-                              k2settings->dst_bgcolor,k2settings->dst_bgtype);
+        if (k2settings->dst_fgtype==4 || k2settings->dst_bgtype==4)
+            k2master_rows_color(bmp,masterinfo,k2settings);
+        else
+            bmp_change_colors(bmp,bmp,
+                              k2settings->dst_fgtype==4?"":k2settings->dst_fgcolor,
+                              k2settings->dst_fgtype,
+                              k2settings->dst_bgtype==4?"":k2settings->dst_bgcolor,
+                              k2settings->dst_bgtype,
+                              0,0,bmp->width-1,bmp->height-1);
         }
 
 
@@ -1348,7 +1370,13 @@ exit(10);
         (*size_reduction)=3;
     if (k2settings->dst_dither && k2settings->dst_bpc<8 && k2settings->jpeg_quality<0)
         bmp_dither_to_bpc(bmp,k2settings->dst_bpc);
+#if (WILLUSDEBUGX & 0x200)
+printf("Removing top rows.  Before, rows=%d\n",masterinfo->rows);
+#endif
     masterinfo_remove_top_rows(masterinfo,k2settings,bp);
+#if (WILLUSDEBUGX & 0x200)
+printf("  After, rows=%d\n",masterinfo->rows);
+#endif
     return(bp);
     }
 
@@ -1364,6 +1392,9 @@ exit(10);
 int masterinfo_should_flush(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings)
 
     {
+#if (WILLUSDEBUGX & 0x200)
+printf("@masterinfo_should_flush, breakpages=%d\n",k2settings->dst_break_pages);
+#endif
     if (k2settings->dst_landscape_pages[0]!='\0' 
            && masterinfo->landscape != masterinfo->landscape_next)
         return(1);
@@ -2560,4 +2591,123 @@ printf("    Inches:  (%g,%g) - (%g,%g)\n",tc->x1/72.,tc->y1/72.,tc->x2/72.,tc->y
         }
 #endif
     return(0);
+    }
+
+
+static void k2master_rows_color(WILLUSBITMAP *srcbmp,MASTERINFO *masterinfo,
+                                K2PDFOPT_SETTINGS *k2settings)
+
+    {
+    PAGEREGIONS *pageregions,_pageregions;
+    int j,maxlevels;
+    WILLUSBITMAP *bmpmask,_bmpmask;
+    char fgc[128],bgc[128];
+    BMPREGION *region,_region;
+    WILLUSBITMAP *gray,_gray;
+
+
+/*
+printf("@k2master_rows_color:  %d x %d\n",srcbmp->width,srcbmp->height);
+*/
+    region=&_region;
+    if (srcbmp->bpp==8)
+        gray=srcbmp;
+    else
+        {
+        gray=&_gray;
+        bmp_init(gray);
+        bmp_convert_to_grayscale_ex(gray,srcbmp);
+        }
+    bmpregion_init(region);
+    region->bgcolor=k2settings->src_whitethresh<0 ? 192 : k2settings->src_whitethresh;
+    region->c1=0;
+    region->c2=gray->width-1;
+    region->r1=0;
+    region->r2=gray->height-1;
+    region->bmp8=gray;
+    region->bmp=srcbmp; /* May not be 24-bit! */
+    region->dpi=k2settings->dst_dpi;
+    region->wrectmaps=NULL;
+    bmpregion_trim_margins(region,k2settings,0xf);
+    bmpmask=&_bmpmask;
+    bmp_init(bmpmask);
+    bmp_copy(bmpmask,srcbmp);
+    fgc[0]='\0';
+    bgc[0]='\0';
+
+    /* Parse region into columns */
+    pageregions=&_pageregions;
+    pageregions_init(pageregions);
+    if (k2settings->ocr_max_columns==2 || k2settings->max_columns>1)
+        maxlevels = 2;
+    else
+        maxlevels = 3;
+    pageregions_find_columns(pageregions,region,k2settings,masterinfo,maxlevels);
+    for (j=0;j<pageregions->n;j++)
+        {
+        int i,nfg,nbg;
+        BMPREGION *subregion;
+
+        subregion=&pageregions->pageregion[j].bmpregion;
+/*
+printf("region %d:  (%d,%d) - (%d,%d)\n",j,subregion->c1,subregion->r1,subregion->c2,subregion->r2);
+*/
+        bmpregion_find_textrows(subregion,k2settings,0,1,0);
+        nfg=k2settings_ncolors(k2settings->dst_fgcolor);
+        nbg=k2settings_ncolors(k2settings->dst_bgcolor);
+/*
+printf("nc=%d, rcindex=%d\n",nc,masterinfo->rcindex);
+printf("TEXTROWS.n=%d\n",region->textrows.n);
+for (i=0;i<region->textrows.n;i++)
+printf("TEXTROW[%2d]=%d\n",i,region->textrows.textrow[i].type);
+*/
+        for (i=0;i<subregion->textrows.n;i++)
+            {
+            TEXTROW *textrow;
+
+            textrow=&subregion->textrows.textrow[i];
+            if (textrow->type==REGION_TYPE_TEXTLINE)
+                {
+                if (k2settings->dst_fgtype==4)
+                    strcpy(fgc,k2settings_color_by_index(k2settings->dst_fgcolor,
+                                                         masterinfo->rcindex%nfg));
+                if (k2settings->dst_bgtype==4)
+                    strcpy(bgc,k2settings_color_by_index(k2settings->dst_bgcolor,
+                                                         masterinfo->rcindex%nbg));
+                masterinfo->rcindex++;
+                /* For some reason if it's a single text line, need to re-calc bbox. */
+                /* Should investigate why at some point... */
+/*
+                if (single_passed_textline)
+                    {
+                    bmpregion_calc_bbox(&region,k2settings,1);
+                    textrow->c1=region->bbox.c1;
+                    textrow->c2=region->bbox.c2;
+                    textrow->r1=region->bbox.r1;
+                    textrow->r2=region->bbox.r2;
+                    }
+*/
+                bmp_change_colors(subregion->bmp,bmpmask,fgc,k2settings_color_type(fgc),
+                                             bgc,k2settings_color_type(bgc),
+                                             textrow->c1,textrow->r1,
+                                             textrow->c2,textrow->r2);
+                }
+            }
+        }
+    if (k2settings->dst_fgtype!=4)
+        strcpy(fgc,k2settings->dst_fgcolor);
+    else
+        fgc[0]='\0';
+    if (k2settings->dst_bgtype!=4)
+        strcpy(bgc,k2settings->dst_bgcolor);
+    else
+        bgc[0]='\0';
+    if (fgc[0]!='\0' || bgc[0]!='\0')
+        bmp_change_colors(region->bmp,bmpmask,fgc,k2settings_color_type(fgc),
+                                              bgc,k2settings_color_type(bgc),
+                                         0,0,region->bmp->width-1,region->bmp->height-1);
+    pageregions_free(pageregions);
+    bmp_free(bmpmask);
+    if (srcbmp->bpp!=8)
+        bmp_free(gray);
     }

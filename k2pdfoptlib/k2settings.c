@@ -21,7 +21,6 @@
 #include "k2pdfopt.h"
 
 static void k2settings_warn(char *message);
-static int k2settings_color_type(char *s);
 static void k2settings_apply_odpi_magnification(K2PDFOPT_SETTINGS *k2settings,double dispres,
                                                 double mag);
 
@@ -382,6 +381,22 @@ void k2pdfopt_settings_quick_sanity_check(K2PDFOPT_SETTINGS *k2settings)
     k2settings->dst_bgtype = k2settings_color_type(k2settings->dst_bgcolor);
     if (k2settings->dst_fgtype==2 || k2settings->dst_bgtype==2)
         k2settings->dst_color=1;
+    if (k2settings->dst_fgtype==4)
+        {
+        int i,n;
+        n=k2settings_ncolors(k2settings->dst_fgcolor);
+        for (i=0;i<n;i++)
+            if (k2settings_color_type(k2settings_color_by_index(k2settings->dst_fgcolor,i))==2)
+                k2settings->dst_color=1;
+        }
+    if (k2settings->dst_bgtype==4)
+        {
+        int i,n;
+        n=k2settings_ncolors(k2settings->dst_bgcolor);
+        for (i=0;i<n;i++)
+            if (k2settings_color_type(k2settings_color_by_index(k2settings->dst_bgcolor,i))==2)
+                k2settings->dst_color=1;
+        }
 
     /* v2.22: If previewing a native PDF, turn color output on. */
     if (!k2settings->dst_color && k2settings->use_crop_boxes && k2settings->preview_page!=0)
@@ -562,8 +577,8 @@ void k2pdfopt_settings_set_margins_and_devsize(K2PDFOPT_SETTINGS *k2settings,
     LINE2D userrect;
     int units[4];
 
-#ifdef WILLUSDEBUG
-printf("@k2pdfopt_settings_set_margins_and_devsize(region=%p,trimmed=%d)\n",region,trimmed);
+#if (WILLUSDEBUGX & 0x200)
+aprintf(ANSI_CYAN "@k2pdfopt_settings_set_margins_and_devsize(region=%p,masterinfo=%p,trimmed=%d)" ANSI_NORMAL "\n",region,masterinfo,trimmed);
 #endif
     if (src_fontsize_pts>0. && fabs(k2settings->dst_fontsize_pts)>1.0e-8)
         {
@@ -572,6 +587,10 @@ printf("@k2pdfopt_settings_set_margins_and_devsize(region=%p,trimmed=%d)\n",regi
         mag = fabs(k2settings->dst_fontsize_pts) / src_fontsize_pts;
         k2settings_apply_odpi_magnification(k2settings,dres,mag);
         }
+    /* Special reset code */
+    if (src_fontsize_pts<-90.)
+        k2settings_apply_odpi_magnification(k2settings,k2settings->dst_display_resolution,
+                                                       k2settings->dst_magnification);
     zeroarea=0;
     pageinfo=masterinfo!=NULL ? &masterinfo->pageinfo : NULL;
     if (region==NULL)
@@ -688,6 +707,9 @@ printf("    userrect (out) = %g,%g - %g,%g\n",userrect.p[0].x,userrect.p[0].y,us
                 double_swap(pageinfo->width_pts,pageinfo->height_pts)
             }
         }
+#if (WILLUSDEBUGX & 0x20000)
+printf("dst_width = %d\n",k2settings->dst_width);
+#endif
     {
     int dstmar_pixels[4];
     int dx_pixels;
@@ -705,7 +727,10 @@ printf("dstmargins (pixels)=%d,%d,%d,%d\n",dstmar_pixels[0],dstmar_pixels[1],
 dstmar_pixels[2],dstmar_pixels[3]);
 */
         k2settings->dst_dpi = (int)(k2settings->dst_width/(MIN_REGION_WIDTH_INCHES+dx_inches));
-#if (WILLUSDEBUGX & 1)
+        /* v2.36, 24 Nov 2016 -- don't allow < 1 */
+        if (k2settings->dst_dpi < 1)
+            k2settings->dst_dpi = 1;
+#if (WILLUSDEBUGX & 0x20000)
 printf("dst_width = %d\n",k2settings->dst_width);
 printf("dst_dpi set to %d\n",k2settings->dst_dpi);
 #endif
@@ -715,10 +740,25 @@ printf("dst_dpi set to %d\n",k2settings->dst_dpi);
         }
     }
     k2pdfopt_settings_set_region_widths(k2settings);
-#if (WILLUSDEBUGX & 1)
+#if (WILLUSDEBUGX & 0x20000)
 printf("After set_margins_and_devsize: dst_dpi=%d\n",k2settings->dst_dpi);
 #endif
     }  
+
+/*
+** If in trim mode and effectively got a blank page, add blank rows and eject them
+** (if also -bp).
+** New in v2.36.
+*/
+int k2settings_trim_mode(K2PDFOPT_SETTINGS *k2settings)
+
+    {
+    return(k2settings->vertical_break_threshold==-2
+            && k2settings->src_trim==1
+            && k2settings->dst_fit_to_page==-2
+            && k2settings->max_columns==1
+            && k2settings->dst_break_pages==2);
+    }
 
 
 /*
@@ -733,7 +773,7 @@ int k2settings_gap_override(K2PDFOPT_SETTINGS *k2settings)
     }
 
 
-static int k2settings_color_type(char *s)
+int k2settings_color_type(char *s)
 
     {
     int c;
@@ -753,11 +793,45 @@ static int k2settings_color_type(char *s)
         if (!status)
             return(3);
         }
+    /* Array of colors? */
+    c=in_string(s,",");
+    if (c>0)
+        return(4);
     c=hexcolor(s);
     if (((c&0xff0000)>>16)==((c&0xff00)>>8) && ((c&0xff00)>>8)==(c&0xff))
         return(1);
     return(2);
     }
+
+
+int k2settings_ncolors(char *s)
+
+    {
+    int i,c;
+    for (i=c=0;s[i]!='\0';i++)
+        if (s[i]==',')
+            c++;
+    return(c+1);
+    }
+
+
+char *k2settings_color_by_index(char *s,int index)
+
+    {
+    int i,c;
+    static char x[128];
+
+    for (i=c=0;c<index && s[i]!='\0';i++)
+        if (s[i]==',')
+            c++;
+    for (c=0;s[i]!='\0' && s[i]!=',' && c<127;i++)
+        x[c++]=s[i];
+    x[c]='\0';
+    return(x);
+    /* return(hexcolor(x)); */
+    }
+
+    
 /*
 void k2cropbox_set_default_values(K2CROPBOX *cbox,double value,int units)
 

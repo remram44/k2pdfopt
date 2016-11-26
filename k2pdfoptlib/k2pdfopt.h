@@ -54,7 +54,6 @@
 */
 
 /*
-#define WILLUSDEBUGX 0x82
 #define WILLUSDEBUGX 512
 #define WILLUSDEBUG
 #define WILLUSDEBUGX 0x100000
@@ -664,6 +663,7 @@ typedef struct
                          ** the gaps as they were in the source doc (except at the
                          ** dpi of the destination doc).
                          */
+    int rcindex;         /* row color index */
     int nocr;            /* scaling value used on lastrow */
     int gapblank;        /* Current white-space pixel gap at bottom of master bitmap */
     int mandatory_region_gap; /* 1 = put in the page_region_gap_in below. */
@@ -790,6 +790,7 @@ void bmpregion_init(BMPREGION *region);
 void bmpregion_free(BMPREGION *region);
 void bmpregion_k2pagebreakmarks_allocate(BMPREGION *region);
 void bmpregion_k2pagebreakmarks_free(BMPREGION *region);
+int  bmpregion_is_blank(BMPREGION *srcregion,K2PDFOPT_SETTINGS *k2settings);
 void bmpregion_copy(BMPREGION *dst,BMPREGION *src,int copy_textrows);
 void bmpregion_calc_bbox(BMPREGION *region,K2PDFOPT_SETTINGS *k2settings,int calc_text_params);
 void bmpregion_trim_margins(BMPREGION *region,K2PDFOPT_SETTINGS *k2settings,int flags);
@@ -920,7 +921,9 @@ void k2pdfopt_settings_restore_output_dpi(K2PDFOPT_SETTINGS *k2settings);
 void k2pdfopt_settings_fit_column_to_screen(K2PDFOPT_SETTINGS *k2settings,
                                             double column_width_inches);
 void k2pdfopt_settings_set_region_widths(K2PDFOPT_SETTINGS *k2settings);
+int k2settings_trim_mode(K2PDFOPT_SETTINGS *k2settings);
 int k2settings_gap_override(K2PDFOPT_SETTINGS *k2settings);
+int k2settings_color_type(char *s);
 void k2pdfopt_settings_set_margins_and_devsize(K2PDFOPT_SETTINGS *k2settings,
                          BMPREGION *region,MASTERINFO *masterinfo,
                          double src_fontsize_pts,int trimmed);
@@ -931,6 +934,8 @@ int  k2cropboxes_count(K2CROPBOXES *cropboxes,int flagmask,int flagtype);
 int  k2settings_has_cropboxes(K2PDFOPT_SETTINGS *k2settings);
 int  k2settings_need_color_initially(K2PDFOPT_SETTINGS *k2settings);
 int  k2settings_need_color_permanently(K2PDFOPT_SETTINGS *k2settings);
+int  k2settings_ncolors(char *s);
+char *k2settings_color_by_index(char *s,int index);
 
 /* k2mark.c */
 void publish_marked_page(PDFFILE *mpdf,WILLUSBITMAP *src,int src_dpi);
@@ -1029,7 +1034,10 @@ void   bmp_detect_vertical_lines(WILLUSBITMAP *bmp,WILLUSBITMAP *cbmp,double dpi
 void   bmp_adjust_contrast(WILLUSBITMAP *src,WILLUSBITMAP *srcgrey,
                            K2PDFOPT_SETTINGS *k2settings,int *white);
 void   bmp_paint_white(WILLUSBITMAP *bmpgray,WILLUSBITMAP *bmp,int white_thresh);
-void   bmp_change_colors(WILLUSBITMAP *bmp,char *fgcolor,int fgtype,char *bgcolor,int bgtype);
+void   bmp_change_colors(WILLUSBITMAP *bmp,WILLUSBITMAP *mask,char *fgcolor,int fgtype,
+                         char *bgcolor,int bgtype,
+                         int c1,int r1,int c2,int r2);
+void   bmp_modbox(WILLUSBITMAP *bmp,int c1,int r1,int c2,int r2,int color1,int color2);
 void   bmp8_merge(WILLUSBITMAP *dst,WILLUSBITMAP *src,int count);
 int    bmp_autocrop2(WILLUSBITMAP *bmp0,int *cx);
 void   k2pagebreakmarks_find_pagebreak_marks(K2PAGEBREAKMARKS *k2pagebreakmarks,WILLUSBITMAP *bmp,

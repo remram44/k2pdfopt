@@ -34,9 +34,9 @@
 #ifdef HAVE_CONFIG_H
 #include "config_auto.h"
 #endif
+#include <locale.h>
 #ifdef USING_GETTEXT
 #include <libintl.h>
-#include <locale.h>
 #define _(x) gettext(x)
 #else
 #define _(x) (x)
@@ -67,12 +67,18 @@ int tess_capi_init(char *datapath,char *language,int ocr_type,FILE *out,
 
     {
     int status;
+    char original_locale[256];
 
 #ifdef USE_NLS
     setlocale (LC_ALL, "");
     bindtextdomain (PACKAGE, LOCALEDIR);
     textdomain (PACKAGE);
 #endif
+    /* willus mod, 11-24-16 */
+    /* Tesseract needs "C" locale to correctly parse all data .traineddata files. */
+    strncpy(original_locale,setlocale(LC_ALL,NULL),255);
+    original_locale[255]='\0';
+    setlocale(LC_ALL,"C");
     // fprintf(stderr, "tesseract %s\n", tesseract::TessBaseAPI::Version());
     // Make the order of args a bit more forgiving than it used to be.
     const char* lang = "eng";
@@ -110,7 +116,11 @@ int tess_capi_init(char *datapath,char *language,int ocr_type,FILE *out,
                    (ocr_type==2 ? tesseract::OEM_CUBE_ONLY :
                                   (tesseract::OEM_TESSERACT_CUBE_COMBINED))));
     if (status)
+        {
+        /* willus mod, 11-24-16 */
+        setlocale(LC_ALL,original_locale);
         return(status);
+        }
     /*
     api.Init("tesscapi",lang,tesseract::OEM_DEFAULT,
            &(argv[arg]), argc - arg, NULL, NULL, false);
@@ -164,6 +174,8 @@ int tess_capi_init(char *datapath,char *language,int ocr_type,FILE *out,
     api.SetVariable("wordrec_debug_level","9");
     api.SetVariable("segsearch_debug_level","9");
 #endif
+    /* willus mod, 11-24-16 */
+    setlocale(LC_ALL,original_locale);
     return(0);
     }
 

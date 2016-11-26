@@ -1368,8 +1368,8 @@ void ocrwords_concatenate(OCRWORDS *dst,OCRWORDS *src);
 void ocr_text_proc(char *s,int allow_spaces);
 
 #ifdef HAVE_GOCR_LIB
-/* ocrjocr.c */
-void jocr_single_word_from_bmp8(char *text,int maxlen,WILLUSBITMAP *bmp8,
+/* ocrgocr.c */
+void gocr_single_word_from_bmp8(char *text,int maxlen,WILLUSBITMAP *bmp8,
                                 int x1,int y1,int x2,int y2,int allow_spaces,
                                 int std_proc);
 #endif

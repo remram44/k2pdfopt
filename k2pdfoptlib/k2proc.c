@@ -274,13 +274,16 @@ static void bmpregion_source_box_process(BMPREGION *region,K2PDFOPT_SETTINGS *k2
 
     {
     PAGEREGIONS *pageregions,_pageregions;
-    int ipr,gridded,maxlevels,trim_regions;
+    int ipr,gridded,maxlevels,trim_regions,trim_mode;
 
 #if (!(WILLUSDEBUGX & 0x200))
     if (k2settings->debug)
 #endif
         k2printf("@bmpregion_source_box_process (%d,%d) - (%d,%d) dpi=%d, lev=%d, pagesdone=%d\n",
                region->c1,region->r1,region->c2,region->r2,region->dpi,level,pages_done);
+
+
+    trim_mode=k2settings_trim_mode(k2settings);
 
     /* Find page regions */     
     pageregions=&_pageregions;
@@ -319,12 +322,48 @@ static void bmpregion_source_box_process(BMPREGION *region,K2PDFOPT_SETTINGS *k2
                 pageregions->pageregion[i].bmpregion.r2);
         }
 */
+#if (WILLUSDEBUGX & 0x200)
+printf("Found %d page regions.\n",pageregions->n);
+{
+int i;
+printf("Before trimming:\n");
+for (i=0;i<pageregions->n;i++)
+printf("    %d. (%d,%d) - (%d,%d)\n",i+1,
+pageregions->pageregion[i].bmpregion.c1,
+pageregions->pageregion[i].bmpregion.r1,
+pageregions->pageregion[i].bmpregion.c2,
+pageregions->pageregion[i].bmpregion.r2);
+}
+#endif
 
     /* v2.33:  Do all trimming up front */
     /* Trim regions */
     if (trim_regions && k2settings->src_trim)
         for (ipr=0;ipr<pageregions->n;ipr++)
+            {
+            /* If blank page and in trim mode with page breaks, don't trim */
+            if (trim_mode && bmpregion_is_blank(&pageregions->pageregion[ipr].bmpregion,k2settings))
+{
+#if (WILLUSDEBUGX & 0x200)
+aprintf(ANSI_YELLOW "Skipping trim." ANSI_NORMAL "\n");
+#endif
+                continue;
+}
             bmpregion_trim_margins(&pageregions->pageregion[ipr].bmpregion,k2settings,0xf);
+            }
+
+#if (WILLUSDEBUGX & 0x200)
+{
+int i;
+printf("After trimming:\n");
+for (i=0;i<pageregions->n;i++)
+printf("    %d. (%d,%d) - (%d,%d)\n",i+1,
+pageregions->pageregion[i].bmpregion.c1,
+pageregions->pageregion[i].bmpregion.r1,
+pageregions->pageregion[i].bmpregion.c2,
+pageregions->pageregion[i].bmpregion.r2);
+}
+#endif
 
     /* v2.33 */
     /* Special sorting if more than 1 column and no notes--apply ragged column edge logic */
@@ -428,6 +467,17 @@ printf("fitcols=%d\n",fitcols);
         if (masterinfo->fit_to_page==-2)
             masterinfo_flush(masterinfo,k2settings);
         }
+    /* Restore default DPI if it was altered */
+/*
+    if (size_reset)
+{
+#if (WILLUSDEBUGX & 0x200)
+printf("Restoring DPI?\n");
+#endif
+        k2settings->dst_width = k2settings->dst_userwidth;
+        k2pdfopt_settings_set_margins_and_devsize(k2settings,NULL,NULL,-99.,0);
+}
+*/
     pageregions_free(pageregions);
     }
 
@@ -1014,7 +1064,7 @@ void bmpregion_add(ADDED_REGION_INFO *added_region,K2PDFOPT_SETTINGS *k2settings
     newregion=&_newregion;
     bmpregion_init(newregion);
     bmpregion_copy(newregion,added_region->region,1);
-#if (WILLUSDEBUGX & 0x000001)
+#if (WILLUSDEBUGX & 0x000201)
 k2printf("@bmpregion_add (%d,%d) - (%d,%d)\n",region->c1,region->r1,region->c2,region->r2);
 k2printf("    trimflags = %X\n",added_region->trim_flags);
 k2printf("    allow_text_wrapping = %d\n",added_region->allow_text_wrapping);
@@ -2156,6 +2206,7 @@ static void bmpregion_vertically_break(BMPREGION *region,K2PDFOPT_SETTINGS *k2se
     int ng;
     int *nfirstrow,*nlastrow;
     int nng;
+    int trim_mode,rblank;
     ADDED_REGION_INFO added_region;
     static char *funcname="bmpregion_vertically_break";
 
@@ -2207,7 +2258,14 @@ k2printf("    notes=%p\n",notes);
     added_region.justification_flags=0x8f; 
     added_region.rowbase_delta=-1;
     /* Use dynamic aperture and remove small rows */
+    /* v2.36--don't trim if blank */
+    trim_mode=k2settings_trim_mode(k2settings);
+    rblank=bmpregion_is_blank(region,k2settings);
+    if (trim_mode && rblank)
+        k2settings->src_trim=0;
     bmpregion_find_textrows(region,k2settings,1,1,k2settings->join_figure_captions);
+    if (trim_mode && rblank)
+        k2settings->src_trim=1;
     textrows=&region->textrows;
     textrow=textrows->textrow;
     n=textrows->n;
@@ -2384,7 +2442,7 @@ printf("Added_region.force_scale = %g\n",added_region.force_scale);
         }
     else
         revert=0;
-#if (WILLUSDEBUGX & 1)
+#if (WILLUSDEBUGX & 0x201)
 k2printf("Entering vert region loop, %d regions.\n",n);
 {
 int i;
@@ -2393,7 +2451,8 @@ k2printf("    Region %d:  r1=%d, r2=%d, gapblank=%d\n",i,textrow[i].r1,textrow[i
 }
 #endif
     /* Un-trim top and bottom region if necessary */
-    if (!k2settings->src_trim && n>0)
+    /* v2.36--also factor in blank region */
+    if (((trim_mode && rblank) || !k2settings->src_trim) && n>0)
         {
         textrow[0].r1=region->r1;
         textrow[n-1].r2=region->r2;
@@ -2415,7 +2474,11 @@ printf("Notes row group %2d:  %3d - %3d out of %3d (r1=%d)\n",i+1,nfirstrow[i],n
         }
     /* Add the regions (broken vertically) */
     added_region.caller_id=1;
-    added_region.trim_flags=k2settings->src_trim ? 0xf : 0x80;
+    /* v2.36--adjust trim flags if region is blank and we're in trim mode with -bp */
+    if (trim_mode && rblank)
+        added_region.trim_flags=0x80;
+    else
+        added_region.trim_flags=k2settings->src_trim ? 0xf : 0x80;
     added_region.maps_to_source = 1;
     for (ni=i=0;i<ng;i++)
         {
@@ -2616,6 +2679,9 @@ aprintf(ANSI_RED "mi->mandatory_region_gap changed to 1 by vertically_break." AN
     new_added_region.region=region;
     new_added_region.firstrow=0;
     new_added_region.lastrow=region->textrows.n-1;
+#if (WILLUSDEBUGX & 0x200)
+aprintf(ANSI_MAGENTA "Adding region.\n" ANSI_NORMAL);
+#endif
     bmpregion_add(&new_added_region,k2settings,masterinfo);
     }
     bmpregion_free(region);

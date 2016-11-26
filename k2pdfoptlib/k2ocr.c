@@ -92,7 +92,7 @@ void k2ocr_init(K2PDFOPT_SETTINGS *k2settings)
             k2printf("%s\n",initstr);
             k2printf(TTEXT_NORMAL);
             if (k2ocr_tess_status)
-                k2printf(TTEXT_WARN "Could not find Tesseract data" TTEXT_NORMAL " (env var TESSDATA_PREFIX = %s).\nUsing GOCR v0.49.\n\n",getenv("TESSDATA_PREFIX")==NULL?"(not assigned)":getenv("TESSDATA_PREFIX"));
+                k2printf(TTEXT_WARN "Could not find Tesseract data" TTEXT_NORMAL " (env var TESSDATA_PREFIX = %s).\nUsing GOCR v0.50.\n\n",getenv("TESSDATA_PREFIX")==NULL?"(not assigned)":getenv("TESSDATA_PREFIX"));
             k2ocr_tess_inited=1;
             }
 #ifdef HAVE_GOCR_LIB
@@ -106,7 +106,7 @@ void k2ocr_init(K2PDFOPT_SETTINGS *k2settings)
             {
             if (!k2ocr_gocr_inited)
                 {
-                k2printf(TTEXT_BOLD "GOCR v0.49 OCR Engine" TTEXT_NORMAL "\n\n");
+                k2printf(TTEXT_BOLD "GOCR v0.50 OCR Engine" TTEXT_NORMAL "\n\n");
                 k2ocr_gocr_inited=1;
                 }
             }
@@ -331,7 +331,7 @@ fflush(stdout);
 #endif
 #endif
 #ifdef HAVE_GOCR_LIB
-                jocr_single_word_from_bmp8(wordbuf,255,newregion->bmp8,
+                gocr_single_word_from_bmp8(wordbuf,255,newregion->bmp8,
                                             textwords->textrow[j].c1,
                                             textwords->textrow[j].r1,
                                             textwords->textrow[j].c2,

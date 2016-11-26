@@ -1,4 +1,4 @@
-char *k2pdfopt_version = "v2.35";
+char *k2pdfopt_version = "v2.36";
 /*
 ** k2version.c  K2pdfopt version number and history.
 **
@@ -18,6 +18,24 @@ char *k2pdfopt_version = "v2.35";
 ** along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **
 ** VERSION HISTORY
+**
+** V2.36 26 NOV 2016
+**           ENHANCEMENTS
+**           - The -colorfg and -colorbg options can take an array of colors, in
+**             which case each array element is used for the next row of text.
+**             See usage.  Suggested in a 5 Nov 2016 e-mail.
+**           BUG FIXES
+**           - If using -mode trim with -bp, blank pages are passed through to
+**             the output file as if -mode copy.  From 11-16-2016 e-mail.
+**           - Minimum dpi allowed from k2settings_settings_set_margins_and_devsize
+**             is 1.
+**           - Fixed bug where -bp was not recognized if at the end of a command line.
+**           - -ocrvis b did not work before without 's'.  Now it does.
+**           - Fixed Tesseract to correctly parse .traineddata files when certain
+**             locales are set.  It was not correctly parsing Chinese .traineddata
+**             files on my Windows 10 system because of the locale.
+**           - Updated GOCR library to GOCR v0.50.  Not convinced it is improved.
+**           - Re-ordered some command line options in usage to keep them alphabetical.
 **
 ** V2.35 22 OCT 2016 
 **           ENHANCEMENTS

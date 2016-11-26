@@ -993,7 +993,9 @@ void bmp_paint_white(WILLUSBITMAP *bmpgray,WILLUSBITMAP *bmp,int white_thresh)
 
 
 /* Added in v2.22 -- -colorfg and -colorbg options */
-void bmp_change_colors(WILLUSBITMAP *bmp,char *colorfg,int fgtype,char *colorbg,int bgtype)
+void bmp_change_colors(WILLUSBITMAP *bmp,WILLUSBITMAP *mask,
+                       char *colorfg,int fgtype,char *colorbg,int bgtype,
+                       int c1,int r1,int c2,int r2)
 
     {
     int change_only_gray;
@@ -1065,30 +1067,33 @@ void bmp_change_colors(WILLUSBITMAP *bmp,char *colorfg,int fgtype,char *colorbg,
         if (bgbmp!=NULL && bgbmp->bpp!=24)
             bmp_promote_to_24(bgbmp);
         }
-    for (r=0;r<bmp->height;r++)
+    for (r=r1;r<bmp->height && r<=r2;r++)
         {
         unsigned char *p;
+        unsigned char *pm;
         unsigned char *pfg;
         unsigned char *pbg;
         int j;
-        p=bmp_rowptr_from_top(bmp,r);
-        pfg = fgbmp==NULL ? NULL : bmp_rowptr_from_top(fgbmp,r%fgbmp->height);
-        pbg = bgbmp==NULL ? NULL : bmp_rowptr_from_top(bgbmp,r%bgbmp->height);
-        for (j=0;j<bmp->width;j++)
+        p=bmp_rowptr_from_top(bmp,r)+c1*kmax;
+        pm=bmp_rowptr_from_top(mask,r)+c1*kmax;
+        pfg = fgbmp==NULL ? NULL : bmp_rowptr_from_top(fgbmp,r%fgbmp->height)+(c1%fgbmp->width)*kmax;
+        pbg = bgbmp==NULL ? NULL : bmp_rowptr_from_top(bgbmp,r%bgbmp->height)+(c1%bgbmp->width)*kmax;
+        for (j=c1;j<=c2 && j<bmp->width;j++)
             {
             int k;
-            if (change_only_gray && kmax==3 && !gscale(p))
+            if (change_only_gray && kmax==3 && !gscale(pm))
                 {
                 p+=kmax;
+                pm+=kmax;
                 continue;
                 }
-            for (k=0;k<kmax;k++,p++)
+            for (k=0;k<kmax;k++,pm++,p++)
                 {
                 int x,fgc,bgc;
 
-                x = p[0];
-                fgc = pfg==NULL ? fg[k] : pfg[(j%fgbmp->width)*kmax+k];
-                bgc = pbg==NULL ? bg[k] : pbg[(j%bgbmp->width)*kmax+k];
+                x = pm[0];
+                fgc = pfg==NULL ? (colorfg[0]=='\0' ? p[0]:fg[k]) : pfg[(j%fgbmp->width)*kmax+k];
+                bgc = pbg==NULL ? (colorbg[0]=='\0' ? p[0]:bg[k]) : pbg[(j%bgbmp->width)*kmax+k];
                 x = fgc + x*(bgc-fgc)/255;
                 p[0] = x;
                 }

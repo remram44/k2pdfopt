@@ -692,8 +692,13 @@ int parse_cmd_args(K2PDFOPT_CONVERSION *k2conv,STRBUF *env,STRBUF *cmdline,
                     k2settings->dst_break_pages=3;
                 continue;
                 }
+            /* v2.36;  Fix if -bp is at end of cmd line */
             if (cmdlineinput_next(cl)==NULL)
+                {
+                if (setvals==1)
+                    k2settings->dst_break_pages=2;
                 break;
+                }
             if (is_a_number(cl->cmdarg) || !stricmp(cl->cmdarg,"m"))
                 {
                 if (setvals==1)
@@ -1352,8 +1357,8 @@ printf("units=%d\n",k2settings->srccropmargins.units[0]);
                 readnext=0;
             continue;
             }
-        NEEDS_STRING("-colorbg",dst_bgcolor,11,0);
-        NEEDS_STRING("-colorfg",dst_fgcolor,11,0);
+        NEEDS_STRING("-colorbg",dst_bgcolor,MAXFILENAMELEN-1,0);
+        NEEDS_STRING("-colorfg",dst_fgcolor,MAXFILENAMELEN-1,0);
         NEEDS_STRING("-toclist",toclist,2047,0);
         NEEDS_STRING("-tocsave",tocsavefile,MAXFILENAMELEN-1,0);
         NEEDS_STRING("-bpl",bpl,2047,0);

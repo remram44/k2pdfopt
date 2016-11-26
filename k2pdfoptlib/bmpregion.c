@@ -397,6 +397,29 @@ void bmpregion_free(BMPREGION *region)
 
 
 /*
+** New function in v2.36 to assess whether a region is blank
+** Somewhat heuristic.
+*/
+int bmpregion_is_blank(BMPREGION *srcregion,K2PDFOPT_SETTINGS *k2settings)
+
+    {
+    BMPREGION region;
+    double a1,a2;
+
+    bmpregion_init(&region);
+    bmpregion_copy(&region,srcregion,0);
+    bmpregion_trim_margins(&region,k2settings,0xf);
+    bmpregion_free(&region);
+    a1=(double)srcregion->bmp->width*srcregion->bmp->height;
+    a2=(double)(region.c2-region.c1+1)*(region.r2-region.r1+1);
+#if (WILLUSDEBUGX & 0x200)
+printf("a1=%g, a2=%g, a2/a1=%g\n",a1,a2,a2/a1);
+#endif
+    return(region.c2-region.c1<=5 || region.r2-region.r1<=5 || a2/a1<1e-4);
+    }
+
+
+/*
 ** Doesn't copy the colcount / rowcount pointers--those get NULLed.
 */
 void bmpregion_copy(BMPREGION *dst,BMPREGION *src,int copy_text_rows)
@@ -447,7 +470,6 @@ void bmpregion_calc_bbox(BMPREGION *region,K2PDFOPT_SETTINGS *k2settings,int cal
     TEXTROW *bbox;
 
 #if (WILLUSDEBUGX & 2)
-if (region->r1==2135)
 {
 printf("@bmpregion_calc_bbox(%d,%d)-(%d,%d)\n",region->c1,region->r1,region->c2,region->r2);
 printf("    bmp8 = %d x %d\n",region->bmp8->width,region->bmp8->height);
@@ -485,7 +507,6 @@ printf("    region->rowcount=%p\n",region->rowcount);
     rowcount=region->rowcount;
     n=bbox->c2-bbox->c1+1;
 #if (WILLUSDEBUGX & 2)
-if (region->r1==2135)
 k2printf("Trim:  reg=(%d,%d) - (%d,%d)\n",bbox->c1,bbox->r1,bbox->c2,bbox->r2);
 /*
 if (bbox->c2+1 > cca || bbox->r2+1 > rca)
@@ -509,7 +530,6 @@ exit(10);
                 }
         }
 #if (WILLUSDEBUGX & 2)
-if (region->r1==2135)
 {
 if (region->rowcount!=NULL)
 {

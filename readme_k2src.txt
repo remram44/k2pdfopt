@@ -1,7 +1,7 @@
 K2pdfopt build help.
 http://willus.com
 Original: 7 September 2012
-Last updated: 22 Oct 2016 (v2.35)
+Last updated: 26 Nov 2016 (v2.36)
 
 This "read me" file describes the source code distribution for k2pdfopt.
 
@@ -53,7 +53,7 @@ NOTE 4 below).
 
     FOR OCR VERSIONS OF K2PDFOPT (search for HAVE_OCR in k2pdfopt.c)
     ----------------------------------------------------------------
-    9.  GOCR 0.49 (sourceforge.net/jocr/)
+    9.  GOCR 0.50 (sourceforge.net/jocr/)
     10. Leptonica 1.72 (leptonica.com)
     11. Tesseract 3.04.01 (C++) (code.google.com/tesseract-ocr/) -- SEE NOTE 2.
 
