@@ -38,11 +38,11 @@ static void endian_flip(char *x,int n);
 /*
 ** Returns 0 for success, NZ for failure.
 */
-int ocrtess_init(char *datadir,char *lang,FILE *out,char *initstr,int maxlen)
+void *ocrtess_init(char *datadir,char *lang,FILE *out,char *initstr,int maxlen,int *status)
 
     {
     char langdef[16];
-    int status;
+    void *api;
 
     if (lang==NULL || lang[0]=='\0')
         lang_default(langdef);
@@ -52,20 +52,14 @@ int ocrtess_init(char *datadir,char *lang,FILE *out,char *initstr,int maxlen)
         langdef[15]='\0';
         }
     /* Try CUBE/COMBINED first */
-    status=tess_capi_init(datadir,langdef,0,out,initstr,maxlen);
+    api=tess_capi_init(datadir,langdef,0,out,initstr,maxlen,status);
     /* Next try just CUBE if that didn't work */
-    if (status)
-        {
-        tess_capi_end();
-        status=tess_capi_init(datadir,langdef,2,out,initstr,maxlen);
-        }
+    if (api==NULL)
+        api=tess_capi_init(datadir,langdef,2,out,initstr,maxlen,status);
     /* Final try:  regular */
-    if (status)
-        {
-        tess_capi_end();
-        status=tess_capi_init(datadir,langdef,1,out,initstr,maxlen);
-        }
-    return(status);
+    if (api==NULL)
+        api=tess_capi_init(datadir,langdef,1,out,initstr,maxlen,status);
+    return(api);
     }
 
 
@@ -137,10 +131,10 @@ static int has_cube_data(char *lang)
 */
 
 
-void ocrtess_end(void)
+void ocrtess_end(void *api)
 
     {
-    tess_capi_end();
+    tess_capi_end(api);
     }
 
 /*
@@ -149,7 +143,7 @@ void ocrtess_end(void)
 ** Output:
 **     "text" gets UTF-8 formatted string of OCR'd text.
 */
-void ocrtess_single_word_from_bmp8(char *text,int maxlen,WILLUSBITMAP *bmp8,
+void ocrtess_single_word_from_bmp8(void *api,char *text,int maxlen,WILLUSBITMAP *bmp8,
                                 int x1,int y1,int x2,int y2,
                                 int ocr_type,int allow_spaces,
                                 int std_proc,FILE *out)
@@ -188,7 +182,7 @@ void ocrtess_single_word_from_bmp8(char *text,int maxlen,WILLUSBITMAP *bmp8,
     for (i=y1;i<=y2;i++,dst+=dw,src+=bmp8->width) 
         memcpy(dst,src,w);
     endian_flip((char *)pixGetData(pix),pixGetWpl(pix)*pixGetHeight(pix));
-    status=tess_capi_get_ocr(pix,text,maxlen,out);
+    status=tess_capi_get_ocr(api,pix,text,maxlen,out);
     pixDestroy(&pix);
     if (status<0)
         text[0]='\0';

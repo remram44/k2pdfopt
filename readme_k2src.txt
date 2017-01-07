@@ -1,7 +1,7 @@
 K2pdfopt build help.
 http://willus.com
 Original: 7 September 2012
-Last updated: 26 Nov 2016 (v2.36)
+Last updated: 7 Jan 2017 (v2.40)
 
 This "read me" file describes the source code distribution for k2pdfopt.
 
@@ -56,6 +56,7 @@ NOTE 4 below).
     9.  GOCR 0.50 (sourceforge.net/jocr/)
     10. Leptonica 1.72 (leptonica.com)
     11. Tesseract 3.04.01 (C++) (code.google.com/tesseract-ocr/) -- SEE NOTE 2.
+    12. POSIX threads support (pretty standard with gcc implementations)
 
     If you don't include MuPDF, DjVuLibre, or OCR, then k2pdfopt will
     look for an installation of Ghostscript.
@@ -110,7 +111,7 @@ to libxxx.a files in d:\3rdparty_lib and headers are in d:\3rdparty_include):
 
     3. gcc -Ofast -m64 -Wall -c -Id:\3rdparty_include k2pdfopt.c
 
-    4. g++ -Ofast -m64 -Wall -o k2pdfopt.exe k2pdfopt.o resfile.o -static-libgcc -static-libstdc++ d:\mingw\x64\lib\crt_noglob.o -Ld:\3rdparty_lib -lk2pdfopt -lwillus -lgocr -ltesseract -lleptonica -ldjvu -lmupdf -lfreetype -ljbig2 -ljpeglib -lopenjpeg -lpng -lzlib -lgdi32 -luuid -lole32 -lcomdlg32 -lshlwapi
+    4. g++ -Ofast -m64 -Wall -o k2pdfopt.exe k2pdfopt.o resfile.o -static-libgcc -static-libstdc++ d:\mingw\x64\lib\crt_noglob.o -Ld:\3rdparty_lib -lk2pdfopt -lwillus -lgocr -ltesseract -lleptonica -ldjvu -lmupdf -lfreetype -ljbig2 -ljpeglib -lopenjpeg -lpng -lzlib -lpthread -lgdi32 -luuid -lole32 -lcomdlg32 -lshlwapi
 
 
     32-bit
@@ -121,7 +122,7 @@ to libxxx.a files in d:\3rdparty_lib and headers are in d:\3rdparty_include):
 
     3. gcc -Ofast -m32 -Wall -c -Id:\3rdparty_include k2pdfopt.c
 
-    4. g++ -Ofast -m32 -Wall -o k2pdfopt.exe k2pdfopt.o resfile.o -static-libgcc -static-libstdc++ d:\mingw\i386\lib\crt_noglob.o -Ld:\3rdparty_lib -lk2pdfopt -lwillus -lgocr -ltesseract -lleptonica -ldjvu -lmupdf -lfreetype -ljbig2 -ljpeglib -lopenjpeg -lpng -lzlib -lgdi32 -luuid -lole32 -lcomdlg32 -lshlwapi
+    4. g++ -Ofast -m32 -Wall -o k2pdfopt.exe k2pdfopt.o resfile.o -static-libgcc -static-libstdc++ d:\mingw\i386\lib\crt_noglob.o -Ld:\3rdparty_lib -lk2pdfopt -lwillus -lgocr -ltesseract -lleptonica -ldjvu -lmupdf -lfreetype -ljbig2 -ljpeglib -lopenjpeg -lpng -lzlib -lpthread -lgdi32 -luuid -lole32 -lcomdlg32 -lshlwapi
 
 
 Build Steps on Linux (64-bit, gcc 4.8.5, compiled on CentOS 7.2)

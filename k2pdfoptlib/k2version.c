@@ -1,8 +1,8 @@
-char *k2pdfopt_version = "v2.36";
+char *k2pdfopt_version = "v2.40";
 /*
 ** k2version.c  K2pdfopt version number and history.
 **
-** Copyright (C) 2016  http://willus.com
+** Copyright (C) 2017  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -17,7 +17,24 @@ char *k2pdfopt_version = "v2.36";
 ** You should have received a copy of the GNU Affero General Public License
 ** along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **
+**
 ** VERSION HISTORY
+**
+** V2.40 7 JAN 2017
+**           NEW FEATURE
+**           - OCR processing is now multithreaded.  This may provide a significant
+**             boost in OCR processing speed depending on how many CPU threads you
+**             have available.  See the -nt option.  As part of this upgrade, the
+**             OCR and total CPU time are now echoed for each run (using the
+**             clock() function).  Include MS Windows GUI control for number of
+**             CPUS.  Inspired by Harry Shamanski's Elucidate app.
+**           BUG FIXES
+**           - Fixed a couple of minor places in the usage where options were not
+**             in alphabetical order.
+**           - k2printf() flushes stdout.
+**           - MS Windows GUI crop selection does not ask for page range if
+**             document only has one page.
+**           - MS Windows GUI no longer exceeds size of desktop when maximized.
 **
 ** V2.36 26 NOV 2016
 **           ENHANCEMENTS

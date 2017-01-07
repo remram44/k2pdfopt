@@ -4,7 +4,7 @@
 **
 ** Part of willus.com general purpose C code library.
 **
-** Copyright (C) 2016  http://willus.com
+** Copyright (C) 2017  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -968,6 +968,25 @@ int willusgui_window_get_rect(WILLUSGUIWINDOW *win,WILLUSGUIRECT *guirect)
     int status;
 
     status=GetWindowRect(win==NULL ? GetDesktopWindow() : (HWND)win->handle,&rect);
+    guirect->left=rect.left;
+    guirect->right=rect.right;
+    guirect->bottom=rect.bottom;
+    guirect->top=rect.top;
+    return(status);
+#else
+    return(0);
+#endif
+    }
+
+
+int willusgui_get_desktop_workarea(WILLUSGUIRECT *guirect)
+
+    {
+#ifdef MSWINGUI
+    RECT rect;
+    int status;
+
+    status=SystemParametersInfo(SPI_GETWORKAREA,0,&rect,0);
     guirect->left=rect.left;
     guirect->right=rect.right;
     guirect->bottom=rect.bottom;

@@ -54,7 +54,7 @@
 /* C Wrappers */
 #include "tesseract.h"
 
-static tesseract::TessBaseAPI api;
+// static tesseract::TessBaseAPI api[4];
 
 /*
 ** ocr_type=0:  OEM_DEFAULT
@@ -62,12 +62,12 @@ static tesseract::TessBaseAPI api;
 ** ocr_type=2:  OEM_CUBE_ONLY
 ** ocr_type=3:  OEM_TESSERACT_CUBE_COMBINED
 */
-int tess_capi_init(char *datapath,char *language,int ocr_type,FILE *out,
-                   char *initstr,int maxlen)
+void *tess_capi_init(char *datapath,char *language,int ocr_type,FILE *out,
+                     char *initstr,int maxlen,int *status)
 
     {
-    int status;
     char original_locale[256];
+    tesseract::TessBaseAPI *api = new tesseract::TessBaseAPI;
 
 #ifdef USE_NLS
     setlocale (LC_ALL, "");
@@ -109,17 +109,19 @@ int tess_capi_init(char *datapath,char *language,int ocr_type,FILE *out,
         }
     */
 
-    api.SetOutputName(NULL);
-    status=api.Init(datapath,lang,
-             ocr_type==0 ? tesseract::OEM_DEFAULT :
+    api->SetOutputName(NULL);
+    (*status)=api->Init(datapath,lang,
+              ocr_type==0 ? tesseract::OEM_DEFAULT :
                 (ocr_type==1 ? tesseract::OEM_TESSERACT_ONLY :
                    (ocr_type==2 ? tesseract::OEM_CUBE_ONLY :
                                   (tesseract::OEM_TESSERACT_CUBE_COMBINED))));
-    if (status)
+    if ((*status)!=0)
         {
         /* willus mod, 11-24-16 */
         setlocale(LC_ALL,original_locale);
-        return(status);
+        api->End();
+        delete api;
+        return(NULL);
         }
     /*
     api.Init("tesscapi",lang,tesseract::OEM_DEFAULT,
@@ -137,8 +139,8 @@ int tess_capi_init(char *datapath,char *language,int ocr_type,FILE *out,
     // tesseract::PSM_SINGLE_BLOCK is from the command line.
     // It would be simpler if we could set the value before Init,
     // but that doesn't work.
-    if (api.GetPageSegMode() == tesseract::PSM_SINGLE_BLOCK)
-        api.SetPageSegMode(pagesegmode);
+    if (api->GetPageSegMode() == tesseract::PSM_SINGLE_BLOCK)
+        api->SetPageSegMode(pagesegmode);
 
     /*
     ** Initialization message
@@ -165,41 +167,50 @@ int tess_capi_init(char *datapath,char *language,int ocr_type,FILE *out,
 
 
     /* Turn off CUBE debugging output */
-    api.SetVariable("cube_debug_level","0");
+    api->SetVariable("cube_debug_level","0");
 #if (WILLUSDEBUG & 1)
-    api.SetVariable("cube_debug_level","9");
-    api.SetVariable("paragraph_debug_level","9");
-    api.SetVariable("tessdata_manager_debug_level","9");
-    api.SetVariable("tosp_debug_level","9");
-    api.SetVariable("wordrec_debug_level","9");
-    api.SetVariable("segsearch_debug_level","9");
+    api->SetVariable("cube_debug_level","9");
+    api->SetVariable("paragraph_debug_level","9");
+    api->SetVariable("tessdata_manager_debug_level","9");
+    api->SetVariable("tosp_debug_level","9");
+    api->SetVariable("wordrec_debug_level","9");
+    api->SetVariable("segsearch_debug_level","9");
 #endif
     /* willus mod, 11-24-16 */
     setlocale(LC_ALL,original_locale);
-    return(0);
+    return((void *)api);
     }
 
 
-int tess_capi_get_ocr(PIX *pix,char *outstr,int maxlen,FILE *out)
+int tess_capi_get_ocr(void *vapi,PIX *pix,char *outstr,int maxlen,FILE *out)
 
     {
-    if (!api.ProcessPage(pix,0,NULL,NULL,0,NULL))
+    tesseract::TessBaseAPI *api;
+
+    api=(tesseract::TessBaseAPI *)vapi;
+    if (!api->ProcessPage(pix,0,NULL,NULL,0,NULL))
         {
         /* pixDestroy(&pix); */
         if (out!=NULL)
             fprintf(out,"tesscapi:  Error during bitmap processing.\n");
-        api.Clear();
+        api->Clear();
         return(-1);
         }
-    strncpy(outstr,api.GetUTF8Text(),maxlen-1);
+    strncpy(outstr,api->GetUTF8Text(),maxlen-1);
     outstr[maxlen-1]='\0';
-    api.Clear();
+    api->Clear();
     return(0);
     }
 
 
-void tess_capi_end(void)
+void tess_capi_end(void *vapi)
 
     {
-    api.End();
+    tesseract::TessBaseAPI *api;
+
+    if (vapi==NULL)
+        return;
+    api=(tesseract::TessBaseAPI *)vapi;
+    api->End();
+    delete api;
     }

@@ -214,6 +214,9 @@ void k2pdfopt_settings_init(K2PDFOPT_SETTINGS *k2settings)
     /* v2.35 */
     k2settings->user_mag=0; /* No magnification adjustment */
     k2settings->join_figure_captions=1;  /* Default: join captions with figures */
+
+    /* v2.36 */
+    k2settings->nthreads=-50; /* Use 50% of available CPUs */
     }
 
 

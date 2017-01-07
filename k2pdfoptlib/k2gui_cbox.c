@@ -2,7 +2,7 @@
 ** k2gui_cbox.c   K2pdfopt WILLUSGUI for the conversion dialog box.
 **                (Non-OS-specific calls.)
 **
-** Copyright (C) 2016  http://willus.com
+** Copyright (C) 2017  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -378,6 +378,7 @@ static void k2gui_cbox_start_conversion(void *data)
     K2PDFOPT_CONVERSION *k2conv;
     K2PDFOPT_SETTINGS *k2settings;
     K2PDFOPT_FILELIST_PROCESS k2listproc;
+    double start,stop;
     static char *funcname="k2gui_cbox_start_conversion";
 
     ptrs=(void **)data;
@@ -386,6 +387,7 @@ static void k2gui_cbox_start_conversion(void *data)
     /*
     ** Count files
     */
+    start=(double)clock()/CLOCKS_PER_SEC;
     k2gui_cbox_set_num_files(1);
     k2gui_cbox_set_files_completed(0,"Counting files...");
     overwrite_set(1);
@@ -442,6 +444,8 @@ printf("\n\nDone conversion...\n\n");
         willus_mem_free((double **)&buf,funcname);
         }
     k2gui_cbox_set_files_completed(k2listproc.filecount,NULL);
+    stop=(double)clock()/CLOCKS_PER_SEC;
+    k2sys_cpu_update(k2settings,start,stop);
     if (k2listproc.filecount==k2conv->k2files.n && k2gui_cbox->error_count==0)
         k2gui_cbox->successful=1;
     k2gui_cbox_conversion_thread_cleanup();

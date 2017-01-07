@@ -2,7 +2,7 @@
 ** k2file.c      K2pdfopt file handling and main file processing
 **               function (k2pdfopt_proc_one()).
 **
-** Copyright (C) 2016  http://willus.com
+** Copyright (C) 2017  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -1552,6 +1552,22 @@ static int file_numpages(char *filename,char *mupdffilename,int src_type,int *us
         np=pdf_numpages(filename);
 #endif
     return(np);
+    }
+
+
+int k2file_get_num_pages(char *filename)
+
+    {
+    int src_type,usegs;
+    char mupdffilename[MAXFILENAMELEN];
+
+    src_type = get_source_type(filename);
+    if (src_type!=SRC_TYPE_PDF && src_type!=SRC_TYPE_DJVU)
+        return(-1);
+    strncpy(mupdffilename,filename,MAXFILENAMELEN-1);
+    mupdffilename[MAXFILENAMELEN-1]='\0';
+    usegs=-1;
+    return(file_numpages(filename,mupdffilename,src_type,&usegs));
     }
 
 

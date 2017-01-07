@@ -1,7 +1,7 @@
 /*
 ** k2pdfopt.h   Main include file for k2pdfopt source modules.
 **
-** Copyright (C) 2016  http://willus.com
+** Copyright (C) 2017  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -409,6 +409,8 @@ typedef struct
     int user_mag; /* User has adjusted mag level with -odpi(1) or -fs(2) */
     int join_figure_captions; /* 1=try not to separate captions from figures */
                               /* 2=do it even for multi-column */
+    /* v2.40 */
+    int nthreads; /* Negative = percent of cpus */
     } K2PDFOPT_SETTINGS;
 
 
@@ -737,6 +739,7 @@ void k2pdfopt_proc_wildarg(K2PDFOPT_SETTINGS *k2settings,char *arg,
                            K2PDFOPT_FILELIST_PROCESS *k2listproc);
 void wpdfboxes_echo(WPDFBOXES *boxes,FILE *out);
 void overwrite_set(int status);
+int  k2file_get_num_pages(char *filename);
 void k2file_get_overlay_bitmap(WILLUSBITMAP *bmp,double *dpi,char *filename,char *pagelist);
 void k2file_look_for_pagebreakmarks(K2PAGEBREAKMARKS *k2pagebreakmarks,
                                     K2PDFOPT_SETTINGS *k2settings,WILLUSBITMAP *src,
@@ -744,6 +747,7 @@ void k2file_look_for_pagebreakmarks(K2PAGEBREAKMARKS *k2pagebreakmarks,
 
 /* k2sys.c */
 void k2sys_init(void);
+void k2sys_cpu_update(K2PDFOPT_SETTINGS *k2settings,double start_seconds,double stop_seconds);
 void k2sys_close(K2PDFOPT_SETTINGS *k2settings);
 void k2sys_header(char *s);
 void k2sys_exit(K2PDFOPT_SETTINGS *k2settings,int val);
@@ -1002,6 +1006,9 @@ void k2ocr_end(K2PDFOPT_SETTINGS *k2settings);
 #ifdef HAVE_OCR_LIB
 void k2ocr_ocrwords_fill_in_ex(MASTERINFO *masterinfo,OCRWORDS *words,BMPREGION *region,
                                K2PDFOPT_SETTINGS *k2settings);
+double k2ocr_cpu_time_secs(void);
+void k2ocr_cpu_time_reset(void);
+int k2ocr_max_threads(void);
 #endif
 
 /* pagelist.c */

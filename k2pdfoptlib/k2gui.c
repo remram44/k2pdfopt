@@ -589,7 +589,7 @@ static void k2gui_main_window_init(int normal_size)
     /* Fill in a couple settings buttons if they are not already used */
     k2gui_set_button_defaults();
     /* Get desktop rectangle */
-    willusgui_window_get_rect(NULL,&dtrect);
+    willusgui_get_desktop_workarea(&dtrect);
     if (k2gui_winposition_get(&k2gui->mainwin.rect))
         {
         int w,h;
@@ -1014,6 +1014,21 @@ printf("settings->src_trim=%d\n",k2settings->src_trim);
                         k2settings->word_spacing = fabs(atof(buf));
                     k2gui_update_controls();
                     }
+                else if (!strcmp(control->name,"nthreads"))
+                    {
+                    char buf[32];
+                    willusgui_control_get_text(control,buf,31);
+                    if (buf[0]!='\0' && buf[strlen(buf)-1]=='%')
+                        {
+                        buf[strlen(buf)-1]='\0';
+                        k2settings->nthreads = -atoi(buf);
+                        }
+                    else if (buf[0]=='\0')
+                        k2settings->nthreads = -50;
+                    else
+                        k2settings->nthreads = atoi(buf);
+                    k2gui_update_controls();
+                    }
                 else if (!strcmp(control->name,"landscapepages"))
                     {
                     willusgui_control_get_text(control,k2settings->dst_landscape_pages,1023);
@@ -1228,14 +1243,18 @@ printf("settings->src_trim=%d\n",k2settings->src_trim);
                         {
                         char optpagelist[256];
                         static int bcolors[3]={0x6060b0,0xf0f0f0,0xf0f0f0};
-                        int status;
+                        int status,np;
 
                         strncpy(optpagelist,box->pagelist,255);
                         optpagelist[255]='\0';                    
-                        status=willusgui_message_box(&k2gui->mainwin,"Optional page range",
+                        np=k2file_get_num_pages(filename);
+                        if (np!=1)
+                            status=willusgui_message_box(&k2gui->mainwin,"Optional page range",
                                         "Specify the page range to display:",
                                         "*&OK","&Cancel","",optpagelist,255,18,600,
                                          0xe0e0e0,bcolors,NULL,1);
+                        else
+                            status=1;
                         if (status==1)
                             {
                             n=k2gui_overlay_get_crop_margins(k2gui,filename,optpagelist,margins);
@@ -1625,9 +1644,13 @@ printf("K2PDFOPT <-- '%s'\n",buf);
             break;
         case WILLUSGUIACTION_WINDOWSIZECHANGE:
             {
-            WILLUSGUIRECT rect;
-            int ww,new_width,new_height;
+            WILLUSGUIRECT rect,dtrect;
+            int ww,new_width,new_height,dtw,dth;
 
+            /* Get desktop rectangle -- v2.40 */
+            willusgui_get_desktop_workarea(&dtrect);
+            dtw=dtrect.right-dtrect.left;
+            dth=dtrect.bottom-dtrect.top;
             new_width  = message->param[0];
             new_height = message->param[1];
             willusgui_window_get_rect(&k2gui->mainwin,&rect);
@@ -1638,6 +1661,17 @@ printf("K2PDFOPT <-- '%s'\n",buf);
                 new_height = new_width*K2WIN_MINHEIGHT/K2WIN_MINWIDTH;
             else
                 new_width = new_height*K2WIN_MINWIDTH/K2WIN_MINHEIGHT;
+            /* v2.40--limit window size to fit screen */
+            if (new_height > dth)
+                {
+                new_height = dth;
+                new_width = new_height*K2WIN_MINWIDTH/K2WIN_MINHEIGHT;
+                }
+            if (new_width > dtw)
+                {
+                new_width = dtw;
+                new_height = new_width*K2WIN_MINHEIGHT/K2WIN_MINWIDTH;
+                }
             message->param[0]=new_width;
             message->param[1]=new_height;
             break;
@@ -3310,6 +3344,8 @@ printf("cmdxtra.s='%s'\n",k2gui->cmdxtra.s);
             textbox=2;
         else if (!stricmp(checkboxname[i],"opfontsize"))
             textbox=3;
+        else if (!stricmp(checkboxname[i],"ocr"))
+            textbox=4;
         else
             textbox=0;
         c=i/n2;
@@ -3436,7 +3472,9 @@ printf("cmdxtra.s='%s'\n",k2gui->cmdxtra.s);
                 willusgui_control_init(control);
                 if (textbox==3)
                     control->rect.left= ctrl1->rect.right + eheight;
-                else
+                else  if (textbox==4)
+                    control->rect.left= ctrl1->rect.right + eheight/4;
+                else 
                     control->rect.left= ctrl1->rect.right + eheight/2;
                 control->rect.top = ctrl1->rect.top+2;
                 control->rect.bottom = control->rect.top+fsize-1;
@@ -3444,8 +3482,10 @@ printf("cmdxtra.s='%s'\n",k2gui->cmdxtra.s);
                     control->rect.right = control->rect.left + eheight*1.5;
                 else if (textbox==2)
                     control->rect.right = control->rect.left + eheight*2.5;
-                else
+                else if (textbox==3)
                     control->rect.right = control->rect.left + eheight*2.0;
+                else
+                    control->rect.right = control->rect.left + eheight*1.2;
                 if (textbox==3)
                     control->font.size=fsize;
                 else
@@ -3461,9 +3501,20 @@ printf("cmdxtra.s='%s'\n",k2gui->cmdxtra.s);
                     strcpy(control->name,"landscapepages");
                 else if (textbox==3)
                     strcpy(control->name,"opfontsizeval");
-                control->label[0]='\0';
-                control->labelx=control->rect.left;
-                control->labely=control->rect.top;
+                else if (textbox==4)
+                    strcpy(control->name,"nthreads");
+                if (textbox==4)
+                    {
+                    strcpy(control->label,"CPUs");
+                    control->labelx=control->rect.right+eheight*.1;
+                    control->labely=control->rect.top+eheight*.1;
+                    }
+                else
+                    {
+                    control->label[0]='\0';
+                    control->labelx=control->rect.left;
+                    control->labely=control->rect.top;
+                    }
                 control->parent=&k2gui->mainwin;
                 }
             if (already_drawn)
@@ -3477,11 +3528,21 @@ printf("cmdxtra.s='%s'\n",k2gui->cmdxtra.s);
                 }
             else if (textbox==2)
                 willusgui_control_set_text(control,k2settings->dst_landscape_pages);
-            else
+            else if (textbox==3)
                 {
                 char buf[32];
                 sprintf(buf,"%.1f",k2gui->opfontsize);
                 willusgui_control_set_text(control,buf);
+                }
+            else
+                {
+                if (k2settings->nthreads<0)
+                    sprintf(xbuf,"%d%%",-k2settings->nthreads);
+                else if (k2settings->nthreads>0)
+                    sprintf(xbuf,"%d",k2settings->nthreads);
+                else
+                    xbuf[0]='\0';
+                willusgui_control_set_text(control,xbuf);
                 }
             }
         }
@@ -4254,7 +4315,12 @@ static void k2gui_contextmenu_by_control(WILLUSGUICONTROL *control)
             "layer of text will be added to the output PDF so that the "
             "text can be selected and/or searched.  You must have a "
             "Tesseract language library installed.  See "
-            "http://willus.com/k2pdfopt/help/ocr.shtml for more details.",
+            "http://willus.com/k2pdfopt/help/ocr.shtml for more details.\n\n"
+            "The \"CPUs\" box next to the OCR check box specifies how many "
+            "CPU threads to use for OCR processing.  It can be a percentage "
+            "of the available CPU threads or just a number of threads.  The "
+            "default is 50%, which typically provides a 1.5 - 2.5x speed "
+            "improvement.",
     #endif
         "_fitpage_",
             "Fit to Preview Window",

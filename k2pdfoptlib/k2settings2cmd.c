@@ -354,6 +354,7 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
         src->src_grid_order = dst->src_grid_order;
         }
     integer_check(cmdline,nongui,"-f2p",&src->dst_fit_to_page,dst->dst_fit_to_page);
+    integer_check(cmdline,NULL,"-nt",&src->nthreads,dst->nthreads);
     double_check(cmdline,nongui,"-vb",&src->vertical_break_threshold,dst->vertical_break_threshold);
     minus_check(cmdline,NULL,"-sm",&src->show_marked_source,dst->show_marked_source);
     minus_check(cmdline,nongui,"-toc",&src->use_toc,dst->use_toc);

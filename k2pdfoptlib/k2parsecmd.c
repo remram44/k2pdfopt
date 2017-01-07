@@ -1376,6 +1376,7 @@ printf("units=%d\n",k2settings->srccropmargins.units[0]);
         if (!stricmp(cl->cmdarg,"-fs") && setvals==1)
             k2settings->user_mag |= 2;
         NEEDS_VALUE_PLUS("-fs",dst_fontsize_pts)
+        NEEDS_INTEGER("-nt",nthreads)
         NEEDS_VALUE("-vls",vertical_line_spacing)
         NEEDS_VALUE("-vs",max_vertical_gap_inches)
         NEEDS_VALUE("-de",defect_size_pts)

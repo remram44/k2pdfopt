@@ -3,7 +3,7 @@
 **
 ** Part of willus.com general purpose C code library.
 **
-** Copyright (C) 2015  http://willus.com
+** Copyright (C) 2016  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -26,7 +26,7 @@
 #include <string.h>
 #include <math.h>
 #include <locale.h>
-#ifdef WIN32
+#ifdef HAVE_WIN32_API
 #include <windows.h>
 #endif
 #ifdef UNIX
@@ -307,6 +307,19 @@ void wsys_sleep(int secs)
     win_sleep(secs*1000);
 #else
     sleep(secs);
+#endif
+    }
+
+
+int wsys_num_cpus(void)
+
+    {
+#ifdef HAVE_WIN32_API
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo(&sysinfo);
+    return(sysinfo.dwNumberOfProcessors);
+#else
+    return((int)sysconf(_SC_NPROCESSORS_ONLN));
 #endif
     }
 

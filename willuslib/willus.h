@@ -1069,6 +1069,7 @@ void   wsys_system_version(char *system,char *_os,char *_chip,char *_compiler);
 int    wsys_win32_api(void);
 int    wsys_wpid_status(int wpid);
 void   wsys_sleep(int secs);
+int    wsys_num_cpus(void);
 char  *wsys_full_exe_name(char *s);
 void   wsys_append_nul_redirect(char *s);
 int    wsys_which(char *exactname,char *exename);
@@ -1376,12 +1377,12 @@ void gocr_single_word_from_bmp8(char *text,int maxlen,WILLUSBITMAP *bmp8,
 
 #ifdef HAVE_TESSERACT_LIB
 /* ocrtess.c */
-int ocrtess_init(char *datadir,char *lang,FILE *out,char *initstr,int maxlen);
-void ocrtess_end(void);
-void ocrtess_single_word_from_bmp8(char *text,int maxlen,WILLUSBITMAP *bmp8,
-                                int x1,int y1,int x2,int y2,
-                                int ocr_type,int allow_spaces,
-                                int std_proc,FILE *out);
+void *ocrtess_init(char *datadir,char *lang,FILE *out,char *initstr,int maxlen,int *status);
+void ocrtess_end(void *api);
+void ocrtess_single_word_from_bmp8(void *api,char *text,int maxlen,WILLUSBITMAP *bmp8,
+                                   int x1,int y1,int x2,int y2,
+                                   int ocr_type,int allow_spaces,
+                                   int std_proc,FILE *out);
 #endif
 
 /* pdfwrite.c */
@@ -1731,6 +1732,7 @@ void willusgui_control_get_text(WILLUSGUICONTROL *control,char *text,int maxlen)
 int  willusgui_control_get_textlen(WILLUSGUICONTROL *control);
 void willusgui_control_scroll_to_bottom(WILLUSGUICONTROL *control);
 int  willusgui_window_get_rect(WILLUSGUIWINDOW *win,WILLUSGUIRECT *guirect);
+int  willusgui_get_desktop_workarea(WILLUSGUIRECT *guirect);
 int  willusgui_window_set_pos(WILLUSGUIWINDOW *win,WILLUSGUIRECT *guirect);
 int  willusgui_window_get_useable_rect(WILLUSGUIWINDOW *win,WILLUSGUIRECT *guirect);
 void willusgui_window_accept_draggable_files(WILLUSGUIWINDOW *win);
