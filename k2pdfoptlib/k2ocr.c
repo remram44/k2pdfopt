@@ -527,6 +527,7 @@ fflush(stdout);
             }
          
 #if (WILLUSDEBUGX & 32)
+/*
 printf("..");
 fflush(stdout);
 if (wordbuf[0]!='\0')
@@ -542,6 +543,7 @@ k2printf("%s\n",wordbuf);
 else
 k2printf("(OCR failed)\n");
 counter++;
+*/
 #endif
             }
         bmpregion_free(newregion);

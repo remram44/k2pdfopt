@@ -4,7 +4,7 @@
 **
 ** Part of willus.com general purpose C code library.
 **
-** Copyright (C) 2015  http://willus.com
+** Copyright (C) 2016  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -192,7 +192,7 @@ static void closexref(fz_context *ctx, globals *glo)
 {
 	if (glo->doc)
 	{
-		pdf_close_document(ctx, glo->doc);
+		pdf_drop_document(ctx, glo->doc);
 		glo->doc = NULL;
 	}
 
@@ -213,14 +213,14 @@ static void showglobalinfo(fz_context *ctx, globals *glo,char *filename)
 	if (obj)
 	{
 		fz_printf(ctx, out, "Info object (%d %d R):\n", pdf_to_num(ctx, obj), pdf_to_gen(ctx, obj));
-		pdf_output_obj(ctx, out, pdf_resolve_indirect(ctx, obj), 1);
+		pdf_print_obj(ctx, out, pdf_resolve_indirect(ctx, obj), 1);
 	}
 
 	obj = pdf_dict_get(ctx, pdf_trailer(ctx, doc), PDF_NAME_Encrypt);
 	if (obj)
 	{
 		fz_printf(ctx, out, "\nEncryption object (%d %d R):\n", pdf_to_num(ctx, obj), pdf_to_gen(ctx, obj));
-		pdf_output_obj(ctx, out, pdf_resolve_indirect(ctx, obj), 1);
+		pdf_print_obj(ctx, out, pdf_resolve_indirect(ctx, obj), 1);
 	}
 
 	fz_printf(ctx, out, "\nPages: %d\n\n", glo->pagecount);
@@ -241,7 +241,7 @@ static void showglobalinfo(fz_context *ctx, globals *glo,char *filename)
         if (buf==NULL)
             {
             fz_printf(ctx,out,"Info object (%d %d R):\n",pdf_to_num(ctx,obj),pdf_to_gen(ctx,obj));
-		    pdf_output_obj(ctx,out,robj,1);
+		    pdf_print_obj(ctx,out,robj,1);
             }
         else
             {
@@ -269,7 +269,7 @@ static void showglobalinfo(fz_context *ctx, globals *glo,char *filename)
 	if (obj)
         {
 		fz_printf(ctx,out, "\nEncryption object (%d %d R):\n", pdf_to_num(ctx,obj), pdf_to_gen(ctx,obj));
-		pdf_output_obj(ctx,out, pdf_resolve_indirect(ctx,obj), 1);
+		pdf_print_obj(ctx,out, pdf_resolve_indirect(ctx,obj), 1);
         }
     }
 
@@ -1201,19 +1201,19 @@ void wmupdfinfo_get(char *filename,int *pagelist,char **buf)
     if (fout==NULL)
         return;
     
-	ctx = fz_new_context(NULL, NULL, FZ_STORE_UNLIMITED);
-	if (!ctx)
-	    {
-		fprintf(stderr, "cannot initialise context\n");
-		exit(1);
-	    }
+    ctx = fz_new_context(NULL, NULL, FZ_STORE_UNLIMITED);
+    if (!ctx)
+        {
+        fprintf(stderr, "cannot initialise context\n");
+        exit(1);
+        }
 
-	fz_var(out);
+    fz_var(out);
 
 	/* ret = 0; */
-	fz_try(ctx)
+    fz_try(ctx)
 	    {
-		out = fz_new_output_with_file(ctx,fout,1);
+		out = fz_new_output_with_file_ptr(ctx,fout,1);
 		pdfinfo_info(ctx,out,filename,password,show,pagelist);
 	    }
 	fz_catch(ctx)

@@ -411,6 +411,9 @@ typedef struct
                               /* 2=do it even for multi-column */
     /* v2.40 */
     int nthreads; /* Negative = percent of cpus */
+
+    /* v2.41 */
+    int src_erosion; /* Source erosion filter value */
     } K2PDFOPT_SETTINGS;
 
 
@@ -1038,6 +1041,7 @@ void   bmp_detect_vertical_lines(WILLUSBITMAP *bmp,WILLUSBITMAP *cbmp,double dpi
                                       double maxwidth_in,double minheight_in,double anglemax_deg,
                                       int white_thresh,int erase_vertical_lines,
                                       int debug,int verbose);
+void   k2bmp_erode(WILLUSBITMAP *src,WILLUSBITMAP *srcgrey,K2PDFOPT_SETTINGS *k2settings);
 void   bmp_adjust_contrast(WILLUSBITMAP *src,WILLUSBITMAP *srcgrey,
                            K2PDFOPT_SETTINGS *k2settings,int *white);
 void   bmp_paint_white(WILLUSBITMAP *bmpgray,WILLUSBITMAP *bmp,int white_thresh);

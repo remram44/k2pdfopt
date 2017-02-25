@@ -408,6 +408,7 @@ int  bmp_bmp_info(char *filename,int *width,int *height,int *bpp,FILE *out);
 int  bmp_jpeg_info(char *filename,int *width,int *height,int *bpp);
 int  bmp_promote_to_24(WILLUSBITMAP *bmp);
 void bmp_convert_to_greyscale(WILLUSBITMAP *bmp);
+void bmp_erode(WILLUSBITMAP *dst,WILLUSBITMAP *src);
 #define bmp_convert_to_grayscale(bmp) bmp_convert_to_greyscale(bmp)
 void bmp_convert_to_greyscale_ex(WILLUSBITMAP *dst,WILLUSBITMAP *src);
 #define bmp_convert_to_grayscale_ex(dst,src) bmp_convert_to_greyscale_ex(dst,src)

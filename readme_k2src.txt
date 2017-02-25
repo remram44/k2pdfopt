@@ -1,7 +1,7 @@
 K2pdfopt build help.
 http://willus.com
 Original: 7 September 2012
-Last updated: 7 Jan 2017 (v2.40)
+Last updated: 25 Feb 2017 (v2.41)
 
 This "read me" file describes the source code distribution for k2pdfopt.
 
@@ -36,16 +36,16 @@ NOTE 4 below).
 
     REQUIRED
     --------
-    1.  Z-lib 1.2.8 (zlib.net)
-    2.  libpng 1.6.25 (www.libpng.org)
+    1.  Z-lib 1.2.11 (zlib.net)
+    2.  libpng 1.6.28 (www.libpng.org)
     3.  Turbo JPEG lib 1.5.1 (sourceforge.net/projects/libjpeg-turbo/)
 
     TO INCLUDE MuPDF LIBRARY (search for HAVE_MUPDF in k2pdfopt.c)
     --------------------------------------------------------------
     4.  JBIG2Dec 0.11 (jbig2dec.sourceforge.net)
     5.  OpenJPEG 2.1.0 (www.openjpeg.org)
-    6.  FreeType 2.7.0 (freetype.sourceforge.net/index2.html)
-    7.  Mupdf 1.8 (mupdf.com) -- SEE NOTE 1.
+    6.  FreeType 2.7.1 (freetype.sourceforge.net/index2.html)
+    7.  Mupdf 1.10a (mupdf.com) -- SEE NOTE 1.
 
     TO INCLUDE DjVuLibre LIBRARY (search for HAVE_DJVU in k2pdfopt.c)
     -----------------------------------------------------------------
@@ -54,8 +54,8 @@ NOTE 4 below).
     FOR OCR VERSIONS OF K2PDFOPT (search for HAVE_OCR in k2pdfopt.c)
     ----------------------------------------------------------------
     9.  GOCR 0.50 (sourceforge.net/jocr/)
-    10. Leptonica 1.72 (leptonica.com)
-    11. Tesseract 3.04.01 (C++) (code.google.com/tesseract-ocr/) -- SEE NOTE 2.
+    10. Leptonica 1.74.1 (leptonica.com)
+    11. Tesseract 3.05.00 (C++) (code.google.com/tesseract-ocr/) -- SEE NOTE 2.
     12. POSIX threads support (pretty standard with gcc implementations)
 
     If you don't include MuPDF, DjVuLibre, or OCR, then k2pdfopt will
@@ -98,7 +98,7 @@ Notes
    to build the project without using these files (I do not use them).
    
 
-Build Steps for k2pdfopt on Windows (gcc 6.2.0)
+Build Steps for k2pdfopt on Windows (gcc 6.3.0)
 -----------------------------------------------
 My compile steps with gcc (MinGW) are as follows (assuming all the libraries are built
 to libxxx.a files in d:\3rdparty_lib and headers are in d:\3rdparty_include):

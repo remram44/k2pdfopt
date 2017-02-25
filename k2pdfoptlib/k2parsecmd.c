@@ -1,7 +1,7 @@
 /*
 ** k2cmdparse.c   Parse command-line options for k2pdfopt.
 **
-** Copyright (C) 2016  http://willus.com
+** Copyright (C) 2017  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -1372,6 +1372,7 @@ printf("units=%d\n",k2settings->srccropmargins.units[0]);
         NEEDS_STRING("-o",dst_opname_format,127,0)
         NEEDS_STRING("-ci",dst_coverimage,255,1)
         NEEDS_INTEGER("-evl",erase_vertical_lines)
+        NEEDS_INTEGER("-er",src_erosion)
         NEEDS_INTEGER("-ehl",erase_horizontal_lines)
         if (!stricmp(cl->cmdarg,"-fs") && setvals==1)
             k2settings->user_mag |= 2;

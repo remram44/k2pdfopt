@@ -5,7 +5,7 @@
 **
 ** Part of willus.com general purpose C code library.
 **
-** Copyright (C) 2016  http://willus.com
+** Copyright (C) 2017  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -142,6 +142,7 @@ static void find_most_common_color(double ***hist,int n,int *r,int *g,int *b,
 static int bmp_uniform_row(WILLUSBITMAP *bmp,int row);
 static int bmp_uniform_col(WILLUSBITMAP *bmp,int col);
 static void bmp_color_xform8(WILLUSBITMAP *dest,WILLUSBITMAP *src,unsigned char *newval);
+static void bmp_one_component_erode(WILLUSBITMAP *src,WILLUSBITMAP *dst,int offsetplane,int bytesperpixel);
 static void bmp_apply_filter_gray(WILLUSBITMAP *dest,WILLUSBITMAP *src,
                                   double **filter,int ncols,int nrows);
 static double bmp_row_by_row_stdev(WILLUSBITMAP *bmp,int ccount,int whitethresh,
@@ -3379,6 +3380,77 @@ static void bmp_color_xform8(WILLUSBITMAP *dest,WILLUSBITMAP *src,unsigned char 
     }
 
 
+void bmp_erode(WILLUSBITMAP *dst0,WILLUSBITMAP *src)
+
+    {
+    WILLUSBITMAP *dst,_dst;
+    int plane;
+
+    if (dst0==src || dst0==NULL)
+        {
+        dst=&_dst;
+        bmp_init(dst);
+        }
+    else
+        dst=dst0;
+    bmp_copy(dst,src);
+    if (bmp_is_grayscale(src))
+        bmp_one_component_erode(src,dst,0,1);
+    else
+        {
+        if (src->bpp==8)
+            bmp_promote_to_24(src);
+        for (plane=0;plane<3;plane++)
+            bmp_one_component_erode(src,dst,plane,3);
+        }
+    if (dst0==src || dst0==NULL)
+        {
+        bmp_copy(src,dst);
+        bmp_free(dst);
+        }
+    }
+
+
+static void bmp_one_component_erode(WILLUSBITMAP *src,WILLUSBITMAP *dst,int offsetplane,int bytesperpixel)
+
+    {
+    int r;
+
+    for (r=0;r<src->height;r++)
+        {
+        unsigned char *p[3];
+        unsigned char *d;
+        int a[9];
+        int c,min;
+
+        p[0]= (r==0) ? NULL : bmp_rowptr_from_top(src,r-1)+offsetplane;
+        p[1] = bmp_rowptr_from_top(src,r)+offsetplane;
+        p[2]= (r>=src->height-1) ? NULL : bmp_rowptr_from_top(src,r+1)+offsetplane;
+        d=bmp_rowptr_from_top(dst,r)+offsetplane;
+        for (c=0;c<src->width;c++,d+=bytesperpixel)
+            {
+            int i,j,k;
+            for (i=k=0;i<3;i++)
+                if (p[i]!=NULL)
+                    {
+                    for (j=-1;j<=1;j++)
+                        {
+                        a[k]=c+j>=0 && c+j<src->width ? p[i][(c+j)*bytesperpixel] : 255;
+                        k++;
+                        }
+                    }
+                else
+                    {
+                    a[k]=a[k+1]=a[k+2]=255;
+                    k+=3;
+                    }
+            for (min=a[0],i=1;i<9;i++)
+                if (min>a[i])
+                    min=a[i];
+            (*d)=min;
+            }
+        }
+    }
 
 /*
 ** Sharpen a bitmap.

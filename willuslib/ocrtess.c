@@ -3,7 +3,7 @@
 **
 ** Part of willus.com general purpose C code library.
 **
-** Copyright (C) 2016  http://willus.com
+** Copyright (C) 2017  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -182,6 +182,8 @@ void ocrtess_single_word_from_bmp8(void *api,char *text,int maxlen,WILLUSBITMAP 
     for (i=y1;i<=y2;i++,dst+=dw,src+=bmp8->width) 
         memcpy(dst,src,w);
     endian_flip((char *)pixGetData(pix),pixGetWpl(pix)*pixGetHeight(pix));
+    /* Tesseract 3.05.00 -- need to set a resolution */
+    pix->xres = pix->yres = 100; /* Just make up resolution of 100 ppi */
     status=tess_capi_get_ocr(api,pix,text,maxlen,out);
     pixDestroy(&pix);
     if (status<0)

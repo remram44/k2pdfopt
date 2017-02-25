@@ -1,7 +1,7 @@
 /*
 ** k2settings.c     Handles k2pdfopt settings (K2PDFOPT_SETTINGS structure)
 **
-** Copyright (C) 2016  http://willus.com
+** Copyright (C) 2017  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -215,8 +215,11 @@ void k2pdfopt_settings_init(K2PDFOPT_SETTINGS *k2settings)
     k2settings->user_mag=0; /* No magnification adjustment */
     k2settings->join_figure_captions=1;  /* Default: join captions with figures */
 
-    /* v2.36 */
+    /* v2.40 */
     k2settings->nthreads=-50; /* Use 50% of available CPUs */
+
+    /* v2.41 */
+    k2settings->src_erosion=0; /* No erosion */
     }
 
 

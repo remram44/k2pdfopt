@@ -1,4 +1,4 @@
-char *k2pdfopt_version = "v2.40";
+char *k2pdfopt_version = "v2.41";
 /*
 ** k2version.c  K2pdfopt version number and history.
 **
@@ -20,6 +20,16 @@ char *k2pdfopt_version = "v2.40";
 **
 ** VERSION HISTORY
 **
+** V2.41 25 FEB 2017
+**           ENHANCEMENTS
+**           - Updated libraries: MuPDF v1.10a, Tesseract 3.05.00,
+**             Leptonica 1.74.1, FreeType 2.7.1, libpng v1.6.28, zlib 1.2.11.
+**           - Compiled with MinGW/GNU C 6.3 (MS Windows version)
+**           NEW FEATURE
+**           - Added bitmap erosion filter (-er option) as an alternative to
+**             gamma correction (-g) to make text thicker/darker (idea from
+**             the original "Yet Another PDF to LRF Converter" program).
+**           
 ** V2.40 7 JAN 2017
 **           NEW FEATURE
 **           - OCR processing is now multithreaded.  This may provide a significant

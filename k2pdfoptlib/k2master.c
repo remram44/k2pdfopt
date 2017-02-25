@@ -1,7 +1,7 @@
 /*
 ** k2master.c    Functions to handle the main (master) k2pdfopt output bitmap.
 **
-** Copyright (C) 2016  http://willus.com
+** Copyright (C) 2017  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -187,7 +187,11 @@ printf("masterinfo->landscape=%d\n",masterinfo->landscape);
         bmp_convert_to_greyscale_ex(srcgrey,src);
     if (!OR_DETECT(rot_deg) && k2settings_need_color_permanently(k2settings))
         bmp_promote_to_24(src);
+    if (k2settings->src_erosion<0)
+        k2bmp_erode(src,srcgrey,k2settings);
     bmp_adjust_contrast(src,srcgrey,k2settings,&white);
+    if (k2settings->src_erosion>0)
+        k2bmp_erode(src,srcgrey,k2settings);
     /* v2.20 -- paint pixels above white threshold white if requested */
     if (k2settings->src_paintwhite)
         bmp_paint_white(srcgrey,src,white);

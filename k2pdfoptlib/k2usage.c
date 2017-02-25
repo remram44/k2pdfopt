@@ -1,7 +1,7 @@
 /*
 ** k2usage.c    K2pdfopt usage text and handling functions.
 **
-** Copyright (C) 2016  http://willus.com
+** Copyright (C) 2017  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -191,6 +191,7 @@ static char *k2pdfopt_options=
 "-cmax <max>       Set max contrast increase on source pages.  1.0 keeps\n"
 "                  contrast from being adjusted.  Use a negative value to\n"
 "                  specify a fixed contrast adjustment.  Def = 2.0.\n"
+"                  See also -er.\n"
 "-col <maxcol>     Set max number of columns.  <maxcol> can be 1, 2, or 4.\n"
 "                  Default is -col 2.  -col 1 disables column searching.\n"
 "-colorbg (or -colorfg) <hexcolor>|<bitmap>[,<hexcolor>|<bitmap>[,...]]\n"
@@ -246,6 +247,15 @@ static char *k2pdfopt_options=
 /* "-debug [<n>]      Set debug mode to <n> (def = 1).\n" */
 "-ehl <n>          Same as -evl, except erases horizontal lines instead of\n"
 "                  vertical lines.  See -evl.  Default is -ehl 0.\n"
+"-er <n>           Use erosion filter on source bitmaps.  Makes the text look\n"
+"                  darker.  A larger value of <n> makes the text thicker/darker.\n"
+"                  Try -er 1 or -er 2.  Default is 0 (no erosion filtering).\n"
+"                  Use a negative value for <n> to do the erosion before the\n"
+"                  constrast adjustment is applied.  Use a positive value to\n"
+"                  to the erosion after the constrast adjustment is applied.\n"
+"                  This option may magnify scanning defects, so you might want\n"
+"                  to combine with the -de (defect removal) option.\n"
+"                  Has no effect in native mode output. See also -de, -g, -cmax.\n"
 "-evl <n>          Detects and erases vertical lines in the source document\n"
 "                  which may be keeping k2pdfopt from correctly separating\n"
 "                  columns or wrapping text, e.g. column dividers.  If <n> is\n"
@@ -286,7 +296,8 @@ static char *k2pdfopt_options=
 "                  size.  The use of -fs overrides the -mag setting.\n"
 "-g <gamma>        Set gamma value of output bitmaps. A value less than 1.0\n"
 "                  makes the page darker and may make the font more readable.\n"
-"                  Default is 0.5.\n"
+"                  Default is 0.5.  Has no effect with native-mode output.\n"
+"                  See also -er, -cmax.\n"
 "-grid <C>x<R>[x<O>][+]  Grid the source page into <C> columns by <R> rows with\n"
 "                  with <O> percent overlap.  No regard will be made for trying\n"
 "                  to break the page between columns or rows of text.  If a +\n"

@@ -2,7 +2,7 @@
 ** k2settings2cmd.c    Convert changes in settings structure to equivalent
 **                     command-line arguments.
 **
-** Copyright (C) 2016  http://willus.com
+** Copyright (C) 2017  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -261,6 +261,7 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
                   &src->erase_vertical_lines,dst->erase_vertical_lines); 
     integer_check(cmdline,dst->erase_horizontal_lines==2?nongui:NULL,"-ehl",
                   &src->erase_horizontal_lines,dst->erase_horizontal_lines);    
+    integer_check(cmdline,nongui,"-er",&src->src_erosion,dst->src_erosion);
     double_plus_check(cmdline,NULL,"-fs",&src->dst_fontsize_pts,dst->dst_fontsize_pts);
     double_check(cmdline,nongui,"-vls",&src->vertical_line_spacing,dst->vertical_line_spacing);
     double_check(cmdline,nongui,"-vm",&src->vertical_multiplier,dst->vertical_multiplier);

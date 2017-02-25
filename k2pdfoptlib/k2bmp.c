@@ -3,7 +3,7 @@
 **              are mostly generic bitmap functions, but there are some
 **              k2pdfopt-specific settings for some.
 **
-** Copyright (C) 2016  http://willus.com
+** Copyright (C) 2017  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -21,7 +21,6 @@
 */
 
 #include "k2pdfopt.h"
-
 
 static int inflection_count(double *x,int n,int delta,int *wthresh);
 static int vert_line_erase(WILLUSBITMAP *bmp,WILLUSBITMAP *cbmp,WILLUSBITMAP *tmp,
@@ -106,6 +105,20 @@ return(status);
     if (!status && bpp==8)
         bmp_convert_to_greyscale(src);
     return(status);
+    }
+
+
+void k2bmp_erode(WILLUSBITMAP *src,WILLUSBITMAP *srcgrey,
+                 K2PDFOPT_SETTINGS *k2settings)
+    {
+    int i,n;
+
+    n=abs(k2settings->src_erosion);
+    for (i=0;i<n;i++)
+        bmp_erode(srcgrey,srcgrey);
+    if (src!=srcgrey && src!=NULL && src->bpp>8)
+        for (i=0;i<n;i++)
+            bmp_erode(src,src);
     }
 
 
