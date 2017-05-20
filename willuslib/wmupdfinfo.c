@@ -4,7 +4,7 @@
 **
 ** Part of willus.com general purpose C code library.
 **
-** Copyright (C) 2016  http://willus.com
+** Copyright (C) 2017  http://willus.com
 **
 ** This program is free software: you can redistribute it and/or modify
 ** it under the terms of the GNU Affero General Public License as
@@ -30,6 +30,7 @@
 #ifdef HAVE_MUPDF_LIB
 #include <mupdf/pdf.h>
 
+static void date_convert(char *dst,char *src);
 enum
 {
 	DIMENSIONS = 0x01,
@@ -255,7 +256,7 @@ static void showglobalinfo(fz_context *ctx, globals *glo,char *filename)
             free(buf);
             }
 	    }
-    if (glo->dims>0)
+    if (glo->dims==1)
         {
         char buf1[128];
 
@@ -263,6 +264,11 @@ static void showglobalinfo(fz_context *ctx, globals *glo,char *filename)
                 (glo->dim[0].u.dim.bbox->x1-glo->dim[0].u.dim.bbox->x0)/72.,
                 (glo->dim[0].u.dim.bbox->y1-glo->dim[0].u.dim.bbox->y0)/72.);
         fz_printf(ctx,out,"%s",buf1);
+        }
+    else
+        {
+        if (glo->dims>1)
+            fz_printf(ctx,out,"PAGE SIZE:      (varies)\n");
         }
 	fz_printf(ctx,out, "PAGES:          %d\n\n", glo->pagecount);
 	obj = pdf_dict_gets(ctx,pdf_trailer(ctx,doc), "Encrypt");
@@ -296,7 +302,15 @@ static void display_pdf_field(fz_context *ctx,fz_output *out,char *buf0,char *fi
             int j;
             for (j=i+lenfn+1;buf[j]!='\0' && buf[j]!=')';j++);
             buf[j]='\0';
-            fz_printf(ctx,out,"%s%s\n",label3,&buf[i+lenfn+1]);
+            fz_printf(ctx,out,"%s",label3);
+            if (in_string(fieldname,"date")>=0)
+                {
+                char newdate[128];
+                date_convert(newdate,&buf[i+lenfn+1]);
+                fz_printf(ctx,out,"%s\n",newdate);
+                }
+            else
+                fz_printf(ctx,out,"%s\n",&buf[i+lenfn+1]);
             break;
             }
         }
@@ -1113,9 +1127,9 @@ static void pdfinfo_info(fz_context *ctx, fz_output *out, char *filename, char *
 		if (!pdf_authenticate_password(ctx, glo.doc, password))
 			fz_throw(glo.ctx, FZ_ERROR_GENERIC, "cannot authenticate password: %s", filename);
     glo.pagecount=pdf_count_pages(ctx,glo.doc);
+	gather_all_info(ctx,&glo,filename,show,pagelist);
 	showglobalinfo(ctx,&glo,filename);
     fz_printf(ctx,glo.out,"       Page       Ref           Details\n");
-	gather_all_info(ctx,&glo,filename,show,pagelist);
     printinfo(ctx,&glo,filename,show);
 	closexref(ctx,&glo);
     }
@@ -1245,4 +1259,50 @@ void wmupdfinfo_get(char *filename,int *pagelist,char **buf)
     remove(tempname);
     (*buf)[sizebytes]='\0';
     }
+
+
+static void date_convert(char *dst,char *src)
+
+    {
+    int i,year,month,date,hour,minute,second;
+    static char *mname[12]={"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
+    char src1[32];
+
+    strcpy(dst,src);
+    if (src[1]!=':')
+        return;
+    strncpy(src1,src,31);
+    src1[31]='\0';
+    i=6;
+    src1[i]='\0';
+    year=atoi(&src1[i-4]);
+    src1[i]=src[i];
+    i=8;
+    src1[i]='\0';
+    month=atoi(&src1[i-2]);
+    src1[i]=src[i];
+    i=10;
+    src1[i]='\0';
+    date=atoi(&src1[i-2]);
+    src1[i]=src[i];
+    i=12;
+    src1[i]='\0';
+    hour=atoi(&src1[i-2]);
+    src1[i]=src[i];
+    i=14;
+    src1[i]='\0';
+    minute=atoi(&src1[i-2]);
+    src1[i]=src[i];
+    i=16;
+    src1[i]='\0';
+    second=atoi(&src1[i-2]);
+    sprintf(dst,"%d-%s-%04d %d:%02d:%02d",date,mname[(month-1)%12],year,hour,minute,second);
+    if (!stricmp(&src[i],"z"))
+        strcat(dst," GMT");
+    else if (src[i]=='-' || src[i]=='+')
+        sprintf(&dst[strlen(dst)]," GMT%s",&src[i]);
+    else if (src[i]!='\0')
+        sprintf(&dst[strlen(dst)]," %s",&src[i]);
+    }
+    
 #endif /* HAVE_MUPDF_LIB */

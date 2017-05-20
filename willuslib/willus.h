@@ -1795,6 +1795,10 @@ void willusgui_set_ime_notify(int status);
 int  willusgui_folder_select(char *foldername,int maxlen);
 
 /* Generic (cross-platform) message box functions */
+/* wleptonica.c */
+void wlept_bmp_dewarp(WILLUSBITMAP *src,WILLUSBITMAP *bmp1,WILLUSBITMAP *bmp2,int wthresh,int fit_order,
+                      char *debugfile);
+
 
 #ifdef PI
 #undef PI

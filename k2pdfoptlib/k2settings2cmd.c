@@ -379,7 +379,6 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
     minus_check(cmdline,nongui,"-fc",&src->fit_columns,dst->fit_columns);
     minus_check(cmdline,nongui,"-d",&src->dst_dither,dst->dst_dither);
     minus_check(cmdline,NULL,"-c",&src->dst_color,dst->dst_color);
-    minus_check(cmdline,NULL,"-ac",&src->autocrop,dst->autocrop);
     minus_check(cmdline,nongui,"-v",&src->verbose,dst->verbose);
     minus_check(cmdline,nongui,"-fr",&src->dst_figure_rotate,dst->dst_figure_rotate);
     minus_check(cmdline,nongui,"-y",&src->assume_yes,dst->assume_yes);
@@ -433,6 +432,30 @@ static void k2settings_to_cmd(STRBUF *cmdline,K2PDFOPT_SETTINGS *dst,
         dst->src_autostraighten=-1;
     if (src->src_autostraighten<=0)
         src->src_autostraighten=-1;
+    if (src->dewarp != dst->dewarp)
+        {
+        if (dst->dewarp==0)
+            strbuf_dsprintf(cmdline,NULL,"-dw-");
+        else if (dst->dewarp>=4)
+            strbuf_dsprintf(cmdline,NULL,"-dw");
+        else if (dst->dewarp<3)
+            strbuf_dsprintf(cmdline,NULL,"-dw 2");
+        else
+            strbuf_dsprintf(cmdline,NULL,"-dw 3");
+        src->dewarp=dst->dewarp;
+        }
+    if (src->autocrop != dst->autocrop)
+        {
+        STRBUF *sbuf;
+        sbuf=NULL;
+        if (dst->autocrop==0)
+            strbuf_dsprintf(cmdline,sbuf,"-ac-");
+        else if (dst->autocrop==100)
+            strbuf_dsprintf(cmdline,sbuf,"-ac");
+        else
+            strbuf_dsprintf(cmdline,sbuf,"-ac %5.3f",(double)(dst->autocrop-10)/990.);
+        src->autocrop=dst->autocrop;
+        }
     if (src->src_autostraighten != dst->src_autostraighten)
         {
         STRBUF *sbuf;

@@ -54,7 +54,6 @@
 */
 
 /*
-#define WILLUSDEBUGX 512
 #define WILLUSDEBUG
 #define WILLUSDEBUGX 0x100000
 #define WILLUSDEBUGX 32
@@ -318,6 +317,7 @@ typedef struct
     double dst_marright;
     */
     int autocrop;
+    int dewarp;
     K2CROPBOX dstmargins;
     K2CROPBOX dstmargins_org;
     int pad_left;
@@ -445,7 +445,8 @@ typedef struct
     {
     int mode;
     int status;
-    int count; /* Increments for each call */
+    int callcount; /* Increments for each call to proc_one on the same file */
+    int filecount; /* Increments for each file */
     WILLUSBITMAP *bmp; /* Returns preview bitmap */
     char *outname; /* Output file name */
     FONTSIZE_HISTOGRAM fsh;
@@ -660,6 +661,11 @@ typedef struct
     int bgcolor;
     int fit_to_page;
     int wordcount;
+    /* v2.42 for bitmap output and improved autocrop */
+    int output_page_count;  /* Count in output file */
+    int filecount;
+    int autocrop_margins[4];
+    /* end v2.42 */
     char debugfolder[256];
     /*
     ** Details on last region added--used to help determine spacing to next region.
@@ -744,6 +750,12 @@ void wpdfboxes_echo(WPDFBOXES *boxes,FILE *out);
 void overwrite_set(int status);
 int  k2file_get_num_pages(char *filename);
 void k2file_get_overlay_bitmap(WILLUSBITMAP *bmp,double *dpi,char *filename,char *pagelist);
+void filename_get_marked_pdf_name(char *dst,char *fmt,char *pdfname,int filecount,
+                                  int pagecount);
+void filename_substitute(char *dst,char *fmt,char *src,int filecount,int pagecount,
+                         char *defext0);
+int  filename_is_bitmap(char *filename);
+void bitmap_file_echo_status(char *filename);
 void k2file_look_for_pagebreakmarks(K2PAGEBREAKMARKS *k2pagebreakmarks,
                                     K2PDFOPT_SETTINGS *k2settings,WILLUSBITMAP *src,
                                     WILLUSBITMAP *srcgrey,int dpi);
@@ -912,6 +924,7 @@ double line_spacing_from_font_size(double lcheight,double h5050,double capheight
 
 /* k2settings.c */
 void k2pdfopt_settings_init(K2PDFOPT_SETTINGS *k2settings);
+int  k2settings_output_is_bitmap(K2PDFOPT_SETTINGS *k2settings);
 K2NOTES *page_has_notes_margin(K2PDFOPT_SETTINGS *k2settings,MASTERINFO *masterinfo);
 int  k2pdfopt_settings_landscape(K2PDFOPT_SETTINGS *k2settings,int pageno,int maxpages);
 void k2pdfopt_conversion_init(K2PDFOPT_CONVERSION *k2conv);
@@ -945,7 +958,8 @@ int  k2settings_ncolors(char *s);
 char *k2settings_color_by_index(char *s,int index);
 
 /* k2mark.c */
-void publish_marked_page(PDFFILE *mpdf,WILLUSBITMAP *src,int src_dpi);
+void publish_marked_page(PDFFILE *mpdf,WILLUSBITMAP *src,int src_dpi,char *srcname,
+                         char *fmtname,int filecount,int pagecount,int jpeg_quality);
 void mark_source_page(K2PDFOPT_SETTINGS *k2settings,MASTERINFO *masterinfo,
                       BMPREGION *region,int caller_id,int mark_flags);
 
@@ -1042,6 +1056,7 @@ void   bmp_detect_vertical_lines(WILLUSBITMAP *bmp,WILLUSBITMAP *cbmp,double dpi
                                       int white_thresh,int erase_vertical_lines,
                                       int debug,int verbose);
 void   k2bmp_erode(WILLUSBITMAP *src,WILLUSBITMAP *srcgrey,K2PDFOPT_SETTINGS *k2settings);
+void   k2bmp_prep_for_dewarp(WILLUSBITMAP *dst,WILLUSBITMAP *src,int dx,int whitethresh);
 void   bmp_adjust_contrast(WILLUSBITMAP *src,WILLUSBITMAP *srcgrey,
                            K2PDFOPT_SETTINGS *k2settings,int *white);
 void   bmp_paint_white(WILLUSBITMAP *bmpgray,WILLUSBITMAP *bmp,int white_thresh);
@@ -1050,7 +1065,8 @@ void   bmp_change_colors(WILLUSBITMAP *bmp,WILLUSBITMAP *mask,char *fgcolor,int 
                          int c1,int r1,int c2,int r2);
 void   bmp_modbox(WILLUSBITMAP *bmp,int c1,int r1,int c2,int r2,int color1,int color2);
 void   bmp8_merge(WILLUSBITMAP *dst,WILLUSBITMAP *src,int count);
-int    bmp_autocrop2(WILLUSBITMAP *bmp0,int *cx);
+int    bmp_autocrop2(WILLUSBITMAP *bmp0,int *cx,double aggressiveness);
+void   k2bmp_apply_autocrop(WILLUSBITMAP *bmp,int *cx0);
 void   k2pagebreakmarks_find_pagebreak_marks(K2PAGEBREAKMARKS *k2pagebreakmarks,WILLUSBITMAP *bmp,
                                        WILLUSBITMAP *bmpgrey,int dpi,int *color,int *type,int n);
 

@@ -1150,7 +1150,7 @@ printf("settings->src_trim=%d\n",k2settings->src_trim);
                     k2gui_get_settings(preset,k2settings,&k2gui->cmdxtra);
                     k2gui_update_controls();
                     }
-                else if (!stricmp(control->name,"info"))
+                else if (!stricmp(control->name,"&info"))
                     k2gui_display_info();
                 else if (in_string(control->name,"add folder")>=0)
                     k2gui_add_folder();
@@ -2307,7 +2307,7 @@ printf("@k2gui_add_children(already_drawn=%d)\n",already_drawn);
     for (x1=x0,j=0,i=3;i>=0;i--,j++,x1-=(w+fs))
         {
         double xl;
-        static char *button_label[4]={"INFO","&ADD FILE","ADD FOLDER","&REMOVE ITEM"};
+        static char *button_label[4]={"&INFO","&ADD FILE","ADD FOLDER","&REMOVE ITEM"};
         WILLUSGUIRECT trect;
 
         xl = 1.00;
@@ -3302,7 +3302,7 @@ printf("cmdxtra.s='%s'\n",k2gui->cmdxtra.s);
                                "&Post-process w/Ghostscript",
 #endif
                                "Generate &marked-up source","Re-flow te&xt",
-                               "Erase vertical l&ines","Erase hori&zontal lines","Fast Previe&w",
+                               "&Erase vertical lines","Erase hori&zontal lines","Fast Previe&w",
                                "Avoi&d Text Select Overlap","I&gnore small defects",
                                "Auto-crop","Fixed output font size",
 #ifdef HAVE_OCR_LIB
@@ -4418,7 +4418,7 @@ static void k2gui_contextmenu_by_control(WILLUSGUICONTROL *control)
             "graphically using an overlay of all selected "
             "source pages (using the page range in the correponding "
             "\"Pages Range\" box).",
-        "&remove item",
+        "remove item",
             "Remove Item",
             "The \"Remove Item\" button removes the selected item "
             "from the file list.",

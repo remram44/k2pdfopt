@@ -220,6 +220,16 @@ void k2pdfopt_settings_init(K2PDFOPT_SETTINGS *k2settings)
 
     /* v2.41 */
     k2settings->src_erosion=0; /* No erosion */
+
+    /* v2.42 */
+    k2settings->dewarp=0;
+    }
+
+
+int k2settings_output_is_bitmap(K2PDFOPT_SETTINGS *k2settings)
+
+    {
+    return(filename_is_bitmap(k2settings->dst_opname_format));
     }
 
 
@@ -321,6 +331,11 @@ void k2settings_check_and_warn(K2PDFOPT_SETTINGS *k2settings)
 
     if (k2settings->assume_yes)
         return;
+    if (k2settings->use_crop_boxes && k2settings->dewarp)
+        {
+        sprintf(buf,"De-warping (-dw) is disabled by native mode output.");
+        k2settings_warn(buf);
+        }
     if (k2settings->fit_columns && k2settings->user_mag)
         {
         sprintf(buf,"You have specified -odpi, -mag, or -fs.  This may not "
@@ -375,9 +390,9 @@ void k2pdfopt_settings_quick_sanity_check(K2PDFOPT_SETTINGS *k2settings)
         }
 
     /*
-    ** If text wrapping is on, can't use crop boxes
+    ** If text wrapping is on or output is bitmap, can't use crop boxes
     */
-    if (k2settings->text_wrap>0)
+    if (k2settings->text_wrap>0 || k2settings_output_is_bitmap(k2settings))
         k2settings->use_crop_boxes=0;
 
     /*
@@ -410,10 +425,15 @@ void k2pdfopt_settings_quick_sanity_check(K2PDFOPT_SETTINGS *k2settings)
 
     /*
     ** If OCR is on, can't use crop boxes
+    ** v2.42--allow this so that the -ocrout option still works in native output mode
     */
 #ifdef HAVE_OCR_LIB
+    /*
     if (k2settings->dst_ocr)
         k2settings->use_crop_boxes=0;
+    */
+    if (k2settings->ocrout[0]!='\0' && k2settings->dst_ocr==0)
+        k2settings->dst_ocr='m';
 #endif
     }
 

@@ -58,6 +58,7 @@ void masterinfo_init(MASTERINFO *masterinfo,K2PDFOPT_SETTINGS *k2settings)
 
     /* Init outline / bookmarks */
     masterinfo->outline=NULL;
+    masterinfo->output_page_count=0;
     masterinfo->outline_srcpage_completed=-1;
     masterinfo->preview_bitmap=NULL;
     masterinfo->preview_captured=0;
@@ -220,6 +221,45 @@ printf("masterinfo->landscape=%d\n",masterinfo->landscape);
                                k2settings->debug,out);
         if (k2settings->use_crop_boxes)
             masterinfo->pageinfo.srcpage_fine_rot_deg = rot;
+        }
+    if (k2settings->autocrop)
+        bmp_autocrop2(srcgrey,masterinfo->autocrop_margins,(double)k2settings->autocrop/1000.);
+    if (k2settings->dewarp && !k2settings->use_crop_boxes)
+        {
+        WILLUSBITMAP _dwbmp,*dwbmp;
+
+        dwbmp=&_dwbmp;
+        bmp_init(dwbmp);
+        bmp_copy(dwbmp,srcgrey);
+        if (k2settings->debug)
+            {
+            bmp_write(dwbmp,"dewarp_pre_prep.png",NULL,100);
+            aprintf("\n" TTEXT_BOLD);
+            wfile_written_info("dewarp_pre_prep.png",stdout);
+            aprintf(TTEXT_NORMAL);
+            }
+        k2bmp_prep_for_dewarp(dwbmp,srcgrey,k2settings->src_dpi/45,white);
+        if (k2settings->autocrop)
+            k2bmp_apply_autocrop(dwbmp,masterinfo->autocrop_margins);
+        if (k2settings->debug)
+            {
+            bmp_write(dwbmp,"dewarp_image.png",NULL,100);
+            aprintf(TTEXT_BOLD);
+            wfile_written_info("dewarp_image.png",stdout);
+            aprintf(TTEXT_NORMAL);
+            }
+        wlept_bmp_dewarp(dwbmp,src,srcgrey,white,k2settings->dewarp,
+                         k2settings->debug?"k2opt_dewarp_model.pdf":NULL);
+        if (k2settings->debug)
+            {
+            aprintf(TTEXT_BOLD);
+            wfile_written_info("k2opt_dewarp_model.pdf",stdout);
+            aprintf(TTEXT_NORMAL);
+            }
+        bmp_free(dwbmp);
+        /* Re-do autocrop after de-warp */
+        if (k2settings->autocrop)
+            bmp_autocrop2(srcgrey,masterinfo->autocrop_margins,(double)k2settings->autocrop/1000.);
         }
 #if (WILLUSDEBUGX & 0x20000)
 printf("k2settings->srccropmargins->units[0]=%d\n",k2settings->srccropmargins.units[0]);
@@ -1198,12 +1238,8 @@ k2printf("mi->published_pages=%d\n",masterinfo->published_pages);
         masterinfo_add_cropbox(masterinfo,k2settings,bmp1,ldpi,bp);
         masterinfo_remove_top_rows(masterinfo,k2settings,bp);
         bmp_free(bmp1);
-        return(bp);
         }     
 #endif /* HAVE_MUPDF_LIB */
-    /*
-    ** Not using crop boxes, so process output bitmap
-    */
     /* Create list of OCR'd words on this page and move */
     /* up positions of remaining OCR'd words.           */
 #ifdef HAVE_OCR_LIB
@@ -1244,7 +1280,12 @@ exit(10);
                 }
         }
 #endif
-        
+    if (k2settings->use_crop_boxes && !preview)
+        return(bp);
+
+    /*
+    ** Not using crop boxes from here on, so process output bitmap
+    */
     /* Center masterinfo->bmp into bmp1 (horizontally) */
     bmp_alloc(bmp1);
     bmp_fill(bmp1,255,255,255);
@@ -2406,10 +2447,8 @@ cbox->units[3]);
     /* Autocrop page */
     if (k2settings->autocrop)
         {
-        int cx[4];
-        bmp_autocrop2(region->bmp8,cx);
         for (i=0;i<4;i++)
-            margins_inches[i]=(double)cx[i]/region->dpi;
+            margins_inches[i]=(double)masterinfo->autocrop_margins[i]/region->dpi;
         return;
         }
     userrect.p[0].x=cbox->box[0];

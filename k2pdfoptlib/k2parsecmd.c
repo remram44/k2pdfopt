@@ -231,7 +231,6 @@ int parse_cmd_args(K2PDFOPT_CONVERSION *k2conv,STRBUF *env,STRBUF *cmdline,
         MINUS_OPTION("-t",src_trim,1)
         MINUS_OPTION("-s",dst_sharpen,1)
         MINUS_OPTION("-to",text_only,1)
-        MINUS_OPTION("-ac",autocrop,1)
         MINUS_OPTION("-fr",dst_figure_rotate,1)
         MINUS_OPTION("-y",assume_yes,1)
 #ifdef HAVE_GHOSTSCRIPT
@@ -854,6 +853,31 @@ int parse_cmd_args(K2PDFOPT_CONVERSION *k2conv,STRBUF *env,STRBUF *cmdline,
             readnext=0;
             continue;
             }
+        if (!stricmp(cl->cmdarg,"-ac-"))
+            {
+            if (setvals==1)
+                k2settings->autocrop=0;
+            continue;
+            }
+        if (!stricmp(cl->cmdarg,"-ac"))
+            {
+            if (setvals==1)
+                k2settings->autocrop=100;
+            if (cmdlineinput_next(cl)==NULL)
+                break;
+            if (is_a_number(cl->cmdarg))
+                {
+                if (setvals==1)
+                    k2settings->autocrop=atof(cl->cmdarg)*990+10;
+                }
+            else
+                readnext=0;
+            if (k2settings->autocrop < 10)
+                k2settings->autocrop = 10;
+            if (k2settings->autocrop > 1000)
+                k2settings->autocrop = 1000;
+            continue;
+            }
         if (!stricmp(cl->cmdarg,"-as-"))
             {
             if (setvals==1)
@@ -875,6 +899,27 @@ int parse_cmd_args(K2PDFOPT_CONVERSION *k2conv,STRBUF *env,STRBUF *cmdline,
                 readnext=0;
             if (k2settings->src_autostraighten > 45.)
                 k2settings->src_autostraighten = 45.;
+            continue;
+            }
+        if (!stricmp(cl->cmdarg,"-dw-"))
+            {
+            if (setvals==1)
+                k2settings->dewarp=0;
+            continue;
+            }
+        if (!stricmp(cl->cmdarg,"-dw"))
+            {
+            if (setvals==1)
+                k2settings->dewarp=4;
+            if (cmdlineinput_next(cl)==NULL)
+                break;
+            if (is_a_number(cl->cmdarg))
+                {
+                if (setvals==1)
+                    k2settings->dewarp=atoi(cl->cmdarg);
+                }
+            else
+                readnext=0;
             continue;
             }
         if (!stricmp(cl->cmdarg,"-rt"))
@@ -1368,6 +1413,8 @@ printf("units=%d\n",k2settings->srccropmargins.units[0]);
         NEEDS_STRING("-title",dst_title,255,0)
 #ifdef HAVE_OCR_LIB
         NEEDS_STRING("-ocrout",ocrout,127,0)
+        if (k2settings->ocrout[0]!='\0' && k2settings->dst_ocr==0)
+            k2settings->dst_ocr='m';
 #endif
         NEEDS_STRING("-o",dst_opname_format,127,0)
         NEEDS_STRING("-ci",dst_coverimage,255,1)

@@ -1,7 +1,7 @@
 K2pdfopt build help.
 http://willus.com
 Original: 7 September 2012
-Last updated: 25 Feb 2017 (v2.41)
+Last updated: 20 May 2017 (v2.42)
 
 This "read me" file describes the source code distribution for k2pdfopt.
 
@@ -19,7 +19,7 @@ K2pdfopt Source Files
    library dependencies (HAVE_XXX_LIB) and whether or not the MS Windows
    GUI is compiled in (HAVE_K2GUI).
 
-3. willus.com general-purpose C library (37 C files + 1 header file) in
+3. willus.com general-purpose C library (38 C files + 1 header file) in
    willuslib subfolder.
    Compile all C files in this subfolder and build them into libwillus.a.
    Near the top of willus.h are #defines which control third-party

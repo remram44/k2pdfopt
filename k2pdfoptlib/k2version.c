@@ -1,4 +1,4 @@
-char *k2pdfopt_version = "v2.41";
+char *k2pdfopt_version = "v2.42";
 /*
 ** k2version.c  K2pdfopt version number and history.
 **
@@ -17,8 +17,33 @@ char *k2pdfopt_version = "v2.41";
 ** You should have received a copy of the GNU Affero General Public License
 ** along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **
-**
 ** VERSION HISTORY
+**
+** V2.42 20 MAY 2017
+**           NEW FEATURES
+**           - Bitmap output.  The -o <namefmt> option now takes names ending
+**             in .jpg and .png to tell k2pdfopt to write out bitmaps instead of
+**             a PDF file.  E.g. -o .png writes pages to srcfile0001.png,
+**             srcfile0002.png, etc.
+**           - Added de-warp (-dw) option to de-warp scanned pages a la
+**             ScanTailor.  This is most useful for books that have been pressed
+**             against the glass of a copier and the scans still have some
+**             curvature (warping) in them.  Or for photographs of pages taken
+**             at a slight angle.  Uses Leptonica's built-in functions.
+**           ENHANCEMENTS
+**           - Improved autocrop (-ac) algorithm and added an "aggressiveness" factor
+**             to it.  It is now called more efficiently as well (it used to be
+**             called multiple times per source page).
+**           - Added Kobo Aura One to built-in device list
+**             https://www.mobileread.com/forums/showthread.php?p=3513245#post3513245
+**           - Improved straightening/deskew algorithm.  Faster and uses weighted
+**             average / fine grain search (25 Mar 2017).  ~20% faster for 64-bit.
+**           - Keyboard shortcut change:  'i' key now brings up file info.
+**           - PDF information shows dates and page size more clearly now.
+**           BUG FIXES
+**           - The -ocrout function works even if native output mode is specified.
+**           - Pressing ESC key when file overwrite is requested now results in a
+**             "no" response (it used to result in a "yes" response).
 **
 ** V2.41 25 FEB 2017
 **           ENHANCEMENTS
