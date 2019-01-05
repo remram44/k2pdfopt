@@ -880,6 +880,7 @@ void wfile_remove_file_plus_parent_dir(char *tempfile);
 FILE *wfile_fopen_utf8(char *filename,char *mode);
 int wfile_remove_utf8(char *filename);
 int wfile_rename_utf8(char *filename1,char *filename2);
+int wfile_read_ascii_to_buf(char **buf,char *filename);
 
 /* wzfile.c */
 typedef struct

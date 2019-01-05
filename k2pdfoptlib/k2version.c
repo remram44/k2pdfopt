@@ -1,4 +1,4 @@
-char *k2pdfopt_version = "v2.51";
+char *k2pdfopt_version = "v2.51a";
 /*
 ** k2version.c  K2pdfopt version number and history.
 **
@@ -20,10 +20,14 @@ char *k2pdfopt_version = "v2.51";
 **
 ** VERSION HISTORY
 **
+** V2.51a 5 JAN 2019
+**           - Fixed issue with MS Windows GUI not displaying PDF file info
+**             correctly (due to change in MuPDF behavior).
+**
 ** V2.51 4 JAN 2019
 **           - Fixed issue with Tesseract and SSE/AVX support
 **           - Added -ocrdpi option to optimize Tesseract v4.0.0 performance
-**           - Added code modes from:  https://gitlab.com/axet/android-k2pdfopt/commit/163d9c9248f9ac00068ecb60af33f1ae7ec17540
+**           - Added code mods from:  https://gitlab.com/axet/android-k2pdfopt/commit/163d9c9248f9ac00068ecb60af33f1ae7ec17540
 **
 ** V2.50 27 DEC 2018
 **           ENHANCEMENTS
